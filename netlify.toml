@@ -1,0 +1,27 @@
+# netlify.toml
+
+# Configuración principal de construcción del sitio
+[build]
+  # Comando que Netlify ejecutará para construir tu frontend.
+  # Verifica en tu `package.json` cuál es el script de "build".
+  # Para Vite/React, casi siempre es "npm run build". ¡Asegúrate que sea correcto!
+  command = "npm run build"
+
+  # Carpeta donde Vite/React pone los archivos construidos (HTML, CSS, JS estáticos).
+  # Para Vite, el valor por defecto es "dist". Verifica si es tu caso.
+  # Esta es la carpeta que Netlify desplegará como tu sitio web.
+  publish = "dist"
+
+  # Directorio donde Netlify buscará los archivos fuente de tus funciones serverless.
+  # Debe coincidir con la carpeta que creaste.
+  functions = "netlify/functions"
+
+# Configuración específica para las funciones (a menudo redundante si ya está en [build])
+[functions]
+  # Vuelve a especificar el directorio (buena práctica, aunque a veces opcional)
+  directory = "netlify/functions"
+
+  # Node Bundler (Opcional, Netlify suele manejarlo bien por defecto con 'esbuild')
+  # Puedes descomentar la siguiente línea si encuentras problemas de compatibilidad
+  # o quieres forzar el uso de esbuild (más moderno y rápido).
+  # node_bundler = "esbuild"
