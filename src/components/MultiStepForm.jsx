@@ -8,15 +8,14 @@ import {
 import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
-// <<< PASO 1: Asegúrate de importar ResultsDisplay >>>
-import ResultsDisplay from './results/ResultsDisplay'; // Ajusta la ruta si es necesario
+import ResultsDisplay from './results/ResultsDisplay'; // Asegúrate que la ruta es correcta
 
 // --- Constantes ---
 const TOTAL_STEPS = sections.length;
 const LOCAL_STORAGE_KEY = 'valuationFormData';
 const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 
-// --- Helper: calculateScores --- (SIN CAMBIOS)
+// --- Helper: calculateScores ---
 function calculateScores(formData) {
   const scores = initialScores ? { ...initialScores } : {};
   if (!Array.isArray(qualitativeQuestions)) {
@@ -39,7 +38,7 @@ function calculateScores(formData) {
   return scores;
 }
 
-// --- Helper: generateImprovementRoadmap --- (SIN CAMBIOS)
+// --- Helper: generateImprovementRoadmap ---
 function generateImprovementRoadmap(scores, stage) {
   console.log("Generating roadmap for stage:", stage, "with scores:", scores);
   const roadmapItems = [];
@@ -91,13 +90,13 @@ function generateImprovementRoadmap(scores, stage) {
 
 // --- React Component Definition ---
 function MultiStepForm() {
-  // --- Estados --- (SIN CAMBIOS)
+  // --- Estados ---
   const [currentStep, setCurrentStep] = useState(() => {
       const savedStep = localStorage.getItem(LOCAL_STORAGE_STEP_KEY);
       const initialStep = savedStep ? parseInt(savedStep, 10) : 0;
       return !isNaN(initialStep) && initialStep >= 0 && initialStep < TOTAL_STEPS ? initialStep : 0;
   });
-  const [formData, setFormData] = useState(() => { // <<< INICIALIZACIÓN ROBUSTA >>>
+  const [formData, setFormData] = useState(() => {
       const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
       let baseData = {};
       if (savedData) {
@@ -118,115 +117,175 @@ function MultiStepForm() {
   const [calculationResult, setCalculationResult] = useState(null);
   const [errors, setErrors] = useState({});
 
-  // --- Effects --- (SIN CAMBIOS)
+  // --- Effects ---
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData)); }, [formData]);
   useEffect(() => { if(currentStep >= 0 && currentStep < TOTAL_STEPS) { localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString()); } }, [currentStep]);
 
-  // --- Handlers --- (SIN CAMBIOS)
   // --- Handlers ---
+
   const handleChange = useCallback((event) => {
-    // <<< INICIO CÓDIGO RESTAURADO >>>
     const { name, value, type } = event.target;
     let resetData = {};
     if (name === 'naicsSector') {
-        resetData.naicsSubSector = ''; // Reset sub-sector when sector changes
+        resetData.naicsSubSector = '';
     }
     setFormData(prevData => ({
-      ...prevData,
-      ...resetData, // Apply reset if needed
-      // Handle number inputs correctly, allowing null for empty
+      ...prevData, ...resetData,
       [name]: type === 'number' ? (value === '' ? null : parseFloat(value)) : value
     }));
-    // Limpiar errores para el campo que se está editando
     if (errors[name]) {
-        setErrors(prevErrors => {
-            const newErrors = { ...prevErrors };
-            delete newErrors[name];
-            return newErrors;
-        });
+        setErrors(prevErrors => { const newErrors = { ...prevErrors }; delete newErrors[name]; return newErrors; });
     }
-    // <<< FIN CÓDIGO RESTAURADO >>>
-  }, [errors]); // La dependencia 'errors' es correcta para limpiar errores
-  const handleSubmit = useCallback(async () => { /* ... (Llama a generateImprovementRoadmap) ... */ }, [formData]);
+  }, [errors]);
+
+  // <<< INICIO CÓDIGO COMPLETO HANDLERS >>>
+  const handleSubmit = useCallback(async () => {
+     console.log("Attempting Submission with Data: ", formData);
+     setIsSubmitting(true);
+     setSubmissionResult(null);
+     setCalculationResult(null);
+     setErrors({});
+     let localCalcResult = null;
+    try {
+        // Validaciones
+        const requiredFinancials = ['currentRevenue', 'ebitda'];
+        const missingFinancials = requiredFinancials.filter(key => formData[key] == null || isNaN(formData[key]));
+        if (missingFinancials.length > 0) throw new Error(`Missing or invalid required financial information: ${missingFinancials.join(', ')}.`);
+        if (!formData.userEmail) throw new Error("Please enter your email address.");
+        if (!formData.naicsSector) throw new Error("Please select your primary Industry Sector.");
+        if (!formData.naicsSubSector) throw new Error("Please select your specific Industry Sub-Sector.");
+        // Cálculos Locales
+        console.log("Performing local calculations before sending...");
+        const ebitdaValue = formData.ebitda || 0;
+        const adjustmentsValue = formData.ebitdaAdjustments || 0;
+        if (isNaN(ebitdaValue) || isNaN(adjustmentsValue)) throw new Error("Invalid number entered for EBITDA or Adjustments.");
+        const adjEbitda = ebitdaValue + adjustmentsValue;
+        const { stage, baseMultiple, maxMultiple } = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
+        const scores = calculateScores(formData);
+        const scorePercentage = calculateMaxPossibleScore() > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / calculateMaxPossibleScore()) : 0;
+        const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
+        const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
+        const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
+        // Generar Roadmap
+        const roadmapData = generateImprovementRoadmap(scores, stage);
+        // Guardar resultados locales
+        localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
+        console.log("Local Calculation Result (with Roadmap):", localCalcResult);
+        // Preparar Payload y Enviar a Netlify Function
+        const payloadToSend = { formData: formData, 
+          results: { 
+            stage: localCalcResult.stage,
+            estimatedValuation: localCalcResult.estimatedValuation,
+            finalMultiple: localCalcResult.finalMultiple,
+            scorePercentage: localCalcResult.scorePercentage,
+            scores: localCalcResult.scores,
+           } 
+          };
+        console.log("Payload to send:", payloadToSend);
+        console.log("Sending data to Netlify Function...");
+        const response = await fetch('/.netlify/functions/submit-valuation', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadToSend) });
+        const result = await response.json();
+        if (!response.ok) { console.error("Netlify Function Error Response:", result); throw new Error(result.error || 'Failed to save submission to backend.'); }
+        console.log("Netlify Function Success Response:", result);
+        // Actualizar estado local
+        setCalculationResult(localCalcResult);
+        setSubmissionResult({ success: true, message: result.message || "Submission processed!" });
+        // Limpiar Local Storage
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+    } catch (error) {
+        console.error("handleSubmit Error:", error);
+        setSubmissionResult({ success: false, message: `Error: ${error.message}` });
+    } finally {
+        setIsSubmitting(false);
+    }
+  }, [formData]);
+
   const handleNext = useCallback(() => {
     const questionsForThisStep = getQuestionsForStep(currentStep);
     const stepErrors = {};
     let isValid = true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    console.log(`>>> handleNext: Validating Step ${currentStep}`); // <-- Log de depuración 1
-
+    console.log(`>>> handleNext: Validating Step ${currentStep}`);
     questionsForThisStep.forEach(question => {
         const value = formData[question.valueKey];
         if (question.required) {
             let isEmpty = value == null || value === '' || (typeof value === 'number' && isNaN(value));
             if (question.valueKey === 'userEmail') {
-                if (isEmpty || !emailRegex.test(value)) {
-                    stepErrors[question.valueKey] = true; isValid = false;
-                    console.log(`   - Validation FAILED for ${question.valueKey}: Required or Invalid Format`); // <-- Log de depuración 2a
-                } else {
-                     console.log(`   - Validation OK for ${question.valueKey}`); // <-- Log de depuración 2b
-                }
+                if (isEmpty || !emailRegex.test(value)) { stepErrors[question.valueKey] = true; isValid = false; console.log(`   - Validation FAILED for ${question.valueKey}: Required or Invalid Format`); }
+                else { console.log(`   - Validation OK for ${question.valueKey}`); }
             } else {
-                if (isEmpty) {
-                    stepErrors[question.valueKey] = true; isValid = false;
-                    console.log(`   - Validation FAILED for ${question.valueKey}: Required`); // <-- Log de depuración 2c
-                } else {
-                     console.log(`   - Validation OK for ${question.valueKey}`); // <-- Log de depuración 2d
-                }
+                if (isEmpty) { stepErrors[question.valueKey] = true; isValid = false; console.log(`   - Validation FAILED for ${question.valueKey}: Required`); }
+                else { console.log(`   - Validation OK for ${question.valueKey}`); }
             }
         }
     });
-
-    setErrors(stepErrors); // Actualizar errores visuales
-
-    console.log(`>>> handleNext: Step ${currentStep} Validation Result - isValid: ${isValid}`, "Errors found:", stepErrors); // <-- Log de depuración 3
-
+    setErrors(stepErrors);
+    console.log(`>>> handleNext: Step ${currentStep} Validation Result - isValid: ${isValid}`, "Errors found:", stepErrors);
     if (isValid) {
-        console.log(`>>> handleNext: Step ${currentStep} is valid. Proceeding...`); // <-- Log de depuración 4a
+        console.log(`>>> handleNext: Step ${currentStep} is valid. Proceeding...`);
         if (currentStep < TOTAL_STEPS - 1) {
             setCurrentStep(prevStep => prevStep + 1);
-            setErrors({}); // Limpiar errores visuales al avanzar
+            setErrors({});
         } else {
-             console.log(`>>> handleNext: Reached last step (${currentStep}). Triggering handleSubmit.`); // <-- Log de depuración 4b
-            handleSubmit(); // Enviar en el último paso
+             console.log(`>>> handleNext: Reached last step (${currentStep}). Triggering handleSubmit.`);
+            handleSubmit(); // Llama a handleSubmit
         }
     } else {
-        console.log(`>>> handleNext: Step ${currentStep} is invalid. Staying on step.`); // <-- Log de depuración 5
-        // No avanzar si hay errores
+        console.log(`>>> handleNext: Step ${currentStep} is invalid. Staying on step.`);
     }
-  }, [currentStep, formData, handleSubmit]); // Dependencias son importantes
-  const handlePrevious = useCallback(() => { /* ... */ }, [currentStep]);
-  const handleStartOver = useCallback(() => { /* ... */ }, []);
-  const handleBackToEdit = useCallback(() => { /* ... */ }, []);
+  }, [currentStep, formData, handleSubmit]); // Correct dependencies
+
+  const handlePrevious = useCallback(() => {
+    if (currentStep > 0) {
+      setErrors({});
+      setCurrentStep(prevStep => prevStep - 1);
+    }
+  }, [currentStep]); // Correct dependency
+
+  const handleStartOver = useCallback(() => {
+    console.log("Starting over: Clearing local storage and reloading.");
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+    setErrors({});
+    window.location.reload();
+  }, []); // Correct dependency
+
+  const handleBackToEdit = useCallback(() => {
+    console.log("Returning to edit...");
+    setSubmissionResult(null);
+    setCalculationResult(null);
+    setCurrentStep(TOTAL_STEPS > 0 ? TOTAL_STEPS - 1 : 0);
+    setErrors({});
+  }, []); // Correct dependency (TOTAL_STEPS is stable)
+
+
 
   // --- Get Questions and Title --- (SIN CAMBIOS)
   const currentQuestions = getQuestionsForStep(currentStep);
   const currentSectionTitle = sections[currentStep];
 
 
-  // --- Conditional Rendering Logic ---
-  // <<< INICIO SECCIÓN MODIFICADA >>>
+  // --- Conditional Rendering Logic --- (SIN CAMBIOS DESDE LA ÚLTIMA VERSIÓN CORRECTA)
   if (submissionResult && submissionResult.success && calculationResult) {
-     // Este bloque AHORA solo llama a ResultsDisplay
-
-     // Log para confirmar que llegamos aquí
      console.log('>>> RENDERING ResultsDisplay Component NOW <<<');
+     // --- ¡¡¡IMPORTANTE: REEMPLAZA ESTE ENLACE CON TU ENLACE REAL DE CALENDLY!!! ---
+     const placeholderConsultantLink = "https://help.calendly.com/hc/en-us/articles/223147027-Embed-options-overview";
 
-     // El return ahora solo llama a ResultsDisplay
+     // Obtener email del formData (asegúrate que formData está accesible aquí)
+     const userEmailFromFormData = formData?.userEmail;
      return (
         <ResultsDisplay
-            calculationResult={calculationResult} // Pasar el objeto completo
-            onStartOver={handleStartOver}        // Pasar la función
-            onBackToEdit={handleBackToEdit}       // Pasar la función
+            calculationResult={calculationResult}
+            onStartOver={handleStartOver}
+            onBackToEdit={handleBackToEdit}
+            consultantCalendlyLink={placeholderConsultantLink} 
+             userEmail={userEmailFromFormData}  
+             formData={formData}
         />
      );
   }
-  // <<< FIN SECCIÓN MODIFICADA >>>
-
-  // --- Render Error View --- (SIN CAMBIOS)
   else if (submissionResult && !submissionResult.success) {
-      // Este bloque permanece igual
       return (
            <div className="submission-result error">
               <h2>Submission Error</h2>
@@ -237,26 +296,29 @@ function MultiStepForm() {
           </div>
       );
   }
-
-  // --- Render Form View --- (SIN CAMBIOS - ¡IMPORTANTE!)
-  // Este es el return final que renderiza el formulario normal
   return (
     <div className="multi-step-form">
       <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={sections} />
       <form onSubmit={(e) => e.preventDefault()}>
          <Step
-           key={currentStep} stepIndex={currentStep} questions={currentQuestions}
-           formData={formData} handleChange={handleChange} sectionTitle={currentSectionTitle}
+           key={currentStep}
+           stepIndex={currentStep}
+           questions={currentQuestions}
+           formData={formData}
+           handleChange={handleChange}
+           sectionTitle={currentSectionTitle}
            errors={errors}
          />
          <Navigation
-           currentStep={currentStep} totalSteps={TOTAL_STEPS} onPrevious={handlePrevious}
-           onNext={handleNext} isSubmitting={isSubmitting}
+           currentStep={currentStep}
+           totalSteps={TOTAL_STEPS}
+           onPrevious={handlePrevious}
+           onNext={handleNext}
+           isSubmitting={isSubmitting}
          />
       </form>
     </div>
   );
-  // <<< FIN DEL COMPONENTE >>>
 }
 
 export default MultiStepForm;

@@ -7,16 +7,25 @@ import ScoreDetails from './ScoreDetails';
 import RoadmapSection from './RoadmapSection';
 import ResultsCTA from './ResultsCTA';
 import { ScoringAreas } from '../../scoringAreas.js'; // Ajusta la ruta si es necesario
+import DiscussTabContent from './DiscussTabContent'; // <-- AÑADIR ESTA LÍNEA
 
 // Definición de las pestañas que tendremos
 const TABS = [
-  { id: 'snapshot', label: 'Resumen Valoración' },
-  { id: 'scores', label: 'Detalle Puntuación' },
-  { id: 'roadmap', label: 'Hoja de Ruta' },
+  { id: 'snapshot', label: 'Valuation Summary' },
+  { id: 'scores', label: 'Score Detail' },
+  { id: 'roadmap', label: 'Roadmap' },
+  { id: 'discuss', label: 'Discuss Your Results' }, 
 ];
 
 // El componente principal de resultados
-function ResultsDisplay({ calculationResult, onStartOver, onBackToEdit }) {
+function ResultsDisplay({ 
+  calculationResult, 
+  onStartOver, 
+  onBackToEdit,
+  consultantCalendlyLink, 
+  userEmail,
+  formData              
+}) {
   // Estado para saber qué pestaña está activa
   const [activeTab, setActiveTab] = useState(TABS[0].id);
 
@@ -59,6 +68,11 @@ function ResultsDisplay({ calculationResult, onStartOver, onBackToEdit }) {
       case 'roadmap':
           // --- USA EL COMPONENTE REAL ---
          return <RoadmapSection roadmap={roadmap} stage={stage} />;
+         case 'discuss':
+          return <DiscussTabContent
+                    calendlyLink={consultantCalendlyLink} // Pasa el prop
+                    userEmail={userEmail}                 // Pasa el prop
+                 />;
       default:
         // Se mantiene igual
         return <div>Selecciona una pestaña</div>;
@@ -79,7 +93,7 @@ function ResultsDisplay({ calculationResult, onStartOver, onBackToEdit }) {
             // Aplica estilos diferentes si la pestaña está activa
             style={activeTab === tab.id ? styles.tabButtonActive : styles.tabButton}
             // Clases para CSS externo
-            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+            className={`tab-button ${activeTab === tab.id ? 'active' : ''} ${tab.id === 'discuss' ? 'discuss-tab-button' : ''}`}
           >
             {tab.label}
           </button>
@@ -100,7 +114,10 @@ function ResultsDisplay({ calculationResult, onStartOver, onBackToEdit }) {
        {/* CTAs y Acciones */}
        <div className="results-actions-footer" style={styles.actionsFooter}>
            {/* --- USAR COMPONENTE REAL --- */}
-           <ResultsCTA />
+           <ResultsCTA 
+            calculationResult={calculationResult}
+            formData={formData}
+            />
            {/* Botones originales */}
            <button type="button" onClick={onStartOver} className="start-over-button" style={styles.actionButton}>
                Start Over
@@ -116,70 +133,47 @@ function ResultsDisplay({ calculationResult, onStartOver, onBackToEdit }) {
 
 // Estilos básicos inline (puedes moverlos a tu archivo CSS)
 const styles = {
-  tabNav: {
-    borderBottom: '1px solid #ccc',
-    marginBottom: '0px', // Quitar margen inferior para que el borde conecte
-    paddingLeft: '10px', // Añadir padding para separar del borde
-    display: 'flex',
-    gap: '2px', // Espacio pequeño entre botones
+  tabNav: { borderBottom: '1px solid #ccc', marginBottom: '0px', paddingLeft: '10px', display: 'flex', gap: '2px' },
+  tabButton: { padding: '10px 15px', cursor: 'pointer', border: '1px solid #ccc', borderBottom: '1px solid #ccc', background: '#eee', borderTopLeftRadius: '5px', borderTopRightRadius: '5px', opacity: 0.7, marginBottom: '-1px', position: 'relative', zIndex: 1, color: '#333', transition: 'background-color 0.2s, color 0.2s' }, // Añadida transición
+  tabButtonActive: { padding: '10px 15px', cursor: 'pointer', border: '1px solid #ccc', borderBottom: '1px solid white', background: 'white', borderTopLeftRadius: '5px', borderTopRightRadius: '5px', fontWeight: 'bold', marginBottom: '-1px', position: 'relative', zIndex: 2, color: '#000000', transition: 'background-color 0.2s, color 0.2s' }, // Añadida transición
+  // --- Estilos para la pestaña Discuss (Ejemplo llamativo - Verde) ---
+  discussTabButtonSpecificStyles: {
+     backgroundColor: '#5cb85c', // Verde
+     color: 'white',
+     fontWeight: 'bold',
+     opacity: 1, // Asegurar que no sea opaco
+     borderBottomColor: '#4cae4c', // Mantener borde inferior de color si no está activa
   },
-  tabButton: {
-    padding: '10px 15px',
-    cursor: 'pointer',
-    border: '1px solid #ccc',
-    borderBottom: '1px solid #ccc', // Borde inferior visible en inactivas
-    background: '#eee',
-    borderTopLeftRadius: '5px', // Redondeo superior
-    borderTopRightRadius: '5px',
-    opacity: 0.7,
-    marginBottom: '-1px', // Para alinear con el borde del contenido
-    position: 'relative',
-    zIndex: 1,
+  discussTabButtonActiveSpecificStyles: { // Estilo si la pestaña Discuss está ACTIVA
+      background: 'white', // Fondo blanco normal
+      color: '#5cb85c', // Texto verde
+      borderBottom: '1px solid white', // Borde inferior blanco
+      fontWeight: 'bold', // Mantener negrita
+      borderTopColor: '#4cae4c', // Ejemplo: Borde superior verde oscuro
+      borderLeftColor: '#4cae4c',
+      borderRightColor: '#4cae4c',
   },
-  tabButtonActive: {
-    padding: '10px 15px',
-    cursor: 'pointer',
-    border: '1px solid #ccc',
-    borderBottom: '1px solid white', // Fondo blanco "cubre" el borde inferior
-    background: 'white',
-    borderTopLeftRadius: '5px',
-    borderTopRightRadius: '5px',
-    fontWeight: 'bold',
-    marginBottom: '-1px', // Asegura que se alinee sobre el borde del contenido
-    position: 'relative',
-    zIndex: 2, // Poner por encima de las inactivas y el borde
-  },
-  tabContent: {
-    padding: '20px',
-    border: '1px solid #ccc',
-    borderTop: 'none', // El borde superior ya está manejado por las pestañas
-    borderRadius: '0 0 5px 5px', // Redondeo inferior
-    background: 'white',
-    marginBottom: '20px',
-    minHeight: '200px', // Altura mínima para que se vea el contenedor
-  },
-   disclaimer: {
-      marginTop: '2rem',
-      fontSize: '0.9em',
-      color: '#777',
-      textAlign: 'center',
-   },
-   actionsFooter: {
-      textAlign: 'center',
-      marginTop: '2rem',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: '1rem',
-      flexWrap: 'wrap',
-   },
-   actionButton: {
-       padding: '10px 20px',
-       border: 'none',
-       borderRadius: '4px',
-       cursor: 'pointer',
-       fontSize: '1em',
-   }
+  tabContent: { padding: '20px', border: '1px solid #ccc', borderTop: 'none', borderRadius: '0 0 5px 5px', background: 'white', marginBottom: '20px', minHeight: '200px' },
+  disclaimer: { marginTop: '2rem', fontSize: '0.9em', color: '#777', textAlign: 'center' },
+  actionsFooter: { textAlign: 'center', marginTop: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' },
+  actionButton: { padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1em' }
+};
+
+// Helper para combinar estilos (mejor si usas clases CSS, pero funciona)
+const combinedStyles = {
+    getButtonStyle: (tabId, activeTabId) => {
+        const isActive = activeTabId === tabId;
+        const baseStyle = isActive ? styles.tabButtonActive : styles.tabButton;
+
+        if (tabId === 'discuss') {
+            const specificStyle = isActive
+                ? styles.discussTabButtonActiveSpecificStyles
+                : styles.discussTabButtonSpecificStyles;
+            // Fusionar base con específico, dando prioridad al específico
+            return { ...baseStyle, ...specificStyle };
+        }
+        return baseStyle;
+    }
 };
 
 export default ResultsDisplay;

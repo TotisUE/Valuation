@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
 // --- RESEND --- Importar Resend
 import { Resend } from 'resend';
-
+import { ScoringAreas } from '../../src/scoringAreas.js'; // Ruta CORREGIDA (dos niveles arriba, luego a src)
 // Helper ActiveCampaign (sin cambios)
 async function activeCampaignApiCall(apiUrl, apiKey, endpoint, method = 'GET', body = null) {
   // ... código del helper igual ...
@@ -82,22 +82,36 @@ const handler = async (event) => {
     const formData = payload.formData;
     const results = payload.results;
 
-    if (!formData || !formData.userEmail || !results || !results.stage) {
-        throw new Error("Incomplete data received");
+    // <<< CORRECCIÓN 1: Extraer scores >>>
+    const scores = results?.scores;
+
+    // <<< CORRECCIÓN 2: Añadir !scores a la validación >>>
+    if (!formData || !formData.userEmail || !results || !results.stage || !scores) {
+        throw new Error("Incomplete data received (missing formData, userEmail, results, stage, or scores)");
     }
     console.log("Received Payload:", payload);
+    console.log("Extracted Scores:", scores); // Log para verificar
+
+    // <<< CORRECCIÓN 3: Definir getMaxScore aquí >>>
+    const getMaxScore = (areaName) => areaName === ScoringAreas.MARKET ? 25 : 20;
 
     // --- 1. Insertar en Supabase ---
-    // ... (Código de inserción en Supabase sin cambios) ...
-      const dataToInsert = {
+    const dataToInsert = {
       user_email: formData.userEmail,
-      form_data: formData, // Guardar todas las respuestas originales
-      // --- MODIFICADO: Añadir resultados calculados a Supabase ---
+      form_data: formData,
       stage: results.stage,
       estimated_valuation: results.estimatedValuation,
       final_multiple: results.finalMultiple,
       score_percentage: results.scorePercentage,
-      // scores: results.scores, // Descomenta si quieres guardar el objeto de scores
+
+      // --- NUEVO: Scores por Área (Ahora 'scores' está definido) ---
+      score_expansion: `${scores[ScoringAreas.EXPANSION] ?? 0} / ${getMaxScore(ScoringAreas.EXPANSION)}`,
+      score_marketing_brand: `${scores[ScoringAreas.MARKETING] ?? 0} / ${getMaxScore(ScoringAreas.MARKETING)}`,
+      score_profitability: `${scores[ScoringAreas.PROFITABILITY] ?? 0} / ${getMaxScore(ScoringAreas.PROFITABILITY)}`,
+      score_offering: `${scores[ScoringAreas.OFFERING] ?? 0} / ${getMaxScore(ScoringAreas.OFFERING)}`,
+      score_workforce: `${scores[ScoringAreas.WORKFORCE] ?? 0} / ${getMaxScore(ScoringAreas.WORKFORCE)}`,
+      score_systems: `${scores[ScoringAreas.SYSTEMS] ?? 0} / ${getMaxScore(ScoringAreas.SYSTEMS)}`,
+      score_market: `${scores[ScoringAreas.MARKET] ?? 0} / ${getMaxScore(ScoringAreas.MARKET)}`,
     };
     console.log("Data to Insert into Supabase:", dataToInsert);
 

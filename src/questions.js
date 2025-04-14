@@ -73,7 +73,7 @@ export const questionsData = [
             { text: "No specific plans or documentation", score: 0 }
         ],
         required: true,
-        helpText: "'Playbook': Guía o manual detallado que documenta los pasos y estrategias para realizar una tarea compleja, como la expansión a nuevos mercados." // <<< AÑADIDO
+        helpText: "'Playbook': A detailed guide or manual that documents the steps and strategies to carry out a complex task, such as expanding into new markets." // <<< AÑADIDO
     },
     {
         id: "exp3", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
@@ -86,7 +86,7 @@ export const questionsData = [
             { text: "Rarely/Never introduce new lines", score: 0 }
         ],
         required: true,
-        helpText: "'ROI Analysis': Análisis del Retorno de la Inversión. Métrica para evaluar la rentabilidad de una inversión." // <<< AÑADIDO
+        helpText: "'ROI Analysis': A metric used to evaluate the profitability of an investment." // <<< AÑADIDO
     },
      {
         id: "exp4", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
@@ -137,7 +137,7 @@ export const questionsData = [
             { text: "Ad-hoc marketing/sales efforts, little measurement or inconsistent channels", score: 0 }
         ],
         required: true,
-        helpText: "'CPL': Costo Por Lead. Métrica de marketing que calcula el costo promedio para generar un nuevo cliente potencial." // <<< AÑADIDO
+        helpText: "'CPL': Cost Per Lead. A marketing metric that calculates the average cost to generate a new potential customer." // <<< AÑADIDO
     },
     {
         id: "mkt4", section: sections[2], scoringArea: ScoringAreas.MARKETING,
@@ -150,7 +150,7 @@ export const questionsData = [
             { text: "Value proposition is not well-defined or poorly communicated", score: 0 }
         ],
         required: true,
-        helpText: "'Unique Value Proposition' (Propuesta Única de Valor): Declaración clara que describe el beneficio que ofreces, cómo resuelves las necesidades del cliente y qué te distingue de la competencia." // <<< AÑADIDO
+        helpText: "'Unique Value Proposition': A clear statement that describes the benefit you offer, how you address the customer's needs, and what sets you apart from the competition." // <<< AÑADIDO
     },
 
     // === Section 3: Profitability Metrics (P - Max Raw Score: 20) === (Qualitative Focus)
@@ -165,7 +165,7 @@ export const questionsData = [
             { text: "Declining profitability", score: 0 }
         ],
         required: true,
-        helpText: "'EBITDA': Beneficio Antes de Intereses, Impuestos, Depreciaciones y Amortizaciones. 'Net Profit Margin': Margen de Beneficio Neto = (Beneficio Neto / Ingresos) * 100." // <<< AÑADIDO
+        helpText: "'EBITDA': Earnings Before Interest, Taxes, Depreciation, and Amortization.'Net Profit Margin = (Net Profit / Revenue) * 100" // <<< AÑADIDO
     },
     {
         id: "prof2", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
@@ -179,7 +179,7 @@ export const questionsData = [
             { text: "Unsure / Don't track this", score: 0 }
         ],
         required: true,
-        helpText: "'Gross Profit Margin' (Margen de Beneficio Bruto) = (Ingresos - Costo de Bienes Vendidos) / Ingresos. Indica la rentabilidad antes de los gastos generales (alquiler, salarios administrativos, etc.)." // <<< AÑADIDO
+        helpText: "'Gross Profit Margin' =Cost of Goods Sold. Indicates profitability before overhead expenses (such as rent, administrative salaries, etc)." // <<< AÑADIDO
     },
     {
         id: "prof3", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
@@ -192,7 +192,7 @@ export const questionsData = [
              { text: "Low (< 10%) or None (Primarily project/transactional based)", score: 1 }
         ],
         required: true,
-        helpText: "'Recurring Revenue' (Ingresos Recurrentes): Ingresos predecibles recibidos de forma regular (ej. suscripciones, contratos) con un alto grado de certeza." // <<< AÑADIDO
+        helpText: "'Recurring Revenue': Predictable income received on a regular basis (e.g., subscriptions, contracts) with a high degree of certainty." // <<< AÑADIDO
     },
      {
         id: "prof4", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
@@ -205,7 +205,7 @@ export const questionsData = [
              { text: "Largely reactive / Poor financial visibility / Managed by gut feel", score: 0 }
         ],
         required: true,
-        helpText: "'MBRs' (Monthly Business Reviews): Revisiones mensuales del negocio. 'Variance Analysis': Análisis de las diferencias entre los resultados reales y los presupuestados o previstos." // <<< AÑADIDO
+        helpText: "'MBRs' (Monthly Business Reviews): Monthly business reviews. 'Variance Analysis': The analysis of differences between actual results and budgeted or forecasted figures." // <<< AÑADIDO
     },
 
     // === Section 4: Offering Excellence (O - Max Raw Score: 20) ===
@@ -220,7 +220,7 @@ export const questionsData = [
             { text: "No structured measurement process", score: 0 }
         ],
         required: true,
-        helpText: "'NPS' (Net Promoter Score): Mide la lealtad (-100 a +100). 'CSAT' (Customer Satisfaction Score): Mide la satisfacción con interacciones específicas (ej. 1-5)." // <<< AÑADIDO
+        helpText: "'NPS' (Net Promoter Score):Measures loyalty (from -100 to +100). 'CSAT' (Customer Satisfaction Score): Measures satisfaction with specific interactions (e.g., 1 to 5 scale)." // <<< AÑADIDO
     },
     {
         id: "off2", section: sections[4], scoringArea: ScoringAreas.OFFERING,
@@ -233,7 +233,7 @@ export const questionsData = [
             { text: "Commodity offering: Little differentiation, competes mainly on price or availability", score: 1 }
         ],
         required: true,
-        helpText: "'USPs' (Propuestas Únicas de Venta): Características o beneficios claros que diferencian tu producto/servicio de la competencia." // <<< AÑADIDO
+        helpText: "'USPs': Clear features or benefits that differentiate your product/service from the competition." // <<< AÑADIDO
     },
     {
         id: "off3", section: sections[4], scoringArea: ScoringAreas.OFFERING,
@@ -246,7 +246,7 @@ export const questionsData = [
             { text: "No formal quality assurance process", score: 0 }
         ],
         required: true,
-        helpText: "'QA' (Aseguramiento de la Calidad): Procesos para garantizar que los productos o servicios cumplan con los estándares de calidad definidos." // <<< AÑADIDO
+        helpText: "'QA':Processes to ensure that products or services meet the defined quality standards." // <<< AÑADIDO
     },
     {
         id: "off4", section: sections[4], scoringArea: ScoringAreas.OFFERING,
@@ -273,7 +273,7 @@ export const questionsData = [
             { text: "Completely reliant: Business cannot function effectively for more than a short period without owner's daily input", score: 0 }
         ],
         required: true,
-        helpText: "'Owner Reliance' (Dependencia del Propietario): Mide cuánto necesita el negocio la participación diaria del propietario. Una alta dependencia puede reducir el valor del negocio." // <<< AÑADIDO
+        helpText: "'Owner Reliance' (Owner Dependence): Measures how much the business relies on the owner's daily involvement. High dependence can reduce the business's value." // <<< AÑADIDO
     },
      {
         id: "work2", section: sections[5], scoringArea: ScoringAreas.WORKFORCE,
@@ -286,7 +286,7 @@ export const questionsData = [
              { text: "Low accountability: Lack of clear roles, responsibilities, or performance metrics", score: 0 }
         ],
         required: true,
-        helpText: "'KPIs' (Indicadores Clave de Rendimiento): Métricas medibles que demuestran la eficacia con la que se están logrando objetivos clave." // <<< AÑADIDO
+        helpText: "'KPIs' (Key Performance Indicators): Measurable metrics that demonstrate the effectiveness in achieving key objectives." // <<< AÑADIDO
     },
     {
         id: "work3", section: sections[5], scoringArea: ScoringAreas.WORKFORCE,
@@ -325,7 +325,7 @@ export const questionsData = [
             { text: "Few documented processes; high degree of variability and inconsistency", score: 0 }
         ],
         required: true,
-        helpText: "'SOPs' (Procedimientos Operativos Estándar): Instrucciones detalladas y escritas para realizar tareas rutinarias de forma consistente y correcta." // <<< AÑADIDO
+        helpText: "'SOPs' (Standard Operating Procedures): Detailed and written instructions for performing routine tasks consistently and correctly." // <<< AÑADIDO
     },
     {
         id: "sys2", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
@@ -338,7 +338,7 @@ export const questionsData = [
             { text: "Ineffective / Lacking key systems / Heavily reliant on spreadsheets and manual processes", score: 0 }
         ],
         required: true,
-        helpText: "'CRM': Gestión de Relaciones con Clientes. 'ERP': Planificación de Recursos Empresariales." // <<< AÑADIDO
+        helpText: "'CRM': Customer Relationship Management). 'ERP': Enterprise Resource Planning." // <<< AÑADIDO
     },
     {
         id: "sys3", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
@@ -351,7 +351,7 @@ export const questionsData = [
             { text: "Little or no formal KPI tracking or operational reporting", score: 0 }
         ],
         required: true,
-        helpText: "'KPIs' (Indicadores Clave de Rendimiento): Métricas medibles que demuestran la eficacia con la que se están logrando objetivos clave." // <<< AÑADIDO (Repetido intencionalmente)
+        helpText: "'KPIs' (Key Performance Indicators): Measurable metrics that demonstrate the effectiveness in achieving key objectives." // <<< AÑADIDO (Repetido intencionalmente)
     },
     {
         id: "sys4", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
@@ -364,7 +364,7 @@ export const questionsData = [
             { text: "Financial records are poor, unreliable, or not based on standard accounting principles", score: 0 }
         ],
         required: true,
-        helpText: "'GAAP' (Principios de Contabilidad Generalmente Aceptados): Conjunto de normas contables estándar en EE.UU. 'Due Diligence': Investigación o auditoría de un negocio antes de una transacción." // <<< AÑADIDO
+        helpText: "'GAAP' (Generally Accepted Accounting Principles): A set of standard accounting rules in the U.S.'Due Diligence': The investigation or audit of a business before a transaction." // <<< AÑADIDO
     },
 
     // === Section 7: Robust Market Position (R - Max Raw Score: 20, now 25) ===
@@ -391,7 +391,7 @@ export const questionsData = [
             { text: "Highly concentrated (Largest customer consistently > 35% of revenue)", score: 1 }
         ],
         required: true,
-        helpText: "'Customer Concentration' (Concentración de Clientes): Mide cuánto dependen tus ingresos de pocos clientes. Una alta concentración (ej. >20% de un solo cliente) es un riesgo." // <<< AÑADIDO
+        helpText: "'Customer Concentration': Measures how much your revenue depends on a few customers. High concentration (e.g., >20% from a single customer) is a risk." // <<< AÑADIDO
     },
     {
         id: "mktpos_tam_size", section: sections[7], scoringArea: ScoringAreas.MARKET,
@@ -405,7 +405,7 @@ export const questionsData = [
             { text: "Unsure / Not Defined", score: 0 }
         ],
         required: true,
-        helpText: "'TAM' (Mercado Total Direccionable): Ingresos totales potenciales si capturaras el 100% del mercado relevante para tus productos/servicios." // <<< AÑADIDO
+        helpText: "'TAM' (Total Addressable Market): The total potential revenue if you captured 100% of the relevant market for your products/services." // <<< AÑADIDO
     },
      {
         id: "mktpos_market_share", section: sections[7], scoringArea: ScoringAreas.MARKET,
@@ -419,7 +419,7 @@ export const questionsData = [
             { text: "Unsure", score: 0 }
         ],
         required: true,
-        helpText: "'Market Share' (Cuota de Mercado): Porcentaje del mercado total (TAM) que tu empresa controla actualmente." // <<< AÑADIDO
+        helpText: "'Market Share': Percentage of the Total Addressable Market (TAM) that your company currently controls." // <<< AÑADIDO
     },
     {
         id: "mktpos4", section: sections[7], scoringArea: ScoringAreas.MARKET, // Keep resilience
@@ -439,25 +439,25 @@ export const questionsData = [
         id: "finRev", section: sections[8], text: "What is your approximate Last Full Year Revenue?",
         type: "number", valueKey: "currentRevenue", placeholder: "e.g., 1500000",
         required: true,
-        helpText: "'Revenue' (Ingresos): Ingresos totales por ventas de bienes o servicios de la operación principal en el último año fiscal completo." // <<< AÑADIDO
+        helpText: "'Revenue': Total revenue from the sale of goods or services from the core operation in the most recent full fiscal year." // <<< AÑADIDO
     },
     {
         id: "finGP", section: sections[8], text: "What is your approximate Last Full Year Gross Profit?",
         type: "number", valueKey: "grossProfit", placeholder: "e.g., 900000",
         required: true,
-        helpText: "'Gross Profit' (Beneficio Bruto) = Ingresos - Costo de Bienes Vendidos (COGS). Beneficio antes de deducir gastos operativos, intereses e impuestos." // <<< AÑADIDO
+        helpText: "'Gross Profit' = Revenue - Cost of Goods Sold (COGS). Profit before deducting operating expenses, interest, and taxes." // <<< AÑADIDO
     },
     {
         id: "finEBITDA", section: sections[8], text: "What is your approximate Last Full Year EBITDA?",
         type: "number", valueKey: "ebitda", placeholder: "e.g., 300000",
         required: true,
-        helpText: "'EBITDA': Beneficio Antes de Intereses, Impuestos, Depreciaciones y Amortizaciones. Medida de rentabilidad operativa." // <<< AÑADIDO
+        helpText: "'EBITDA': Earnings Before Interest, Taxes, Depreciation, and Amortization (EBITDA). A measure of operational profitability." // <<< AÑADIDO
     },
     {
         id: "finAdj", section: sections[8], text: "What are your typical annual EBITDA Add-backs / Adjustments?",
         type: "number", valueKey: "ebitdaAdjustments", placeholder: "e.g., 50000 (can be 0)",
         // NOT required, as 0 is a valid input.
-        helpText: "'Add-backs / Adjustments': Ajustes al EBITDA para normalizar ganancias (ej. gastos no recurrentes, exceso de salario del dueño, gastos personales). Consulta a un asesor si no estás seguro." // <<< AÑADIDO
+        helpText: "'Add-backs / Adjustments': Adjustments to EBITDA to normalize earnings (e.g., non-recurring expenses, owner's excessive salary, personal expenses). Consult an advisor if you're unsure." // <<< AÑADIDO
     },
     {
         id: "industrySector", section: sections[8], text: "Select your primary Industry Sector:",
