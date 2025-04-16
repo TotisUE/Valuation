@@ -1,5 +1,6 @@
 // src/components/Step.jsx
 import React, { useState, useEffect } from 'react';
+import { NumericFormat } from 'react-number-format';
 import { getSubSectors } from '../naicsData';
 
 // (props sin cambios: { stepIndex, questions, formData, handleChange, sectionTitle, errors = {} })
@@ -77,7 +78,50 @@ function Step({ stepIndex, questions, formData, handleChange, sectionTitle, erro
             )}
 
             {/* Number Input */}
-            {q.type === 'number' && (
+            {q.type === 'number' && (() => { // Abrir función para lógica condicional
+          const isFinancialField = ['currentRevenue', 'grossProfit', 'ebitda', 'ebitdaAdjustments'].includes(q.valueKey);
+
+          if (isFinancialField) {
+            // --- MODIFICACIÓN PARA EBITDA ADJUSTMENTS ---
+            // Determinar el valor a mostrar. Si es 0 o null para adjustments, mostrar vacío ''
+            // para que el placeholder aparezca. Para otros campos, puede ser 0.
+            // (Ajusta esta lógica si quieres que otros campos también oculten el 0)
+            const displayValue = (q.valueKey === 'ebitdaAdjustments' && (formData[q.valueKey] === 0 || formData[q.valueKey] == null))
+                                ? '' // Mostrar vacío para que aparezca el placeholder
+                                : formData[q.valueKey] ?? ''; // Usar valor o vacío para otros
+
+            return (
+              <NumericFormat
+                id={q.valueKey}
+                name={q.valueKey}
+                // --- USAR displayValue ---
+                value={displayValue} // <--- Cambio aquí
+                onValueChange={(values, sourceInfo) => {
+                  handleChange({
+                    target: {
+                      name: q.valueKey,
+                      // --- GUARDAR null si está vacío o undefined, 0 si es 0 ---
+                      value: values.floatValue === undefined ? null : values.floatValue, // <-- Cambio aquí (null si undefined)
+                      type: 'number',
+                    }
+                  });
+                }}
+                thousandSeparator=","
+                // Ajustar allowNegative según el campo si es necesario
+                allowNegative={q.valueKey === 'ebitda' || q.valueKey === 'ebitdaAdjustments'} // Ejemplo
+                decimalScale={0}
+                prefix="$ "
+                placeholder={q.placeholder || 'e.g., $ 1,500,000'} // Placeholder se mantiene
+                required={q.required} // Sigue siendo false para ebitdaAdjustments
+                className="number-input"
+                aria-invalid={hasError}
+                autoComplete="off"
+              />
+            );
+            // --- FIN NumericFormat ---
+          } else {
+            // --- MANTENER input normal PARA OTROS CAMPOS NUMÉRICOS (si los hubiera) ---
+            return (
               <input
                 type="number"
                 id={q.valueKey}
@@ -89,7 +133,11 @@ function Step({ stepIndex, questions, formData, handleChange, sectionTitle, erro
                 className="number-input"
                 aria-invalid={hasError}
               />
-            )}
+            );
+            // --- FIN input normal ---
+          }
+        })()} {/* Cerrar la función autoejecutable */}
+        {/* --- FIN SECCIÓN MODIFICADA --- */}
 
             {/* Email Input Handling */}
             {q.type === 'email' && (

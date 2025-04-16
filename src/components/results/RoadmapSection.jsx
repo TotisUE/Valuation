@@ -1,5 +1,6 @@
 // src/components/results/RoadmapSection.jsx
 import React from 'react';
+import { calculateMaxScoreForArea } from '../../questions';
 
 // --- AÑADIR ESTILOS ---
 const styles = {

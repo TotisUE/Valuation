@@ -5,6 +5,8 @@ import fetch from 'node-fetch';
 // --- RESEND --- Importar Resend
 import { Resend } from 'resend';
 import { ScoringAreas } from '../../src/scoringAreas.js'; // Ruta CORREGIDA (dos niveles arriba, luego a src)
+import { questionsData } from '../../src/questions.js';
+
 // Helper ActiveCampaign (sin cambios)
 async function activeCampaignApiCall(apiUrl, apiKey, endpoint, method = 'GET', body = null) {
   // ... código del helper igual ...
@@ -89,21 +91,22 @@ const handler = async (event) => {
     if (!formData || !formData.userEmail || !results || !results.stage || !scores) {
         throw new Error("Incomplete data received (missing formData, userEmail, results, stage, or scores)");
     }
-    console.log("Received Payload:", payload);
-    console.log("Extracted Scores:", scores); // Log para verificar
 
-    // <<< CORRECCIÓN 3: Definir getMaxScore aquí >>>
-    const getMaxScore = (areaName) => {
-      // Si es Market, Profitability U Offering, el máximo es 25
-      if (areaName === ScoringAreas.MARKET ||
-          areaName === ScoringAreas.PROFITABILITY ||
-          areaName === ScoringAreas.MARKETING ||
-          areaName === ScoringAreas.OFFERING) { // <-- AÑADIR ESTA CONDICIÓN
-          return 25;
-      }
-      // Para todas las demás, es 20
-      return 20;
-  };
+    const calculateMaxScoreForArea = (areaName) => {
+      if (!areaName) return 0;
+      // Filtrar questionsData para obtener solo las cualitativas
+      const qualitativeQuestions = questionsData.filter(q => q && q.scoringArea && Object.values(ScoringAreas).includes(q.scoringArea));
+  
+      return qualitativeQuestions
+        .filter(q => q.scoringArea === areaName)
+        .reduce((total, q) => {
+          if (q.type === 'mcq' && q.options && q.options.length > 0) {
+            const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
+            return total + maxOptionScore;
+          }
+          return total;
+        }, 0);
+    };
 
     // --- 1. Insertar en Supabase ---
     const dataToInsert = {
@@ -115,13 +118,13 @@ const handler = async (event) => {
       score_percentage: results.scorePercentage,
 
       // --- NUEVO: Scores por Área (Ahora 'scores' está definido) ---
-      score_expansion: `${scores[ScoringAreas.EXPANSION] ?? 0} / ${getMaxScore(ScoringAreas.EXPANSION)}`,
-      score_marketing_brand: `${scores[ScoringAreas.MARKETING] ?? 0} / ${getMaxScore(ScoringAreas.MARKETING)}`,
-      score_profitability: `${scores[ScoringAreas.PROFITABILITY] ?? 0} / ${getMaxScore(ScoringAreas.PROFITABILITY)}`,
-      score_offering: `${scores[ScoringAreas.OFFERING] ?? 0} / ${getMaxScore(ScoringAreas.OFFERING)}`,
-      score_workforce: `${scores[ScoringAreas.WORKFORCE] ?? 0} / ${getMaxScore(ScoringAreas.WORKFORCE)}`,
-      score_systems: `${scores[ScoringAreas.SYSTEMS] ?? 0} / ${getMaxScore(ScoringAreas.SYSTEMS)}`,
-      score_market: `${scores[ScoringAreas.MARKET] ?? 0} / ${getMaxScore(ScoringAreas.MARKET)}`,
+  score_expansion: `${scores[ScoringAreas.EXPANSION] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.EXPANSION)}`, // <-- Llamar nueva función
+  score_marketing_brand: `${scores[ScoringAreas.MARKETING] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.MARKETING)}`, // <-- Llamar nueva función
+  score_profitability: `${scores[ScoringAreas.PROFITABILITY] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.PROFITABILITY)}`, // <-- etc.
+  score_offering: `${scores[ScoringAreas.OFFERING] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.OFFERING)}`,
+  score_workforce: `${scores[ScoringAreas.WORKFORCE] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.WORKFORCE)}`,
+  score_systems: `${scores[ScoringAreas.SYSTEMS] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.SYSTEMS)}`,
+  score_market: `${scores[ScoringAreas.MARKET] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.MARKET)}`,
     };
     console.log("Data to Insert into Supabase:", dataToInsert);
 

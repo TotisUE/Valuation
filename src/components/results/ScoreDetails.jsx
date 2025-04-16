@@ -2,19 +2,7 @@
 import React from 'react';
 import ScoreRadarChart from './ScoreRadarChart';
 import { ScoringAreas } from '../../scoringAreas';
-
-// Función para obtener el máximo score por área (copiada por conveniencia)
-const getMaxScore = (areaName) => {
-    // Si es Market, Profitability U Offering, el máximo es 25
-    if (areaName === ScoringAreas.MARKET ||
-        areaName === ScoringAreas.PROFITABILITY ||
-        areaName === ScoringAreas.OFFERING ||
-        areaName === ScoringAreas.MARKETING) {
-        return 25;
-    }
-    // Para todas las demás, es 20
-    return 20;
-};
+import { calculateMaxScoreForArea } from '../../questions';
 
 // Estilos básicos (puedes moverlos a CSS)
 const styles = {
@@ -99,7 +87,7 @@ function ScoreDetails({ scores }) {
                  {/* Mapear usando las claves válidas filtradas */}
                  {validAreaKeys.map((areaKey) => {
                      const scoreValue = scores[areaKey] ?? 0; // Usar la clave correcta
-                     const maxScore = getMaxScore(areaKey); // Usar la clave correcta
+                     const maxScore = calculateMaxScoreForArea(areaKey); // Usar la clave correcta
                      return (
                          <div key={areaKey} style={styles.scoreItem}>
                              {/* Mostrar el nombre del área (la clave misma) */}

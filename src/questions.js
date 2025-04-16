@@ -49,8 +49,8 @@ export const questionsData = [
         required: true
     },
 
-    // === Section 1: Expansion Capability (E - Max Raw Score: 20) ===
-    {
+    // === Section 1: Expansion Capability ===
+    { // exp1: High (Max Score: 5) - No change needed from original 5 max
         id: "exp1", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
         text: "How prepared are your current systems and processes to handle 3x your current business volume?",
         type: "mcq", valueKey: "expansionVolumePrep",
@@ -62,37 +62,37 @@ export const questionsData = [
         ],
         required: true
     },
-    {
+    { // exp2: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "exp2", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
         text: "Do you have a documented process or 'playbook' for expanding into new geographic markets or locations?",
         type: "mcq", valueKey: "expansionPlaybook",
         options: [
-            { text: "Yes, detailed and tested playbook exists", score: 5 },
-            { text: "Yes, a basic process is documented", score: 3 },
-            { text: "Considered informally, but not documented", score: 1 },
+            { text: "Yes, detailed and tested playbook exists", score: 3 }, // Scaled from 5
+            { text: "Yes, a basic process is documented", score: 2 }, // Scaled from 3
+            { text: "Considered informally, but not documented", score: 1 }, // Scaled from 1
             { text: "No specific plans or documentation", score: 0 }
         ],
         required: true,
-        helpText: "'Playbook': A detailed guide or manual that documents the steps and strategies to carry out a complex task, such as expanding into new markets." // <<< AÑADIDO
+        helpText: "'Playbook': A detailed guide or manual that documents the steps and strategies to carry out a complex task, such as expanding into new markets."
     },
-    {
+    { // exp3: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "exp3", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
         text: "How systematic is your approach to developing and launching new service or product line extensions?",
         type: "mcq", valueKey: "expansionNewServices",
         options: [
-            { text: "Formal process with market validation and ROI analysis", score: 5 },
-            { text: "Semi-formal process, some analysis done", score: 3 },
-            { text: "Ad-hoc, based on opportunity or requests", score: 1 },
+            { text: "Formal process with market validation and ROI analysis", score: 3 }, // Scaled from 5
+            { text: "Semi-formal process, some analysis done", score: 2 }, // Scaled from 3
+            { text: "Ad-hoc, based on opportunity or requests", score: 1 }, // Scaled from 1
             { text: "Rarely/Never introduce new lines", score: 0 }
         ],
         required: true,
-        helpText: "'ROI Analysis': A metric used to evaluate the profitability of an investment." // <<< AÑADIDO
+        helpText: "'ROI Analysis': A metric used to evaluate the profitability of an investment."
     },
-    {
+    { // exp5: High (Max Score: 5) - No change needed from original 5 max
         id: "exp5", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
         text: "Regarding customer refunds and significant complaints, which statement best describes your current situation?",
         type: "mcq",
-        valueKey: "expansionProblemRate", // Nueva clave para guardar la respuesta
+        valueKey: "expansionProblemRate",
         options: [
             { text: "Refunds/significant complaints are rare (<1-2%), and we have clear processes to resolve them effectively when they occur.", score: 5 },
             { text: "They occur occasionally (e.g., 3-5% range), and we generally manage them adequately as they arise.", score: 3 },
@@ -100,34 +100,35 @@ export const questionsData = [
             { text: "Refunds/complaints are a common or significant issue, often time-consuming, or we don't track this data reliably.", score: 0 }
         ],
         required: true,
-        helpText: "Significant complaints refer to issues requiring notable effort or escalation to resolve, beyond routine inquiries." // <-- Opcional: Tooltip
+        helpText: "Significant complaints refer to issues requiring notable effort or escalation to resolve, beyond routine inquiries."
     },
-    // === Section 2: Marketing & Brand Equity (M - Max Raw Score: 20) ===
-     {
+
+    // === Section 2: Marketing & Brand Equity ===
+     { // mkt1: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "mkt1", section: sections[2], scoringArea: ScoringAreas.MARKETING,
         text: "How well-known and regarded is your brand within your primary target market?",
         type: "mcq", valueKey: "marketingBrandRec",
         options: [
-            { text: "Recognized leader with strong positive reputation, often sought out", score: 5 },
-            { text: "Well-known by target customers, generally positive perception", score: 4 },
-            { text: "Some recognition among target customers, neutral perception", score: 2 },
+            { text: "Recognized leader with strong positive reputation, often sought out", score: 3 }, // Scaled from 5
+            { text: "Well-known by target customers, generally positive perception", score: 2 }, // Scaled from 4
+            { text: "Some recognition among target customers, neutral perception", score: 1 }, // Scaled from 2
             { text: "Largely unknown or weak/negative reputation", score: 0 }
         ],
         required: true
     },
-    {
+    { // mkt2: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "mkt2", section: sections[2], scoringArea: ScoringAreas.MARKETING,
         text: "How effective is your website and overall digital presence in generating qualified leads or business?",
         type: "mcq", valueKey: "marketingDigitalPresence",
         options: [
-            { text: "Very effective: Optimized, major source of qualified leads/sales, strong analytics", score: 5 },
-            { text: "Moderately effective: Generates some leads/business, basic analytics", score: 3 },
-            { text: "Basic online presence exists, but generates minimal leads/business", score: 1 },
+            { text: "Very effective: Optimized, major source of qualified leads/sales, strong analytics", score: 3 }, // Scaled from 5
+            { text: "Moderately effective: Generates some leads/business, basic analytics", score: 2 }, // Scaled from 3
+            { text: "Basic online presence exists, but generates minimal leads/business", score: 1 }, // Scaled from 1
             { text: "Ineffective or minimal/outdated digital presence", score: 0 }
         ],
         required: true
     },
-     {
+     { // mkt3: High (Max Score: 5) - No change needed from original 5 max
         id: "mkt3", section: sections[2], scoringArea: ScoringAreas.MARKETING,
         text: "How systematic and measurable is your process for generating new leads?",
         type: "mcq", valueKey: "marketingLeadGen",
@@ -138,107 +139,106 @@ export const questionsData = [
             { text: "Ad-hoc marketing/sales efforts, little measurement or inconsistent channels", score: 0 }
         ],
         required: true,
-        helpText: "'CPL': Cost Per Lead. A marketing metric that calculates the average cost to generate a new potential customer." // <<< AÑADIDO
+        helpText: "'CPL': Cost Per Lead. A marketing metric that calculates the average cost to generate a new potential customer."
     },
-    {
+    { // mkt4: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "mkt4", section: sections[2], scoringArea: ScoringAreas.MARKETING,
         text: "How clearly and consistently is your unique value proposition communicated across your marketing materials and sales efforts?",
         type: "mcq", valueKey: "marketingComms",
         options: [
-            { text: "Very clear, consistent, and differentiated messaging across all touchpoints", score: 5 },
-            { text: "Mostly clear and consistent, but could be improved", score: 3 },
-            { text: "Somewhat inconsistent or unclear messaging depending on channel/person", score: 1 },
+            { text: "Very clear, consistent, and differentiated messaging across all touchpoints", score: 3 }, // Scaled from 5
+            { text: "Mostly clear and consistent, but could be improved", score: 2 }, // Scaled from 3
+            { text: "Somewhat inconsistent or unclear messaging depending on channel/person", score: 1 }, // Scaled from 1
             { text: "Value proposition is not well-defined or poorly communicated", score: 0 }
         ],
         required: true,
-        helpText: "'Unique Value Proposition': A clear statement that describes the benefit you offer, how you address the customer's needs, and what sets you apart from the competition." // <<< AÑADIDO
+        helpText: "'Unique Value Proposition': A clear statement that describes the benefit you offer, how you address the customer's needs, and what sets you apart from the competition."
     },
-    {
+    { // mkt5: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "mkt5", section: sections[2], scoringArea: ScoringAreas.MARKETING,
         text: "How clearly defined is your Ideal Customer Profile (ICP), and how strongly do your marketing and sales efforts focus only on attracting this profile?",
         type: "mcq",
         valueKey: "marketingICPFocus",
         options: [
-            { text: "Very clearly defined ICP; marketing/sales strictly focuses only on this profile.", score: 5 },
-            { text: "ICP is defined; we primarily target them but occasionally pursue other opportunistic leads.", score: 3 },
-            { text: "We have a general idea of our customers, but it's not formally defined or strictly targeted.", score: 1 },
+            { text: "Very clearly defined ICP; marketing/sales strictly focuses only on this profile.", score: 3 }, // Scaled from 5
+            { text: "ICP is defined; we primarily target them but occasionally pursue other opportunistic leads.", score: 2 }, // Scaled from 3
+            { text: "We have a general idea of our customers, but it's not formally defined or strictly targeted.", score: 1 }, // Scaled from 1
             { text: "We try to serve almost anyone who expresses interest; no clear ICP definition or targeting focus.", score: 0 }
         ],
         required: true,
-        helpText: "'ICP': Ideal Customer Profile. A detailed description of the type of customer that gets the most value from your offering and provides the most value to your company." // <-- Opcional: Tooltip
+        helpText: "'ICP': Ideal Customer Profile. A detailed description of the type of customer that gets the most value from your offering and provides the most value to your company."
     },
 
-    // === Section 3: Profitability Metrics (P - Max Raw Score: 20) === (Qualitative Focus)
-     {
+    // === Section 3: Profitability Metrics ===
+     { // prof1: Critical (Max Score: 7) - Scale up from original 5 max
         id: "prof1", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
         text: "Over the past 3 years, what has been the general trend of your business's profitability (e.g., EBITDA, Net Profit margin)?",
         type: "mcq", valueKey: "profitTrend",
         options: [
-            { text: "Strong, consistent growth (Profit % increasing or growing faster than revenue)", score: 5 },
-            { text: "Moderate or steady growth (Profit % stable or growing with revenue)", score: 3 },
-            { text: "Flat or inconsistent profitability (Ups and downs, or profit % shrinking)", score: 1 },
+            { text: "Strong, consistent growth (Profit % increasing or growing faster than revenue)", score: 7 }, // Scaled from 5
+            { text: "Moderate or steady growth (Profit % stable or growing with revenue)", score: 4 }, // Scaled from 3
+            { text: "Flat or inconsistent profitability (Ups and downs, or profit % shrinking)", score: 1 }, // Scaled from 1
             { text: "Declining profitability", score: 0 }
         ],
         required: true,
-        helpText: "'EBITDA': Earnings Before Interest, Taxes, Depreciation, and Amortization.'Net Profit Margin = (Net Profit / Revenue) * 100" // <<< AÑADIDO
+        helpText: "'EBITDA': Earnings Before Interest, Taxes, Depreciation, and Amortization.'Net Profit Margin = (Net Profit / Revenue) * 100"
     },
-    {
+    { // prof2: High (Max Score: 5) - No change needed from original 5 max (but adjust intermediate score)
         id: "prof2", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
         text: "How do you believe your Gross Profit Margins compare to direct competitors in your specific industry? (Best guess)",
         type: "mcq", valueKey: "profitMargins",
         options: [
             { text: "Likely Top Tier (Significantly higher, indicating strong pricing power or efficiency)", score: 5 },
-            { text: "Likely Above Average", score: 4 },
-            { text: "Likely Average", score: 2 },
-            { text: "Likely Below Average", score: 1 },
+            { text: "Likely Above Average", score: 4 }, // Kept 4
+            { text: "Likely Average", score: 2 }, // Kept 2
+            { text: "Likely Below Average", score: 1 }, // Kept 1
             { text: "Unsure / Don't track this", score: 0 }
         ],
         required: true,
-        helpText: "'Gross Profit Margin' =Cost of Goods Sold. Indicates profitability before overhead expenses (such as rent, administrative salaries, etc)." // <<< AÑADIDO
+        helpText: "'Gross Profit Margin' = Revenue - Cost of Goods Sold. Indicates profitability before overhead expenses (such as rent, administrative salaries, etc)."
     },
-    {
+    { // prof3: Critical (Max Score: 7) - Scale up from original 5 max
         id: "prof3", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
         text: "Approximately what percentage of your total revenue is recurring or comes from long-term contracts (predictable income)?",
         type: "mcq", valueKey: "profitRecurringRev",
         options: [
-             { text: "High (> 50%)", score: 5 },
-             { text: "Significant (25-50%)", score: 4 },
-             { text: "Moderate (10-24%)", score: 2 },
-             { text: "Low (< 10%) or None (Primarily project/transactional based)", score: 1 }
+             { text: "High (> 50%)", score: 7 }, // Scaled from 5
+             { text: "Significant (25-50%)", score: 6 }, // Scaled from 4
+             { text: "Moderate (10-24%)", score: 3 }, // Scaled from 2
+             { text: "Low (< 10%) or None (Primarily project/transactional based)", score: 1 } // Scaled from 1
         ],
         required: true,
-        helpText: "'Recurring Revenue': Predictable income received on a regular basis (e.g., subscriptions, contracts) with a high degree of certainty." // <<< AÑADIDO
+        helpText: "'Recurring Revenue': Predictable income received on a regular basis (e.g., subscriptions, contracts) with a high degree of certainty."
     },
-     {
+     { // prof4: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "prof4", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
         text: "How rigorous and proactive is your company's financial planning, including budgeting, cash flow forecasting, and regular financial performance reviews?",
         type: "mcq", valueKey: "profitFinancialMgmt",
         options: [
-             { text: "Very rigorous: Formal budgets, rolling cash flow forecasts, frequent detailed reviews (MBRs) with variance analysis", score: 5 },
-             { text: "Moderately rigorous: Annual budget, some basic forecasting, periodic high-level reviews", score: 3 },
-             { text: "Basic: Limited budgeting/forecasting, infrequent or informal reviews", score: 1 },
+             { text: "Very rigorous: Formal budgets, rolling cash flow forecasts, frequent detailed reviews (MBRs) with variance analysis", score: 3 }, // Scaled from 5
+             { text: "Moderately rigorous: Annual budget, some basic forecasting, periodic high-level reviews", score: 2 }, // Scaled from 3
+             { text: "Basic: Limited budgeting/forecasting, infrequent or informal reviews", score: 1 }, // Scaled from 1
              { text: "Largely reactive / Poor financial visibility / Managed by gut feel", score: 0 }
         ],
         required: true,
-        helpText: "'MBRs' (Monthly Business Reviews): Monthly business reviews. 'Variance Analysis': The analysis of differences between actual results and budgeted or forecasted figures." // <<< AÑADIDO
+        helpText: "'MBRs' (Monthly Business Reviews): Monthly business reviews. 'Variance Analysis': The analysis of differences between actual results and budgeted or forecasted figures."
     },
-
-    {
+    { // prof5: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "prof5", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
         text: "How would you characterize your company's overall employee compensation (salary + benefits) relative to the market rate for similar roles in your industry and location?",
         type: "mcq", valueKey: "profitCompensationLevel",
         options: [
-            { text: "Consistently competitive or slightly above market rate, benchmarked regularly.", score: 5 },
-            { text: "Generally at market rate, with occasional benchmarking.", score: 3 },
-            { text: "Often below market rate, or compensation hasn't been formally benchmarked recently.", score: 1 },
+            { text: "Consistently competitive or slightly above market rate, benchmarked regularly.", score: 3 }, // Scaled from 5
+            { text: "Generally at market rate, with occasional benchmarking.", score: 2 }, // Scaled from 3
+            { text: "Often below market rate, or compensation hasn't been formally benchmarked recently.", score: 1 }, // Scaled from 1
             { text: "Significantly below market rate (causing retention issues) OR Significantly above market rate (without clear justification).", score: 0 }
         ],
         required: true,
-        helpText: "'Benchmarking': Comparing your compensation practices against other companies in your industry/location to ensure competitiveness." // <-- Opcional: Añadir tooltip
+        helpText: "'Benchmarking': Comparing your compensation practices against other companies in your industry/location to ensure competitiveness."
     },
-    
-    // === Section 4: Offering Excellence (O - Max Raw Score: 20) ===
-    {
+
+    // === Section 4: Offering Excellence ===
+    { // off1: High (Max Score: 5) - No change needed from original 5 max
         id: "off1", section: sections[4], scoringArea: ScoringAreas.OFFERING,
         text: "Do you systematically measure customer satisfaction (e.g., NPS, CSAT scores, detailed surveys) and actively use the feedback for improvement?",
         type: "mcq", valueKey: "offeringSatisfaction",
@@ -249,47 +249,47 @@ export const questionsData = [
             { text: "No structured measurement process", score: 0 }
         ],
         required: true,
-        helpText: "'NPS' (Net Promoter Score):Measures loyalty (from -100 to +100). 'CSAT' (Customer Satisfaction Score): Measures satisfaction with specific interactions (e.g., 1 to 5 scale)." // <<< AÑADIDO
+        helpText: "'NPS' (Net Promoter Score): Measures loyalty (from -100 to +100). 'CSAT' (Customer Satisfaction Score): Measures satisfaction with specific interactions (e.g., 1 to 5 scale)."
     },
-    {
+    { // off2: High (Max Score: 5) - No change needed from original 5 max (adjust intermediate)
         id: "off2", section: sections[4], scoringArea: ScoringAreas.OFFERING,
         text: "How strongly differentiated is your core product/service offering compared to your main competitors?",
         type: "mcq", valueKey: "offeringDifferentiation",
         options: [
             { text: "Highly differentiated: Clear unique selling propositions (USPs), potentially proprietary elements, hard for competitors to replicate", score: 5 },
-            { text: "Significantly differentiated: Noticeable advantages in key features, service, or branding", score: 4 },
-            { text: "Some differentiation: Minor differences, but largely similar offerings exist", score: 2 },
-            { text: "Commodity offering: Little differentiation, competes mainly on price or availability", score: 1 }
+            { text: "Significantly differentiated: Noticeable advantages in key features, service, or branding", score: 4 }, // Kept 4
+            { text: "Some differentiation: Minor differences, but largely similar offerings exist", score: 2 }, // Kept 2
+            { text: "Commodity offering: Little differentiation, competes mainly on price or availability", score: 1 } // Kept 1
         ],
         required: true,
-        helpText: "'USPs': Clear features or benefits that differentiate your product/service from the competition." // <<< AÑADIDO
+        helpText: "'USPs': Clear features or benefits that differentiate your product/service from the competition."
     },
-    {
+    { // off3: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "off3", section: sections[4], scoringArea: ScoringAreas.OFFERING,
         text: "How well-documented and consistently followed are your quality assurance (QA) processes for services or products?",
         type: "mcq", valueKey: "offeringQualitySystems",
         options: [
-            { text: "Well-documented QA processes/SOPs exist, are consistently followed by team, and results (low error/rework rates) are tracked", score: 5 },
-            { text: "Partial documentation or QA process exists but is inconsistently followed or not tracked well", score: 3 },
-            { text: "Informal quality checks based on individual experience or spot-checking", score: 1 },
+            { text: "Well-documented QA processes/SOPs exist, are consistently followed by team, and results (low error/rework rates) are tracked", score: 3 }, // Scaled from 5
+            { text: "Partial documentation or QA process exists but is inconsistently followed or not tracked well", score: 2 }, // Scaled from 3
+            { text: "Informal quality checks based on individual experience or spot-checking", score: 1 }, // Scaled from 1
             { text: "No formal quality assurance process", score: 0 }
         ],
         required: true,
-        helpText: "'QA':Processes to ensure that products or services meet the defined quality standards." // <<< AÑADIDO
+        helpText: "'QA': Processes to ensure that products or services meet the defined quality standards."
     },
-    {
+    { // off4: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "off4", section: sections[4], scoringArea: ScoringAreas.OFFERING,
         text: "How active is your business in improving existing offerings and developing new ones based on market needs and feedback?",
         type: "mcq", valueKey: "offeringInnovation",
         options: [
-            { text: "Very active: Structured continuous improvement process AND regular introduction of relevant new offerings/features", score: 5 },
-            { text: "Moderately active: Occasional improvements or new offerings introduced based on feedback or opportunity", score: 3 },
-            { text: "Reactive: Changes primarily driven only by direct complaints or major competitor moves", score: 1 },
+            { text: "Very active: Structured continuous improvement process AND regular introduction of relevant new offerings/features", score: 3 }, // Scaled from 5
+            { text: "Moderately active: Occasional improvements or new offerings introduced based on feedback or opportunity", score: 2 }, // Scaled from 3
+            { text: "Reactive: Changes primarily driven only by direct complaints or major competitor moves", score: 1 }, // Scaled from 1
             { text: "Static: Little change or innovation in offerings over the last few years", score: 0 }
         ],
         required: true
     },
-    {
+    { // off5: High (Max Score: 5) - No change needed from original 5 max
         id: "off5", section: sections[4], scoringArea: ScoringAreas.OFFERING,
         text: "Considering a typical new customer, what best describes the revenue generated after their very first purchase within the first 12 months?",
         type: "mcq",
@@ -301,104 +301,104 @@ export const questionsData = [
              { text: "Little to no additional revenue: Usually, there are no significant purchases after the initial one within the first 12 months.", score: 0 }
         ],
         required: true,
-        helpText: "This assesses repeat business or upselling potential within the first year for new customers." // <-- Opcional: Tooltip
+        helpText: "This assesses repeat business or upselling potential within the first year for new customers."
     },
 
-    // === Section 5: Workforce & Leadership (W - Max Raw Score: 20) ===
-    {
+    // === Section 5: Workforce & Leadership ===
+    { // work1: Critical (Max Score: 7) - Scale up from original 5 max
         id: "work1", section: sections[5], scoringArea: ScoringAreas.WORKFORCE,
         text: "How reliant is the business's day-to-day operation and key strategic decision-making on the primary owner(s)?",
         type: "mcq", valueKey: "workforceOwnerReliance",
         options: [
-            { text: "Low reliance: Strong management team empowered to run operations; owner focuses on high-level strategy/vision", score: 5 },
-            { text: "Moderate reliance: Owner involved in key decisions/approvals, but team manages daily tasks effectively", score: 3 },
-            { text: "Heavily reliant: Owner frequently involved in operational details and most key decisions", score: 1 },
+            { text: "Low reliance: Strong management team empowered to run operations; owner focuses on high-level strategy/vision", score: 7 }, // Scaled from 5
+            { text: "Moderate reliance: Owner involved in key decisions/approvals, but team manages daily tasks effectively", score: 4 }, // Scaled from 3
+            { text: "Heavily reliant: Owner frequently involved in operational details and most key decisions", score: 1 }, // Scaled from 1
             { text: "Completely reliant: Business cannot function effectively for more than a short period without owner's daily input", score: 0 }
         ],
         required: true,
-        helpText: "'Owner Reliance' (Owner Dependence): Measures how much the business relies on the owner's daily involvement. High dependence can reduce the business's value." // <<< AÑADIDO
+        helpText: "'Owner Reliance' (Owner Dependence): Measures how much the business relies on the owner's daily involvement. High dependence can reduce the business's value."
     },
-     {
+     { // work2: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "work2", section: sections[5], scoringArea: ScoringAreas.WORKFORCE,
         text: "To what extent are employees held accountable with clear roles, responsibilities, and measurable performance indicators (KPIs)?",
         type: "mcq", valueKey: "workforceAccountability",
         options: [
-             { text: "High accountability: Most roles have clearly defined responsibilities and measurable KPIs that are regularly reviewed", score: 5 },
-             { text: "Moderate accountability: Key roles have defined responsibilities/KPIs, others less so; reviews may be inconsistent", score: 3 },
-             { text: "Some accountability: Performance often measured informally or subjectively; roles may overlap or be unclear", score: 1 },
+             { text: "High accountability: Most roles have clearly defined responsibilities and measurable KPIs that are regularly reviewed", score: 3 }, // Scaled from 5
+             { text: "Moderate accountability: Key roles have defined responsibilities/KPIs, others less so; reviews may be inconsistent", score: 2 }, // Scaled from 3
+             { text: "Some accountability: Performance often measured informally or subjectively; roles may overlap or be unclear", score: 1 }, // Scaled from 1
              { text: "Low accountability: Lack of clear roles, responsibilities, or performance metrics", score: 0 }
         ],
         required: true,
-        helpText: "'KPIs' (Key Performance Indicators): Measurable metrics that demonstrate the effectiveness in achieving key objectives." // <<< AÑADIDO
+        helpText: "'KPIs' (Key Performance Indicators): Measurable metrics that demonstrate the effectiveness in achieving key objectives."
     },
-    {
+    { // work3: High (Max Score: 5) - No change needed from original 5 max (adjust intermediate)
         id: "work3", section: sections[5], scoringArea: ScoringAreas.WORKFORCE,
         text: "How would you rate your employee retention and ability to attract needed talent compared to your industry peers?",
         type: "mcq", valueKey: "workforceRetention",
         options: [
             { text: "Excellent: High retention in key roles (low turnover), known as a desirable place to work, strong talent pipeline", score: 5 },
-            { text: "Good: Retention is generally stable, able to attract needed talent with reasonable effort", score: 3 },
-            { text: "Average: Turnover and recruitment challenges are typical for the industry", score: 2 },
-            { text: "Challenging: Higher than average turnover or significant difficulty attracting/retaining key talent", score: 1 }
+            { text: "Good: Retention is generally stable, able to attract needed talent with reasonable effort", score: 3 }, // Kept 3
+            { text: "Average: Turnover and recruitment challenges are typical for the industry", score: 2 }, // Kept 2
+            { text: "Challenging: Higher than average turnover or significant difficulty attracting/retaining key talent", score: 1 } // Kept 1
         ],
         required: true
     },
-    {
+    { // work4: Moderate (Max Score: 3) - Scale down from original 5 max
         id: "work4", section: sections[5], scoringArea: ScoringAreas.WORKFORCE,
         text: "How well is the company's long-term vision and strategic plan communicated and understood by employees?",
         type: "mcq", valueKey: "workforceAlignment",
         options: [
-            { text: "Very well: Vision/plan clearly communicated, regularly reinforced, understood by most, influences work", score: 5 },
-            { text: "Moderately well: Vision/plan shared, generally understood by managers and key staff", score: 3 },
-            { text: "Somewhat understood: Communication is inconsistent or unclear; employees may not see how their work connects", score: 1 },
+            { text: "Very well: Vision/plan clearly communicated, regularly reinforced, understood by most, influences work", score: 3 }, // Scaled from 5
+            { text: "Moderately well: Vision/plan shared, generally understood by managers and key staff", score: 2 }, // Scaled from 3
+            { text: "Somewhat understood: Communication is inconsistent or unclear; employees may not see how their work connects", score: 1 }, // Scaled from 1
             { text: "Poorly understood / Not clearly defined or communicated", score: 0 }
         ],
         required: true
     },
 
-    // === Section 6: Execution Systems (E - Max Raw Score: 20) ===
-    {
+    // === Section 6: Execution Systems === (sys1 removed)
+    { // sys2: Critical (Max Score: 7) - Scale up from original 5 max
         id: "sys2", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
         text: "How effectively are key technology systems (e.g., CRM, ERP, Project Management, Financial Software) utilized and integrated to support efficient operations and provide useful data?",
         type: "mcq", valueKey: "systemsTech",
         options: [
-            { text: "Highly effective: Key systems are well-integrated, widely adopted, data is accurate and used for decision-making, supports efficiency", score: 5 },
-            { text: "Moderately effective: Key systems are used for core functions, but some data silos, manual workarounds, or underutilization exist", score: 3 },
-            { text: "Basic utilization: Systems used minimally, significant manual processes still required, data may be unreliable or hard to access", score: 1 },
+            { text: "Highly effective: Key systems are well-integrated, widely adopted, data is accurate and used for decision-making, supports efficiency", score: 7 }, // Scaled from 5
+            { text: "Moderately effective: Key systems are used for core functions, but some data silos, manual workarounds, or underutilization exist", score: 4 }, // Scaled from 3
+            { text: "Basic utilization: Systems used minimally, significant manual processes still required, data may be unreliable or hard to access", score: 1 }, // Scaled from 1
             { text: "Ineffective / Lacking key systems / Heavily reliant on spreadsheets and manual processes", score: 0 }
         ],
         required: true,
-        helpText: "'CRM': Customer Relationship Management). 'ERP': Enterprise Resource Planning." // <<< AÑADIDO
+        helpText: "'CRM': Customer Relationship Management). 'ERP': Enterprise Resource Planning."
     },
-    {
+    { // sys3: Critical (Max Score: 7) - Scale up from original 5 max
         id: "sys3", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
         text: "To what extent does the business use dashboards or regular reporting to track Key Performance Indicators (KPIs) and operational metrics?",
         type: "mcq", valueKey: "systemsKPIs",
         options: [
-            { text: "Extensive use of real-time or frequently updated dashboards/reports with actionable KPIs tracked across departments, reviewed regularly", score: 5 },
-            { text: "Regular (e.g., weekly/monthly) reporting on key metrics, some dashboard usage for management", score: 3 },
-            { text: "Basic or infrequent reporting (e.g., only standard financial statements), limited operational KPI tracking", score: 1 },
+            { text: "Extensive use of real-time or frequently updated dashboards/reports with actionable KPIs tracked across departments, reviewed regularly", score: 7 }, // Scaled from 5
+            { text: "Regular (e.g., weekly/monthly) reporting on key metrics, some dashboard usage for management", score: 4 }, // Scaled from 3
+            { text: "Basic or infrequent reporting (e.g., only standard financial statements), limited operational KPI tracking", score: 1 }, // Scaled from 1
             { text: "Little or no formal KPI tracking or operational reporting", score: 0 }
         ],
         required: true,
-        helpText: "'KPIs' (Key Performance Indicators): Measurable metrics that demonstrate the effectiveness in achieving key objectives." // <<< AÑADIDO (Repetido intencionalmente)
+        helpText: "'KPIs' (Key Performance Indicators): Measurable metrics that demonstrate the effectiveness in achieving key objectives."
     },
-    {
+    { // sys4: Critical (Max Score: 7) - Scale up from original 5 max
         id: "sys4", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
         text: "Are your financial statements prepared according to standard accounting principles (e.g., GAAP or equivalent) and suitable for external review (like an audit or due diligence)?",
         type: "mcq", valueKey: "systemsFinancials",
         options: [
-            { text: "Yes, fully compliant, regularly reviewed by qualified personnel, clear audit trail, audit-ready with minimal effort", score: 5 },
-            { text: "Largely compliant, reviewed internally, likely require some cleanup/adjustments for a formal audit or diligence", score: 3 },
-            { text: "Basic bookkeeping exists, but may not be fully compliant or easily auditable; significant cleanup likely needed", score: 1 },
+            { text: "Yes, fully compliant, regularly reviewed by qualified personnel, clear audit trail, audit-ready with minimal effort", score: 7 }, // Scaled from 5
+            { text: "Largely compliant, reviewed internally, likely require some cleanup/adjustments for a formal audit or diligence", score: 4 }, // Scaled from 3
+            { text: "Basic bookkeeping exists, but may not be fully compliant or easily auditable; significant cleanup likely needed", score: 1 }, // Scaled from 1
             { text: "Financial records are poor, unreliable, or not based on standard accounting principles", score: 0 }
         ],
         required: true,
-        helpText: "'GAAP' (Generally Accepted Accounting Principles): A set of standard accounting rules in the U.S.'Due Diligence': The investigation or audit of a business before a transaction." // <<< AÑADIDO
+        helpText: "'GAAP' (Generally Accepted Accounting Principles): A set of standard accounting rules in the U.S.'Due Diligence': The investigation or audit of a business before a transaction."
     },
 
-    // === Section 7: Robust Market Position (R - Max Raw Score: 20, now 25) ===
-    {
+    // === Section 7: Robust Market Position ===
+    { // mktpos1: High (Max Score: 5) - No change needed from original 5 max
         id: "mktpos1", section: sections[7], scoringArea: ScoringAreas.MARKET,
         text: "What is the perceived long-term growth potential of your primary target market(s)?",
         type: "mcq", valueKey: "marketGrowthPotential",
@@ -410,49 +410,49 @@ export const questionsData = [
         ],
         required: true
     },
-    {
+    { // mktpos2: Critical (Max Score: 7) - Scale up from original 5 max (adjust intermediate)
         id: "mktpos2", section: sections[7], scoringArea: ScoringAreas.MARKET,
         text: "How diversified is your customer base? Consider the approximate percentage of total revenue coming from your single largest customer.",
         type: "mcq", valueKey: "marketCustConcentration",
         options: [
-            { text: "Highly diversified (Largest customer consistently < 5-10% of revenue)", score: 5 },
-            { text: "Well diversified (Largest customer consistently < 15-20% of revenue)", score: 4 },
-            { text: "Moderately concentrated (Largest customer sometimes or consistently 20-35% of revenue)", score: 2 },
-            { text: "Highly concentrated (Largest customer consistently > 35% of revenue)", score: 1 }
+            { text: "Highly diversified (Largest customer consistently < 5-10% of revenue)", score: 7 }, // Scaled from 5
+            { text: "Well diversified (Largest customer consistently < 15-20% of revenue)", score: 6 }, // Scaled from 4
+            { text: "Moderately concentrated (Largest customer sometimes or consistently 20-35% of revenue)", score: 3 }, // Scaled from 2
+            { text: "Highly concentrated (Largest customer consistently > 35% of revenue)", score: 1 } // Scaled from 1
         ],
         required: true,
-        helpText: "'Customer Concentration': Measures how much your revenue depends on a few customers. High concentration (e.g., >20% from a single customer) is a risk." // <<< AÑADIDO
+        helpText: "'Customer Concentration': Measures how much your revenue depends on a few customers. High concentration (e.g., >20% from a single customer) is a risk."
     },
-    {
+    { // mktpos_tam_size: High (Max Score: 5) - No change needed from original 5 max (adjust intermediate)
         id: "mktpos_tam_size", section: sections[7], scoringArea: ScoringAreas.MARKET,
         text: "Estimate the size of the Total Addressable Market (TAM) for your core offerings in your primary geographic area(s):",
         type: "mcq", valueKey: "marketTamSize",
         options: [
             { text: "Very Large (e.g., > $500 Million / National / Global)", score: 5 },
-            { text: "Large (e.g., $50M - $500 Million / Large Regional)", score: 4 },
-            { text: "Medium (e.g., $5M - $50 Million / City or Metro Area)", score: 3 },
-            { text: "Small / Niche (e.g., < $5 Million / Localized)", score: 1 },
+            { text: "Large (e.g., $50M - $500 Million / Large Regional)", score: 4 }, // Kept 4
+            { text: "Medium (e.g., $5M - $50 Million / City or Metro Area)", score: 3 }, // Kept 3
+            { text: "Small / Niche (e.g., < $5 Million / Localized)", score: 1 }, // Kept 1
             { text: "Unsure / Not Defined", score: 0 }
         ],
         required: true,
-        helpText: "'TAM' (Total Addressable Market): The total potential revenue if you captured 100% of the relevant market for your products/services." // <<< AÑADIDO
+        helpText: "'TAM' (Total Addressable Market): The total potential revenue if you captured 100% of the relevant market for your products/services."
     },
-     {
+     { // mktpos_market_share: Moderate (Max Score: 3) - Scale down from original 5 max (adjust intermediate)
         id: "mktpos_market_share", section: sections[7], scoringArea: ScoringAreas.MARKET,
         text: "Estimate your company's current market share within that Total Addressable Market:",
         type: "mcq", valueKey: "marketShare",
         options: [
-            { text: "Dominant Leader (> 30%)", score: 5 },
-            { text: "Significant Player (10% - 30%)", score: 4 },
-            { text: "Moderate Player (3% - 10%)", score: 2 },
-            { text: "Small Player (< 3%)", score: 1 },
+            { text: "Dominant Leader (> 30%)", score: 3 }, // Scaled from 5
+            { text: "Significant Player (10% - 30%)", score: 2 }, // Scaled from 4
+            { text: "Moderate Player (3% - 10%)", score: 1 }, // Scaled from 2
+            { text: "Small Player (< 3%)", score: 1 }, // Scaled from 1 (keeps minimum score)
             { text: "Unsure", score: 0 }
         ],
         required: true,
-        helpText: "'Market Share': Percentage of the Total Addressable Market (TAM) that your company currently controls." // <<< AÑADIDO
+        helpText: "'Market Share': Percentage of the Total Addressable Market (TAM) that your company currently controls."
     },
-    {
-        id: "mktpos4", section: sections[7], scoringArea: ScoringAreas.MARKET, // Keep resilience
+    { // mktpos4: High (Max Score: 5) - No change needed from original 5 max
+        id: "mktpos4", section: sections[7], scoringArea: ScoringAreas.MARKET,
         text: "How resilient has your business model proven to be during past economic downturns or significant market shifts?",
         type: "mcq", valueKey: "marketResilience",
         options: [
@@ -467,27 +467,31 @@ export const questionsData = [
     // === Section 8: Your Financials & Industry (Inputs) ===
     {
         id: "finRev", section: sections[8], text: "What is your approximate Last Full Year Revenue?",
-        type: "number", valueKey: "currentRevenue", placeholder: "e.g., 1500000",
+        type: "number", valueKey: "currentRevenue",
+        placeholder: "e.g., $ 1,500,000",
         required: true,
-        helpText: "'Revenue': Total revenue from the sale of goods or services from the core operation in the most recent full fiscal year." // <<< AÑADIDO
+        helpText: "..."
     },
     {
         id: "finGP", section: sections[8], text: "What is your approximate Last Full Year Gross Profit?",
-        type: "number", valueKey: "grossProfit", placeholder: "e.g., 900000",
+        type: "number", valueKey: "grossProfit",
+        placeholder: "e.g., $ 900,000",
         required: true,
-        helpText: "'Gross Profit' = Revenue - Cost of Goods Sold (COGS). Profit before deducting operating expenses, interest, and taxes." // <<< AÑADIDO
+        helpText: "..."
     },
     {
         id: "finEBITDA", section: sections[8], text: "What is your approximate Last Full Year EBITDA?",
-        type: "number", valueKey: "ebitda", placeholder: "e.g., 300000",
+        type: "number", valueKey: "ebitda",
+        placeholder: "e.g., $ 300,000",
         required: true,
-        helpText: "'EBITDA': Earnings Before Interest, Taxes, Depreciation, and Amortization (EBITDA). A measure of operational profitability." // <<< AÑADIDO
+        helpText: "..."
     },
     {
         id: "finAdj", section: sections[8], text: "What are your typical annual EBITDA Add-backs / Adjustments?",
-        type: "number", valueKey: "ebitdaAdjustments", placeholder: "e.g., 50000 (can be 0)",
-        // NOT required, as 0 is a valid input.
-        helpText: "'Add-backs / Adjustments': Adjustments to EBITDA to normalize earnings (e.g., non-recurring expenses, owner's excessive salary, personal expenses). Consult an advisor if you're unsure." // <<< AÑADIDO
+        type: "number", valueKey: "ebitdaAdjustments",
+        placeholder: "e.g., $ 50,000 (can be 0)",
+        required: false,
+        helpText: "..."
     },
     {
         id: "industrySector", section: sections[8], text: "Select your primary Industry Sector:",
@@ -506,14 +510,17 @@ export const questionsData = [
 
 
 // --- Helper Functions and Derived Data ---
-// (El resto del código permanece igual - No se ha eliminado nada aquí)
 
+// Función para filtrar solo preguntas cualitativas (CON scoringArea)
 const isQualitativeQuestion = (q) => {
-  return q.scoringArea && Object.values(ScoringAreas).includes(q.scoringArea);
+  // Asegurarse que q.scoringArea existe y es uno de los valores definidos en ScoringAreas
+  return q && q.scoringArea && Object.values(ScoringAreas).includes(q.scoringArea);
 };
 
+// Exportar el array filtrado
 export const qualitativeQuestions = questionsData.filter(isQualitativeQuestion);
 
+// Función para obtener preguntas por paso (sin cambios)
 export const getQuestionsForStep = (stepIndex) => {
   if (stepIndex < 0 || stepIndex >= sections.length) {
       console.error(`Invalid stepIndex requested: ${stepIndex}`);
@@ -523,9 +530,13 @@ export const getQuestionsForStep = (stepIndex) => {
   return questionsData.filter(q => q.section === sectionName);
 };
 
+// --- Función para calcular el máximo score TOTAL (SIN CAMBIOS EN CÓDIGO, se adapta a los nuevos scores) ---
+// --- PERO ACTUALIZA ESTE COMENTARIO CON EL NUEVO TOTAL CALCULADO MANUALMENTE ---
+// Example: Calculates the total maximum possible score based on weighted questions (Currently XXX points)
 export const calculateMaxPossibleScore = () => {
   return qualitativeQuestions.reduce((total, q) => {
     if (q.type === 'mcq' && q.options && q.options.length > 0) {
+      // Suma el score más alto definido en las opciones de esta pregunta
       const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
       return total + maxOptionScore;
     }
@@ -533,6 +544,38 @@ export const calculateMaxPossibleScore = () => {
   }, 0);
 };
 
+
+// --- NUEVA FUNCIÓN DINÁMICA ---
+/**
+ * Calculates the actual maximum possible score for a specific scoring area
+ * based on the current questions defined in qualitativeQuestions.
+ * @param {string} areaName - The scoring area key (e.g., ScoringAreas.SYSTEMS)
+ * @returns {number} The maximum possible score for that area.
+ */
+export const calculateMaxScoreForArea = (areaName) => {
+  if (!areaName) return 0; // Manejar caso inválido
+
+  // Asegúrate que qualitativeQuestions esté disponible aquí
+  // (ya está exportada en este archivo, así que debería estarlo)
+  if (!qualitativeQuestions) {
+    console.error("qualitativeQuestions is not available for calculateMaxScoreForArea");
+    return 0;
+  }
+
+  return qualitativeQuestions
+    .filter(q => q.scoringArea === areaName) // Filtrar preguntas del área específica
+    .reduce((total, q) => { // Sumar los máximos de esas preguntas
+      if (q.type === 'mcq' && q.options && q.options.length > 0) {
+        const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
+        return total + maxOptionScore;
+      }
+      return total;
+    }, 0);
+};
+// --- FIN NUEVA FUNCIÓN ---
+
+
+// --- Estructura ebitdaTiers y getValuationParameters (SIN CAMBIOS) ---
 export const ebitdaTiers = [
     { threshold: 5000000, stage: "Mature Scaleup", baseMultiple: 5, maxMultiple: 7 },
     { threshold: 3000000, stage: "Scale Up", baseMultiple: 4, maxMultiple: 6 },

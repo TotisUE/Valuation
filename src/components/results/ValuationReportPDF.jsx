@@ -2,6 +2,7 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import { ScoringAreas } from '../../scoringAreas'; // Asegúrate que la ruta es correcta
+import { calculateMaxScoreForArea } from '../../questions';
 
 // --- Opcional: Registrar fuentes (si quieres usar fuentes personalizadas) ---
 // Font.register({
@@ -147,24 +148,9 @@ function ValuationReportPDF({ calculationResult, formData, chartImage }) {
     // yearsInvolved = 'N/A',
   } = formData || {};
 
-  // --- Necesitamos mapear los scores que vienen en `calculationResult.scores` ---
-  // A los que vienen de la función `submit-valuation` (formato "X / Y")
-  // Asumiremos que `calculationResult.scores` es el objeto directo: { SYSTEMS: 15, ... }
-  const getMaxScore = (areaName) => {
-    // Si es Market, Profitability U Offering, el máximo es 25
-    if (areaName === ScoringAreas.MARKET ||
-        areaName === ScoringAreas.PROFITABILITY ||
-        areaName === ScoringAreas.MARKETING ||
-        areaName === ScoringAreas.OFFERING) { 
-        return 25;
-    }
-    // Para todas las demás, es 20
-    return 20;
-};
-
   const formattedScores = Object.values(ScoringAreas).reduce((acc, areaKey) => {
         const scoreValue = scores[areaKey] ?? 0;
-        const maxScore = getMaxScore(areaKey);
+        const maxScore = calculateMaxScoreForArea(areaKey);
         acc[areaKey] = `${scoreValue} / ${maxScore}`;
         return acc;
   }, {});

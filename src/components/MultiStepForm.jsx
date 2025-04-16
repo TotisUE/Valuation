@@ -1,14 +1,16 @@
 // src/components/MultiStepForm.jsx
+// src/components/MultiStepForm.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { ScoringAreas, initialScores } from '../scoringAreas';
+import { ScoringAreas, initialScores } from '../scoringAreas'; // Asumiendo que '../scoringAreas' es correcto
 import {
     sections, getQuestionsForStep, calculateMaxPossibleScore,
-    getValuationParameters, qualitativeQuestions
-} from '../questions';
+    getValuationParameters, qualitativeQuestions,
+    calculateMaxScoreForArea 
+} from '../questions'; // Asumiendo que '../questions' es correcto
 import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
-import ResultsDisplay from './results/ResultsDisplay'; // Asegúrate que la ruta es correcta
+import ResultsDisplay from './results/ResultsDisplay';
 
 // --- Constantes ---
 const TOTAL_STEPS = sections.length;
@@ -78,8 +80,13 @@ function generateImprovementRoadmap(scores, stage) {
     if (content) {
       const linkText = `-> Watch the "${stage}" section on Acquisition.com for guidance on ${content.title}`;
       roadmapItems.push({
-        areaName: areaKey, title: content.title, areaScore: areaScore || 0,
-        maxScore: content.maxScore, rationale: content.rationale, actionSteps: content.actionSteps,
+        areaName: areaKey, 
+        title: content.title, 
+        areaScore: areaScore || 0,
+        maxScore: calculateMaxScoreForArea(areaKey), 
+        rationale: content.rationale, 
+        actionSteps: content.
+        actionSteps,
         linkText: linkText,
         linkUrl: targetUrl
       });
