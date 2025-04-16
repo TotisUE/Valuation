@@ -93,7 +93,17 @@ const handler = async (event) => {
     console.log("Extracted Scores:", scores); // Log para verificar
 
     // <<< CORRECCIÓN 3: Definir getMaxScore aquí >>>
-    const getMaxScore = (areaName) => areaName === ScoringAreas.MARKET ? 25 : 20;
+    const getMaxScore = (areaName) => {
+      // Si es Market, Profitability U Offering, el máximo es 25
+      if (areaName === ScoringAreas.MARKET ||
+          areaName === ScoringAreas.PROFITABILITY ||
+          areaName === ScoringAreas.MARKETING ||
+          areaName === ScoringAreas.OFFERING) { // <-- AÑADIR ESTA CONDICIÓN
+          return 25;
+      }
+      // Para todas las demás, es 20
+      return 20;
+  };
 
     // --- 1. Insertar en Supabase ---
     const dataToInsert = {

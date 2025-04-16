@@ -1,64 +1,116 @@
 // src/components/results/ScoreDetails.jsx
 import React from 'react';
-// <<< IMPORTANTE: Ajusta la ruta a scoringAreas si es diferente >>>
-import { ScoringAreas } from '../../scoringAreas.js'; // Asume que está 2 niveles arriba
-// O import { ScoringAreas } from '../scoringAreas'; si está 1 nivel arriba
-// O import { ScoringAreas } from '../../questions'; si se exporta desde questions.js
+import ScoreRadarChart from './ScoreRadarChart';
+import { ScoringAreas } from '../../scoringAreas';
 
-// Textos explicativos (Tarea 6 - Contenido Educativo - Propuesta inicial)
-const areaExplanations = {
-    [ScoringAreas.SYSTEMS]: "Reflects the efficiency, documentation, and scalability of your core operations.",
-    [ScoringAreas.WORKFORCE]: "Assesses owner dependency, team strength, accountability, and talent management.",
-    [ScoringAreas.MARKET]: "Evaluates market size/growth, customer diversification, and competitive positioning.",
-    [ScoringAreas.PROFITABILITY]: "Focuses on the health and trend of margins and the predictability of revenue.",
-    [ScoringAreas.MARKETING]: "Measures brand strength, lead generation effectiveness, and value communication.",
-    [ScoringAreas.OFFERING]: "Gauges customer satisfaction, product/service differentiation, and quality.",
-    [ScoringAreas.EXPANSION]: "Indicates the business's readiness and capability to scale effectively.",
+// Función para obtener el máximo score por área (copiada por conveniencia)
+const getMaxScore = (areaName) => {
+    // Si es Market, Profitability U Offering, el máximo es 25
+    if (areaName === ScoringAreas.MARKET ||
+        areaName === ScoringAreas.PROFITABILITY ||
+        areaName === ScoringAreas.OFFERING ||
+        areaName === ScoringAreas.MARKETING) {
+        return 25;
+    }
+    // Para todas las demás, es 20
+    return 20;
 };
 
-function ScoreDetails({ scores = {} }) { // Añadir valor por defecto
-   // Calcular maxScore para el área MARKET (si es necesario ajustar)
-   const getMaxScore = (areaName) => areaName === ScoringAreas.MARKET ? 25 : 20;
+// Estilos básicos (puedes moverlos a CSS)
+const styles = {
+    container: {
+        padding: '10px',
+    },
+    title: {
+        fontSize: '1.3em',
+        fontWeight: 'bold',
+        marginBottom: '15px',
+        textAlign: 'center',
+        color: '#333',
+    },
+    chartExplanation: { // Estilo para texto explicativo del gráfico
+        fontSize: '0.9em',
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: '15px',
+        padding: '0 10px',
+    },
+    chartContainer: {
+        marginBottom: '30px',
+    },
+    listContainer: {
+         marginTop: '20px',
+         borderTop: '1px solid #eee',
+         paddingTop: '20px',
+    },
+    listTitle: {
+        fontSize: '1.1em',
+        fontWeight: 'bold',
+        marginBottom: '10px',
+        color: '#444',
+    },
+    scoreItem: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '8px 0',
+        borderBottom: '1px solid #f0f0f0',
+    },
+    areaName: {
+        fontWeight: '500',
+         color: '#555',
+    },
+    areaScore: {
+         fontWeight: 'bold',
+         color: '#1a1a1a',
+    }
+};
 
-  // Filtrar y mapear solo las áreas válidas que existen en ScoringAreas
-  const validScores = Object.entries(scores)
-        .filter(([areaKey]) => Object.values(ScoringAreas).includes(areaKey));
+function ScoreDetails({ scores }) {
 
-  return (
-    <div>
-      <h3>Score Details (Qualitative Areas)</h3>
-      {/* TODO: Añadir Gráfico de Barras/Radar aquí */}
-      <p style={{marginBottom: '1.5rem'}}>This reflects how your business scores across key qualitative areas that influence valuation multiples.</p>
-      {validScores.length > 0 ? (
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {validScores.map(([areaName, score]) => {
-                const maxScore = getMaxScore(areaName);
-                // Asegurarse que score sea un número o 0
-                const numericScore = typeof score === 'number' ? score : 0;
-                const percentage = maxScore > 0 ? (numericScore / maxScore) * 100 : 0;
-                return (
-                   <li key={areaName} style={{ marginBottom: '1.5rem', borderBottom: '1px solid #eee', paddingBottom: '1rem' }}>
-                       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                           <strong style={{fontSize: '1.1em'}}>{areaName}:</strong>
-                           <span style={{fontWeight: 'bold', fontSize: '1.1em'}}>{numericScore} / {maxScore}</span>
-                       </div>
-                       {/* Barra de progreso */}
-                       <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '12px', overflow: 'hidden' }}>
-                           <div style={{ width: `${percentage}%`, backgroundColor: '#3498db', height: '100%', borderRadius: '5px 0 0 5px' }}></div>
-                       </div>
-                       {/* Explicación Educativa */}
-                       <p style={{fontSize: '0.9em', color: '#666', marginTop: '8px'}}>
-                           {areaExplanations[areaName] || `Details for ${areaName}`}
-                       </p>
-                   </li>
-                );
-            })}
-         </ul>
-      ) : (
-          <p>Score details are not available.</p>
-      )}
-    </div>
-  );
+    // Validación (mantenemos la validación)
+    if (!scores || typeof scores !== 'object' || Object.keys(scores).length === 0) {
+        return <div>Score details are unavailable.</div>;
+    }
+
+    // Filtrar las claves válidas (basado en las *claves* que llegan en scores)
+    const validAreaKeys = Object.keys(scores)
+                              .filter(key => Object.values(ScoringAreas).includes(key));
+
+    // Si no hay claves válidas encontradas en los scores recibidos
+     if (validAreaKeys.length === 0) {
+          return <div>No valid score data found to display details.</div>;
+     }
+
+    return (
+        <div style={styles.container}>
+            <h3 style={styles.title}>Detailed Score Breakdown</h3>
+
+            {/* --- AÑADIR EXPLICACIÓN DEL GRÁFICO --- */}
+            <p style={styles.chartExplanation}>
+                This radar chart visually compares your scores (inner shape) against the maximum possible score for each area (outer shape). A larger, more balanced shape generally indicates stronger overall business health.
+            </p>
+            <div style={styles.chartContainer}>
+                 <ScoreRadarChart scores={scores} />
+            </div>
+
+             {/* Contenedor OPCIONAL para la lista de scores (si quieres ambos) */}
+             <div style={styles.listContainer}>
+                 <h4 style={styles.listTitle}>Scores by Area:</h4>
+                 {/* Mapear usando las claves válidas filtradas */}
+                 {validAreaKeys.map((areaKey) => {
+                     const scoreValue = scores[areaKey] ?? 0; // Usar la clave correcta
+                     const maxScore = getMaxScore(areaKey); // Usar la clave correcta
+                     return (
+                         <div key={areaKey} style={styles.scoreItem}>
+                             {/* Mostrar el nombre del área (la clave misma) */}
+                             <span style={styles.areaName}>{areaKey.replace(/_/g, ' ')}:</span>
+                             <span style={styles.areaScore}>{scoreValue} / {maxScore}</span>
+                         </div>
+                     );
+                 })}
+             </div>
+        </div>
+    );
 }
 
 export default ScoreDetails;

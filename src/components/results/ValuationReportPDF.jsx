@@ -1,6 +1,6 @@
 // src/components/results/ValuationReportPDF.jsx
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import { ScoringAreas } from '../../scoringAreas'; // Asegúrate que la ruta es correcta
 
 // --- Opcional: Registrar fuentes (si quieres usar fuentes personalizadas) ---
@@ -76,6 +76,15 @@ const styles = StyleSheet.create({
   roadmapAction: {
       marginLeft: 10, // Indentación para pasos de acción
   },
+  chartImage: {
+    width: 400,       // <-- Ancho fijo en puntos (pt)
+    height: 300,      // <-- Alto fijo en puntos (pt)
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 15,
+    borderWidth: 1, // <-- Añadir un borde temporal
+    borderColor: 'red', // <-- Borde rojo para ver si el espacio se reserva
+  },
   disclaimer: {
       marginTop: 20,
       fontSize: 8,
@@ -108,7 +117,9 @@ const formatScore = (scoreString) => {
 }
 
 // --- El Componente del Documento PDF ---
-function ValuationReportPDF({ calculationResult, formData }) {
+function ValuationReportPDF({ calculationResult, formData, chartImage }) {
+
+  console.log("--- ValuationReportPDF: chartImage prop received (snippet):", chartImage ? chartImage.substring(0, 60) + '...' : 'NO IMAGE PROP');
 
   // Extraer datos con valores por defecto por seguridad
   const {
@@ -138,13 +149,18 @@ function ValuationReportPDF({ calculationResult, formData }) {
 
   // --- Necesitamos mapear los scores que vienen en `calculationResult.scores` ---
   // A los que vienen de la función `submit-valuation` (formato "X / Y")
-  // Esto es un poco redundante, idealmente `calculationResult` tendría el formato consistente
-  // Si `calculationResult.scores` ya viene en formato "X / Y", este paso no es necesario.
   // Asumiremos que `calculationResult.scores` es el objeto directo: { SYSTEMS: 15, ... }
   const getMaxScore = (areaName) => {
-      if (areaName === ScoringAreas.MARKET) return 25;
-      return 20; // Para todas las demás áreas
-  };
+    // Si es Market, Profitability U Offering, el máximo es 25
+    if (areaName === ScoringAreas.MARKET ||
+        areaName === ScoringAreas.PROFITABILITY ||
+        areaName === ScoringAreas.MARKETING ||
+        areaName === ScoringAreas.OFFERING) { 
+        return 25;
+    }
+    // Para todas las demás, es 20
+    return 20;
+};
 
   const formattedScores = Object.values(ScoringAreas).reduce((acc, areaKey) => {
         const scoreValue = scores[areaKey] ?? 0;
@@ -238,6 +254,12 @@ function ValuationReportPDF({ calculationResult, formData }) {
         {/* --- Detalles de Puntuación --- */}
         <View style={styles.section}>
            <Text style={styles.sectionTitle}>Score Details by Area</Text>
+           {chartImage && ( // Mostrar solo si la imagen existe
+               <Image
+               src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
+               style={styles.chartImage} // Usa los estilos simplificados de la Prueba 1
+           />
+           )}
            {Object.values(ScoringAreas).map((areaKey) => (
                <View key={areaKey} style={styles.row}>
                    <Text style={styles.label}>{areaKey}:</Text>

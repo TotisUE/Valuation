@@ -88,19 +88,20 @@ export const questionsData = [
         required: true,
         helpText: "'ROI Analysis': A metric used to evaluate the profitability of an investment." // <<< AÑADIDO
     },
-     {
-        id: "exp4", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
-        text: "How significant are strategic partnerships (suppliers, referrals, channels) to your business growth and operations?",
-        type: "mcq", valueKey: "expansionPartnerships",
+    {
+        id: "exp5", section: sections[1], scoringArea: ScoringAreas.EXPANSION,
+        text: "Regarding customer refunds and significant complaints, which statement best describes your current situation?",
+        type: "mcq",
+        valueKey: "expansionProblemRate", // Nueva clave para guardar la respuesta
         options: [
-            { text: "Critical, with well-managed agreements/programs providing clear advantages", score: 5 },
-            { text: "Important, contribute significantly to growth or efficiency", score: 3 },
-            { text: "Minor role / Some ad-hoc relationships exist", score: 1 },
-            { text: "Not a significant factor / No real strategic partnerships", score: 0 }
+            { text: "Refunds/significant complaints are rare (<1-2%), and we have clear processes to resolve them effectively when they occur.", score: 5 },
+            { text: "They occur occasionally (e.g., 3-5% range), and we generally manage them adequately as they arise.", score: 3 },
+            { text: "They happen somewhat frequently (>5% range), or our process for handling them is inconsistent and sometimes problematic.", score: 1 },
+            { text: "Refunds/complaints are a common or significant issue, often time-consuming, or we don't track this data reliably.", score: 0 }
         ],
-        required: true
+        required: true,
+        helpText: "Significant complaints refer to issues requiring notable effort or escalation to resolve, beyond routine inquiries." // <-- Opcional: Tooltip
     },
-
     // === Section 2: Marketing & Brand Equity (M - Max Raw Score: 20) ===
      {
         id: "mkt1", section: sections[2], scoringArea: ScoringAreas.MARKETING,
@@ -151,6 +152,20 @@ export const questionsData = [
         ],
         required: true,
         helpText: "'Unique Value Proposition': A clear statement that describes the benefit you offer, how you address the customer's needs, and what sets you apart from the competition." // <<< AÑADIDO
+    },
+    {
+        id: "mkt5", section: sections[2], scoringArea: ScoringAreas.MARKETING,
+        text: "How clearly defined is your Ideal Customer Profile (ICP), and how strongly do your marketing and sales efforts focus only on attracting this profile?",
+        type: "mcq",
+        valueKey: "marketingICPFocus",
+        options: [
+            { text: "Very clearly defined ICP; marketing/sales strictly focuses only on this profile.", score: 5 },
+            { text: "ICP is defined; we primarily target them but occasionally pursue other opportunistic leads.", score: 3 },
+            { text: "We have a general idea of our customers, but it's not formally defined or strictly targeted.", score: 1 },
+            { text: "We try to serve almost anyone who expresses interest; no clear ICP definition or targeting focus.", score: 0 }
+        ],
+        required: true,
+        helpText: "'ICP': Ideal Customer Profile. A detailed description of the type of customer that gets the most value from your offering and provides the most value to your company." // <-- Opcional: Tooltip
     },
 
     // === Section 3: Profitability Metrics (P - Max Raw Score: 20) === (Qualitative Focus)
@@ -208,6 +223,20 @@ export const questionsData = [
         helpText: "'MBRs' (Monthly Business Reviews): Monthly business reviews. 'Variance Analysis': The analysis of differences between actual results and budgeted or forecasted figures." // <<< AÑADIDO
     },
 
+    {
+        id: "prof5", section: sections[3], scoringArea: ScoringAreas.PROFITABILITY,
+        text: "How would you characterize your company's overall employee compensation (salary + benefits) relative to the market rate for similar roles in your industry and location?",
+        type: "mcq", valueKey: "profitCompensationLevel",
+        options: [
+            { text: "Consistently competitive or slightly above market rate, benchmarked regularly.", score: 5 },
+            { text: "Generally at market rate, with occasional benchmarking.", score: 3 },
+            { text: "Often below market rate, or compensation hasn't been formally benchmarked recently.", score: 1 },
+            { text: "Significantly below market rate (causing retention issues) OR Significantly above market rate (without clear justification).", score: 0 }
+        ],
+        required: true,
+        helpText: "'Benchmarking': Comparing your compensation practices against other companies in your industry/location to ensure competitiveness." // <-- Opcional: Añadir tooltip
+    },
+    
     // === Section 4: Offering Excellence (O - Max Raw Score: 20) ===
     {
         id: "off1", section: sections[4], scoringArea: ScoringAreas.OFFERING,
@@ -259,6 +288,20 @@ export const questionsData = [
             { text: "Static: Little change or innovation in offerings over the last few years", score: 0 }
         ],
         required: true
+    },
+    {
+        id: "off5", section: sections[4], scoringArea: ScoringAreas.OFFERING,
+        text: "Considering a typical new customer, what best describes the revenue generated after their very first purchase within the first 12 months?",
+        type: "mcq",
+        valueKey: "offeringFollowOnRevenue",
+        options: [
+             { text: "Significant additional revenue: The first purchase often represents less than 50% of the total revenue from that customer in the first year.", score: 5 },
+             { text: "Moderate additional revenue: Subsequent purchases occur, making the first purchase typically 50-75% of the first year's total revenue.", score: 3 },
+             { text: "Minimal additional revenue: The first purchase represents more than 75% of the first year's total revenue; follow-on purchases are infrequent or small.", score: 1 },
+             { text: "Little to no additional revenue: Usually, there are no significant purchases after the initial one within the first 12 months.", score: 0 }
+        ],
+        required: true,
+        helpText: "This assesses repeat business or upselling potential within the first year for new customers." // <-- Opcional: Tooltip
     },
 
     // === Section 5: Workforce & Leadership (W - Max Raw Score: 20) ===
@@ -314,19 +357,6 @@ export const questionsData = [
     },
 
     // === Section 6: Execution Systems (E - Max Raw Score: 20) ===
-    {
-        id: "sys1", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
-        text: "How comprehensive and consistently utilized are Standard Operating Procedures (SOPs) for your core business processes (e.g., sales, fulfillment, operations)?",
-        type: "mcq", valueKey: "systemsSOPs",
-        options: [
-            { text: "Comprehensive SOPs exist for most core processes, are easily accessible, regularly used, and updated", score: 5 },
-            { text: "SOPs exist for key processes, but usage or accessibility could be improved; updates may lag", score: 3 },
-            { text: "Some informal documentation or reliance on 'tribal knowledge'; processes vary by person", score: 1 },
-            { text: "Few documented processes; high degree of variability and inconsistency", score: 0 }
-        ],
-        required: true,
-        helpText: "'SOPs' (Standard Operating Procedures): Detailed and written instructions for performing routine tasks consistently and correctly." // <<< AÑADIDO
-    },
     {
         id: "sys2", section: sections[6], scoringArea: ScoringAreas.SYSTEMS,
         text: "How effectively are key technology systems (e.g., CRM, ERP, Project Management, Financial Software) utilized and integrated to support efficient operations and provide useful data?",

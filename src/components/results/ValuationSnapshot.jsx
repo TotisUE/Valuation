@@ -1,5 +1,53 @@
 // src/components/results/ValuationSnapshot.jsx
 import React from 'react';
+const styles = {
+  container: {
+      padding: '10px', // Espaciado interno
+  },
+  sectionTitle: {
+      fontSize: '1.3em',
+      fontWeight: 'bold',
+      marginBottom: '15px',
+      color: '#333',
+      borderBottom: '1px solid #eee', // Línea divisoria sutil
+      paddingBottom: '8px',
+  },
+  dataRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      marginBottom: '8px',
+      padding: '4px 0', // Espaciado vertical
+  },
+  dataLabel: {
+      fontWeight: 'bold',
+      color: '#555',
+      marginRight: '10px',
+  },
+  dataValue: {
+      textAlign: 'right',
+      color: '#1a1a1a',
+  },
+  explanationText: { // Estilo para los textos educativos
+      fontSize: '0.9em',
+      color: '#666',
+      marginTop: '-4px', // Acercar al dato anterior
+      marginBottom: '12px', // Espacio antes del siguiente dato
+      paddingLeft: '10px', // Pequeña indentación
+      fontStyle: 'italic',
+  },
+  valuationHighlight: { // Para el resultado final
+      fontSize: '2em',
+      fontWeight: 'bold',
+      color: '#27ae60', // Verde
+      margin: '0.5em 0',
+      textAlign: 'center',
+  },
+  valuationCommentary: { // Para el texto del múltiplo final
+      textAlign: 'center',
+      fontSize: '1em',
+      color: '#444',
+  }
+};
 
 function ValuationSnapshot({
   stage,

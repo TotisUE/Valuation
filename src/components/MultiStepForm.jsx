@@ -25,16 +25,17 @@ function calculateScores(formData) {
   qualitativeQuestions.forEach(question => {
     const answer = formData[question.valueKey];
     const area = question.scoringArea;
+
     if (answer && area && question.type === 'mcq' && scores.hasOwnProperty(area) && Array.isArray(question.options)) {
       const selectedOption = question.options.find(opt => opt.text === answer);
       if (selectedOption && typeof selectedOption.score === 'number') {
-        scores[area] += selectedOption.score;
+        scores[area] += selectedOption.score; // <-- Aquí se asigna usando la clave 'area'
       } else if (selectedOption) {
         console.warn(`Score value missing/invalid for Question ID: ${question.id}, Answer: "${answer}"`);
       }
     }
   });
-  console.log("Calculated Scores:", scores);
+  console.log("Calculated Scores (inside calculateScores):", scores); // <-- VERIFICA ESTE LOG
   return scores;
 }
 
