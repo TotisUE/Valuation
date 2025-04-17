@@ -189,6 +189,7 @@ function MultiStepForm() {
             scores: localCalcResult.scores,
            } 
           };
+          
         console.log("Payload to send:", payloadToSend);
         console.log("Sending data to Netlify Function...");
         const response = await fetch('/.netlify/functions/submit-valuation', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadToSend) });
@@ -207,6 +208,19 @@ function MultiStepForm() {
     } finally {
         setIsSubmitting(false);
     }
+    const functionsBaseUrl = import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL || ''; // Proporcionar un fallback vacío
+
+// Construir la URL completa de la función
+const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
+
+console.log(`Sending data to deployed Netlify Function: ${functionUrl}`); // Log para verificar
+
+// Usar la URL completa en fetch
+const response = await fetch(functionUrl, { // <-- USAR functionUrl
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payloadToSend)
+});
   }, [formData]);
 
   const handleNext = useCallback(() => {
