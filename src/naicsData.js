@@ -320,22 +320,13 @@ export const getSubSectors = (sectorName) => {
 
 
 /**
- * Gets the adjustment factor for a given sub-sector name by finding it within the nested structure.
- * @param {string} sectorName - The name of the selected top-level sector.
- * @param {string} subSectorName - The specific name of the sub-sector.
- * @returns {number} - The adjustment factor (e.g., 1.1 or 0.9). Returns 1.0 as default if not found.
+ * Gets the industry adjustment factor. MODIFIED TO ALWAYS RETURN 1.0
+ * @param {string} sectorName - The name of the selected top-level sector (ignored).
+ * @param {string} subSectorName - The specific name of the sub-sector (ignored).
+ * @returns {number} - Always returns 1.0.
  */
 export const getIndustryAdjustmentFactor = (sectorName, subSectorName) => {
-    const sector = naicsSectors.find(s => s.name === sectorName);
-    if (sector && sector.subSectors) {
-        const subSector = sector.subSectors.find(sub => sub.name === subSectorName);
-        if (subSector && typeof subSector.adjustmentFactor === 'number') {
-            // --- AHORA SIEMPRE DEVOLVERÁ 0 (excepto el default) ---
-            return subSector.adjustmentFactor;
-        }
-    }
-    console.warn(`Adjustment factor not found for Sector: "${sectorName}", SubSector: "${subSectorName}". Using default 1.0.`);
-    // --- EL DEFAULT SE MANTIENE EN 1.0 ---
-    // --- SI QUIERES QUE EL DEFAULT TAMBIÉN SEA 0, CAMBIA ESTA LÍNEA ---
-    return 1.0; // Default factor if sector, sub-sector, or factor is not found/valid
+  // Ya no necesitamos buscar en los datos porque queremos ignorar el ajuste.
+  // Simplemente devolvemos 1.0 para que los múltiplos no se modifiquen.
+  return 1.0;
 };
