@@ -77,15 +77,15 @@ const styles = StyleSheet.create({
   roadmapAction: {
       marginLeft: 10, // Indentación para pasos de acción
   },
-  chartImage: {
-    width: 400,       // <-- Ancho fijo en puntos (pt)
-    height: 300,      // <-- Alto fijo en puntos (pt)
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 15,
-    borderWidth: 1, // <-- Añadir un borde temporal
-    borderColor: 'red', // <-- Borde rojo para ver si el espacio se reserva
-  },
+  //chartImage: {
+    //width: 400,       // <-- Ancho fijo en puntos (pt)
+    //height: 300,      // <-- Alto fijo en puntos (pt)
+    //alignSelf: 'center',
+   // marginTop: 10,
+   // marginBottom: 15,
+  //  borderWidth: 1, // <-- Añadir un borde temporal
+   // borderColor: 'red', // <-- Borde rojo para ver si el espacio se reserva
+ // },
   disclaimer: {
       marginTop: 20,
       fontSize: 8,
@@ -242,7 +242,7 @@ function ValuationReportPDF({ calculationResult, formData, chartImage }) {
            <Text style={styles.sectionTitle}>Score Details by Area</Text>
            {chartImage && ( // Mostrar solo si la imagen existe
                <Image
-               src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
+               src={chartImage} 
                style={styles.chartImage} // Usa los estilos simplificados de la Prueba 1
            />
            )}
