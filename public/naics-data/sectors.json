@@ -1,0 +1,22 @@
+[
+    { "id": "11", "name": "Agriculture, Forestry, Fishing and Hunting", "subSectorFile": "agriculture_forestry_fishing_hunting.json" },
+    { "id": "21", "name": "Mining, Quarrying, and Oil and Gas Extraction", "subSectorFile": "mining_quarrying_oil_gas.json" },
+    { "id": "22", "name": "Utilities", "subSectorFile": "utilities.json" },
+    { "id": "23", "name": "Construction", "subSectorFile": "construction.json" },
+    { "id": "31-33", "name": "Manufacturing", "subSectorFile": "manufacturing.json" },
+    { "id": "42", "name": "Wholesale Trade", "subSectorFile": "wholesale_trade.json" },
+    { "id": "44-45", "name": "Retail Trade", "subSectorFile": "retail_trade.json" },
+    { "id": "48-49", "name": "Transportation and Warehousing", "subSectorFile": "transportation_warehousing.json" },
+    { "id": "51", "name": "Information", "subSectorFile": "information.json" },
+    { "id": "52", "name": "Finance and Insurance", "subSectorFile": "finance_insurance.json" },
+    { "id": "53", "name": "Real Estate and Rental and Leasing", "subSectorFile": "real_estate_rental_leasing.json" },
+    { "id": "54", "name": "Professional, Scientific, and Technical Services", "subSectorFile": "professional_scientific_technical.json" },
+    { "id": "55", "name": "Management of Companies and Enterprises", "subSectorFile": "management_companies.json" },
+    { "id": "56", "name": "Administrative and Support and Waste Management and Remediation Services", "subSectorFile": "administrative_support_waste.json" },
+    { "id": "61", "name": "Educational Services", "subSectorFile": "educational_services.json" },
+    { "id": "62", "name": "Health Care and Social Assistance", "subSectorFile": "health_care_social_assistance.json" },
+    { "id": "71", "name": "Arts, Entertainment, and Recreation", "subSectorFile": "arts_entertainment_recreation.json" },
+    { "id": "72", "name": "Accommodation and Food Services", "subSectorFile": "accommodation_food_services.json" },
+    { "id": "81", "name": "Other Services (except Public Administration)", "subSectorFile": "other_services.json" },
+    { "id": "92", "name": "Public Administration", "subSectorFile": "public_administration.json" }
+  ]
