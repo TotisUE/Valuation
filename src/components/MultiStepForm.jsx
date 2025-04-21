@@ -196,55 +196,56 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
 
     // handleSubmit (Llama a los helpers internos)
     const handleSubmit = useCallback(async () => {
-        console.log("Attempting Submission with Data: ", formData);
-        setIsSubmitting(true); setSubmissionResult(null); setCalculationResult(null); setErrors({});
-        let localCalcResult = null;
-        try {
-            // --- Validaciones Finales ---
-            const requiredFinancials = ['currentRevenue', 'ebitda'];
-            const missingFinancials = requiredFinancials.filter(key => formData[key] == null || isNaN(formData[key]));
-            if (missingFinancials.length > 0) throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
-            if (!formData.userEmail) throw new Error("Email is required.");
-            if (!formData.naicsSector) throw new Error("Industry Sector is required.");
-            if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
+      console.log("Attempting Submission with Data: ", formData);
+      setIsSubmitting(true); setSubmissionResult(null); setCalculationResult(null); setErrors({});
+      let localCalcResult = null;
+      try {
+          // --- Validaciones (Mantener) ---
+          const requiredFinancials = ['currentRevenue', 'ebitda'];
+          const missingFinancials = requiredFinancials.filter(key => formData[key] == null || isNaN(formData[key]));
+          if (missingFinancials.length > 0) throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
+          if (!formData.userEmail) throw new Error("Email is required.");
+          if (!formData.naicsSector) throw new Error("Industry Sector is required.");
+          if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
 
-            // --- Cálculos Locales ---
-            console.log("Performing local calculations...");
-            const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
-            const { stage, baseMultiple, maxMultiple } = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
-            const scores = calculateScores(formData); // <<< Llama al helper interno
-            const scorePercentage = calculateMaxPossibleScore() > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / calculateMaxPossibleScore()) : 0;
-            const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
-            const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
-            const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
-            const roadmapData = generateImprovementRoadmap(scores, stage); // <<< Llama al helper interno
-            localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
+          // --- Cálculos Locales (COMENTAR TEMPORALMENTE) ---
+          console.log("Performing local calculations... (SKIPPED FOR DEBUG)");
+          /*  // <<<<<<< INICIO COMENTARIO
+          const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
+          const { stage, baseMultiple, maxMultiple } = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
+          const scores = calculateScores(formData); // calculateScores usa la versión simplificada de isQualitative, puede fallar
+          const scorePercentage = calculateMaxPossibleScore() > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / calculateMaxPossibleScore()) : 0;
+          const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
+          const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
+          const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
+          const roadmapData = generateImprovementRoadmap(scores, stage); // generateImprovementRoadmap también puede fallar
+          localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
+          */ // <<<<<<< FIN COMENTARIO
+          localCalcResult = { stage: 'DebugStage', estimatedValuation: 1000 }; // <<< VALORES FICTICIOS TEMPORALES
 
-            // --- Preparar Payload y Enviar ---
-            const payloadToSend = { formData: formData, results: { stage: localCalcResult.stage, estimatedValuation: localCalcResult.estimatedValuation, finalMultiple: localCalcResult.finalMultiple, scorePercentage: localCalcResult.scorePercentage, scores: localCalcResult.scores } };
-            console.log("Payload to send:", payloadToSend);
-            if (!functionsBaseUrl) throw new Error("Function URL Base not configured.");
-            const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
-            console.log(`Sending data to: ${functionUrl}`);
-            const response = await fetch(functionUrl, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadToSend) });
-            const result = await response.json();
-            if (!response.ok) { console.error("Backend Error:", result); throw new Error(result.error || 'Failed to save submission.'); }
+             // --- Preparar Payload y Enviar (Modificar para enviar menos datos) ---
+             const payloadToSend = {
+              formData: formData,
+              // Enviar resultados ficticios o mínimos ya que no los calculamos
+              results: { stage: localCalcResult?.stage || 'Debug', estimatedValuation: localCalcResult?.estimatedValuation || 0 }
+         };
+         console.log("Payload to send (DEBUG):", payloadToSend);
+         if (!functionsBaseUrl) throw new Error("Function URL Base not configured.");
+         const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
+         console.log(`Sending data to: ${functionUrl}`);
+         const response = await fetch(functionUrl, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadToSend) });
+         const result = await response.json();
+         if (!response.ok) { console.error("Backend Error:", result); throw new Error(result.error || 'Failed to save submission.'); }
 
-            // --- Éxito ---
-            console.log("Submission Success Response:", result);
-            setCalculationResult(localCalcResult);
-            setSubmissionResult({ success: true, message: result.message || "Submission processed!" });
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+         // --- Éxito (Mostrar resultados ficticios) ---
+         console.log("Submission Success Response:", result);
+         setCalculationResult(localCalcResult); // Muestra los datos ficticios
+         setSubmissionResult({ success: true, message: result.message || "Submission processed! (DEBUG MODE)" });
+         localStorage.removeItem(LOCAL_STORAGE_KEY); localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
 
-        } catch (error) {
-            console.error("handleSubmit Error:", error);
-            setSubmissionResult({ success: false, message: `Error: ${error.message}` });
-            setCalculationResult(null);
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [formData, calculateScores, generateImprovementRoadmap]); // Dependencias: formData y los helpers internos
+     } catch (error) { /* ... (manejo de error sin cambios) ... */ }
+     finally { setIsSubmitting(false); }
+ }, [formData]); // Quitar helpers de dependencias si se comentaron
 
     // handlePrevious (Sin cambios)
     const handlePrevious = useCallback(() => { /* ... */ }, [currentStep]);
