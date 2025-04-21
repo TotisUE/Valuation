@@ -1,0 +1,30 @@
+[
+    {
+      "name": "Executive, Legislative, and Other General Government Support",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Justice, Public Order, and Safety Activities",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Administration of Human Resource Programs",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Administration of Housing Programs, Urban Planning, and Community Development",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Administration of Economic Programs",
+      "adjustmentFactor": 0.0
+    },
+    {
+        "name": "Space Research and Technology",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "National Security and International Affairs",
+        "adjustmentFactor": 0.0
+      }
+  ]

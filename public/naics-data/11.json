@@ -1,0 +1,22 @@
+[
+    {
+      "name": "Crop Production",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Animal Production and Aquaculture",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Forestry and Logging",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Fishing, Hunting and Trapping",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Support Activities for Agriculture and Forestry",
+      "adjustmentFactor": 0.0
+    }
+  ]

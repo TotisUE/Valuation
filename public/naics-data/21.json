@@ -1,0 +1,14 @@
+[
+    {
+      "name": "Oil and Gas Extraction",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Mining (except Oil and Gas)",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Support Activities for Mining",
+      "adjustmentFactor": 0.0
+    }
+  ]

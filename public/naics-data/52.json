@@ -1,0 +1,22 @@
+[
+    {
+      "name": "Monetary Authorities-Central Bank",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Credit Intermediation and Related Activities",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Securities, Commodity Contracts, and Other Financial Investments and Related Activities",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Insurance Carriers and Related Activities",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Funds, Trusts, and Other Financial Vehicles",
+      "adjustmentFactor": 0.0
+    }
+  ]

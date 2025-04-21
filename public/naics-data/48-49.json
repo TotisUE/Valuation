@@ -1,0 +1,46 @@
+[
+    {
+      "name": "Air Transportation",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Rail Transportation",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Water Transportation",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Truck Transportation",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Transit and Ground Passenger Transportation",
+      "adjustmentFactor": 0.0
+    },
+    {
+        "name": "Pipeline Transportation",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Scenic and Sightseeing Transportation",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Support Activities for Transportation",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Postal Service",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Couriers and Messengers",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Warehousing and Storage",
+        "adjustmentFactor": 0.0
+      }
+  ]

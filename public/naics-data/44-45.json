@@ -1,0 +1,38 @@
+[
+    {
+      "name": "Motor Vehicle and Parts Dealers",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Building Material and Garden Equipment and Supplies Dealers",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Food and Beverage Retailers",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Furniture, Home Furnishings, Electronics, and Appliance Retailers",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "General Merchandise Retailers",
+      "adjustmentFactor": 0.0
+    },
+        {
+          "name": "Health and Personal Care Retailers",
+          "adjustmentFactor": 0.0
+        },
+        {
+          "name": "Gasoline Stations and Fuel Dealers",
+          "adjustmentFactor": 0.0
+        },
+        {
+          "name": "Clothing, Clothing Accessories, Shoe, and Jewelry Retailers",
+          "adjustmentFactor": 0.0
+        },
+        {
+          "name": "Sporting Goods, Hobby, Musical Instrument, Book, and Miscellaneous Retailers",
+          "adjustmentFactor": 0.0
+        }
+  ]

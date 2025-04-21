@@ -1,0 +1,18 @@
+[
+    {
+      "name": "Ambulatory Health Care Services",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Hospitals",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Nursing and Residential Care Facilities",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Social Assistance",
+      "adjustmentFactor": 0.0
+    }
+  ]

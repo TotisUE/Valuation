@@ -1,0 +1,86 @@
+[
+    {
+      "name": "Food Manufacturing",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Beverage and Tobacco Product Manufacturing",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Textile Mills",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Textile Product Mills",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Apparel Manufacturing",
+      "adjustmentFactor": 0.0
+    },
+    {
+        "name": "Leather and Allied Product Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Wood Product Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Paper Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Printing and Related Support Activities",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Petroleum and Coal Products Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Chemical Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Plastics and Rubber Products Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Nonmetallic Mineral Product Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Primary Metal Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+        "name": "Fabricated Metal Product Manufacturing",
+        "adjustmentFactor": 0.0
+      },
+      {
+          "name": "Machinery Manufacturing",
+          "adjustmentFactor": 0.0
+        },
+        {
+          "name": "Computer and Electronic Product Manufacturing",
+          "adjustmentFactor": 0.0
+        },
+        {
+          "name": "Electrical Equipment, Appliance, and Component Manufacturing",
+          "adjustmentFactor": 0.0
+        },
+        {
+          "name": "Transportation Equipment Manufacturing",
+          "adjustmentFactor": 0.0
+        },
+        {
+          "name": "Furniture and Related Product Manufacturing",
+          "adjustmentFactor": 0.0
+        },
+        {
+            "name": "Miscellaneous Manufacturing",
+            "adjustmentFactor": 0.0
+          }
+  ]

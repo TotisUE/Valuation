@@ -1,0 +1,14 @@
+[
+    {
+      "name": "Merchant Wholesalers, Durable Goods",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Merchant Wholesalers, Nondurable Goods",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Wholesale Trade Agents and Brokers",
+      "adjustmentFactor": 0.0
+    }
+  ]

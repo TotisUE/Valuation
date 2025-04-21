@@ -1,0 +1,26 @@
+[
+    {
+      "name": "Motion Picture and Sound Recording Industries",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Publishing Industries",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Broadcasting and Content Providers",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Telecommunications",
+      "adjustmentFactor": 0.0
+    },
+    {
+      "name": "Computing Infrastructure Providers, Data Processing, Web Hosting, and RelatedServices",
+      "adjustmentFactor": 0.0
+    },
+    {
+        "name": "Web Search Portals, Libraries, Archives, and Other Information Services",
+        "adjustmentFactor": 0.0
+      }
+  ]
