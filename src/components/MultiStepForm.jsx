@@ -314,38 +314,67 @@ function MultiStepForm({ initialFormData, initialSubmissionId }) {
 
     // --- Renderizado principal del formulario ---
     return (
-        <div className="multi-step-form">
-            <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={sections} />
-            <form onSubmit={(e) => e.preventDefault()}>
-                {/* --- PASO 4.7: PASAR PROPS A STEP --- */}
-                <Step
-                    key={currentStep}
-                    stepIndex={currentStep}
-                    questions={currentQuestions}
-                    formData={formData}
-                    handleChange={handleChange}
-                    sectionTitle={currentSectionTitle}
-                    errors={errors}
-                    // --- Props Añadidas para NAICS ---
-                    dynamicOptions={{
-                        sectors: sectors,       // Pasar la lista de sectores cargada
-                        subSectors: subSectors  // Pasar la lista de subsectores (o vacía)
-                    }}
-                    isSubSectorsLoading={isSubSectorsLoading} // Pasar estado de carga
-                    // --- Fin Props Añadidas ---
-                />
-                <Navigation
-                    currentStep={currentStep}
-                    totalSteps={TOTAL_STEPS}
-                    onPrevious={handlePrevious}
-                    onNext={handleNext} // Llama a handleNext (que valida y puede llamar a handleSubmit)
-                    isSubmitting={isSubmitting} // Muestra estado en el botón final
-                />
-                {/* --- SECCIÓN OPCIONAL PARA MAGIC LINK (Si la añadiste antes, puede quedar) --- */}
-                {/* <div style={{ marginTop: '20px', ... }}> ... Botón Send Link ... </div> */}
-            </form>
-        </div>
-    );
-}
+      <div className="multi-step-form">
+          {/* ProgressIndicator se mantiene igual */}
+          <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={sections} />
+
+          {/* El formulario principal */}
+          <form onSubmit={(e) => e.preventDefault()}>
+
+              {/* El componente Step con las nuevas props para NAICS */}
+              <Step
+                  key={currentStep} // Key es importante para que React re-renderice correctamente al cambiar de paso
+                  stepIndex={currentStep}
+                  questions={currentQuestions}
+                  formData={formData}
+                  handleChange={handleChange}
+                  sectionTitle={currentSectionTitle}
+                  errors={errors}
+                  // Props añadidas para NAICS (como en la respuesta anterior)
+                  dynamicOptions={{
+                      sectors: sectors,
+                      subSectors: subSectors
+                  }}
+                  isSubSectorsLoading={isSubSectorsLoading}
+              />
+
+              {/* --- ASEGURARSE QUE NAVIGATION RECIBE TODAS LAS PROPS NECESARIAS --- */}
+              <Navigation
+                  currentStep={currentStep}
+                  totalSteps={TOTAL_STEPS}
+                  onPrevious={handlePrevious} // Pasar la función para el botón "Previous"
+                  onNext={handleNext}       // Pasar la función para el botón "Next/Submit"
+                  isSubmitting={isSubmitting} // Pasar el estado para deshabilitar/cambiar texto del botón final
+              />
+
+              {/* --- SECCIÓN OPCIONAL PARA ENVIAR LINK DE CONTINUACIÓN --- */}
+              {/* Si tenías esta sección y la quieres mantener, inclúyela aquí */}
+              {/* Si no la quieres, simplemente elimina este bloque 'div' */}
+              <div style={{ marginTop: '20px', padding: '15px', border: '1px dashed #ccc', textAlign: 'center' }}>
+                  <p>Need to pause? Send the seller a link to continue later:</p>
+                  <button
+                      type="button"
+                      onClick={handleSendContinuationLink} // Asegúrate que handleSendContinuationLink esté definido arriba
+                      disabled={isSendingLink || !formData.userEmail} // Usa el estado isSendingLink
+                      style={{ padding: '8px 15px', cursor: 'pointer' }}
+                   >
+                      {isSendingLink ? 'Sending...' : 'Send Continuation Link'}
+                   </button>
+                   {sendLinkStatus.message && ( // Asegúrate que sendLinkStatus esté definido arriba
+                      <p style={{ marginTop: '10px', color: sendLinkStatus.error ? 'red' : 'green', fontSize: '0.9em' }}>
+                          {sendLinkStatus.message}
+                      </p>
+                   )}
+              </div>
+              {/* --- FIN SECCIÓN OPCIONAL --- */}
+
+          </form>
+           {/* La lógica para mostrar ResultsDisplay o el error de envío ya está manejada
+               *antes* de este return principal, por lo que no es necesario aquí.
+               * Este return solo se ejecuta cuando NO estamos mostrando los resultados finales.
+           */}
+      </div>
+  );
+} 
 
 export default MultiStepForm;
