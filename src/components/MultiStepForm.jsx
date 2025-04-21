@@ -66,7 +66,7 @@ function MultiStepForm({ initialFormData, initialSubmissionId }) {
 
     // handleChange (Modificado para resetear subsector - Correcto)
     const handleChange = useCallback((event) => { /* ... Tu lógica ... */ }, [errors]);
-
+    console.log('handleChange Called! Name:', event.target.name, 'Value:', event.target.value);
     // handleSubmit (Modificado para enviar ID - Correcto)
     const handleSubmit = useCallback(async () => { /* ... Tu lógica ... */ }, [formData, submissionId]);
 
