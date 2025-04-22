@@ -193,11 +193,11 @@ function Step({
                                     <>
                                         <option value="" disabled>-- Select a Sub-Sector --</option>
                                         {/* Mapear sobre la lista de SUB-SECTORES pasada por props */}
-                                        {dynamicOptions?.subSectors?.map((subSectorName) => (
-                                            <option key={subSectorName} value={subSectorName}>
-                                                {subSectorName}
-                                            </option>
-                                        ))}
+                                        {dynamicOptions?.subSectors?.map((subSector) => ( // <-- Cambia 'subSectorName' a 'subSector'
+    <option key={subSector.name} value={subSector.name}> {/* <-- Usa subSector.name */}
+        {subSector.name} {/* <-- Usa subSector.name */}
+    </option>
+))}
                                         {/* Mostrar mensaje si no se encontraron subsectores para el sector elegido */}
                                         {(!dynamicOptions?.subSectors || dynamicOptions.subSectors.length === 0) && (
                                              <option value="" disabled>(No specific sub-sectors listed for this sector)</option>

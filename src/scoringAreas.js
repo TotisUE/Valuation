@@ -5,7 +5,7 @@ export const ScoringAreas = {
   EXPANSION: "Expansion Capability",        // E
   MARKETING: "Marketing & Brand Equity",    // M
   PROFITABILITY: "Profitability Metrics",     // P (Qualitative aspects)
-  OFFERING: "Offering Excellence",          // O
+  OFFERING_SALES: 'Offering & Sales Effectiveness',         // O
   WORKFORCE: "Workforce & Leadership",      // W
   SYSTEMS: "Execution Systems",           // E (Execution)
   MARKET: "Robust Market Position"       // R
@@ -19,7 +19,7 @@ export const scoringWeights = {
   [ScoringAreas.EXPANSION]: 0.15,
   [ScoringAreas.MARKETING]: 0.15,
   [ScoringAreas.PROFITABILITY]: 0.15,
-  [ScoringAreas.OFFERING]: 0.15,
+  [ScoringAreas.OFFERING_SALES]: 0.15,
   [ScoringAreas.WORKFORCE]: 0.10,
   [ScoringAreas.SYSTEMS]: 0.15,
   [ScoringAreas.MARKET]: 0.15,
@@ -30,7 +30,7 @@ export const initialScores = {
   [ScoringAreas.EXPANSION]: 0,
   [ScoringAreas.MARKETING]: 0,
   [ScoringAreas.PROFITABILITY]: 0,
-  [ScoringAreas.OFFERING]: 0,
+  [ScoringAreas.OFFERING_SALES]: 0,
   [ScoringAreas.WORKFORCE]: 0,
   [ScoringAreas.SYSTEMS]: 0,
   [ScoringAreas.MARKET]: 0,

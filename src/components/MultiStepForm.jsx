@@ -46,40 +46,61 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
 
 
     // --- Effects (Completos) ---
-    useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData)); }, [formData]);
-    useEffect(() => { localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString()); }, [currentStep]);
     useEffect(() => {
-        const fetchSectors = async () => {
-             try {
-                 const response = await fetch('/naics-data/sectors.json');
-                 if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-                 const data = await response.json();
-                 if (Array.isArray(data)) { setSectors(data); }
-                 else { console.error("Sectors data not an array"); setSectors([]); }
-             } catch (error) { console.error("Error fetching sectors:", error); setSectors([]); }
-        };
-        fetchSectors();
-    }, []);
-    useEffect(() => {
-        const loadSubSectors = async (selectedSectorName) => {
-            if (!selectedSectorName || sectors.length === 0) { setSubSectors([]); return; }
-            const selectedSector = sectors.find(s => s.name === selectedSectorName);
-            if (!selectedSector || !selectedSector.subSectorFile) {
-                console.warn(`No subSectorFile for: "${selectedSectorName}"`);
-                setSubSectors([]); setIsSubSectorsLoading(false); return;
-            }
-            setIsSubSectorsLoading(true); setSubSectors([]);
-            const subSectorFilePath = `/naics-data/${selectedSector.subSectorFile}`;
+        const fetchNaicsData = async () => {
+            setIsSubSectorsLoading(true);
+            setSectors([]);
+            setSubSectors([]);
             try {
-                const response = await fetch(subSectorFilePath);
-                 if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-                 const data = await response.json();
-                 if (Array.isArray(data)) { setSubSectors(data); }
-                 else { console.error("Sub-sectors data not an array"); setSubSectors([]); }
-             } catch (error) { console.error(`Error fetching sub-sectors ${subSectorFilePath}:`, error); setSubSectors([]); }
-             finally { setIsSubSectorsLoading(false); }
+                // 1. Carga el archivo único
+                const response = await fetch('/naics-data/all_naics_data.json'); // <-- Apunta al nuevo archivo
+                if (!response.ok) throw new Error(`HTTP error ${response.status} fetching all_naics_data.json`);
+                const allData = await response.json();
+    
+                if (Array.isArray(allData)) {
+                    // 2. Guarda la estructura completa en el estado 'sectors'
+                    setSectors(allData); // 'sectors' contiene [{name, subSectors:[{name},...]}, ...]
+    
+                    // 3. Si ya hay un sector seleccionado, carga sus subsectores
+                    if (formData.naicsSector) {
+                        const selectedSectorData = allData.find(s => s.name === formData.naicsSector);
+                        if (selectedSectorData && Array.isArray(selectedSectorData.subSectors)) {
+                            setSubSectors(selectedSectorData.subSectors);
+                        } else {
+                            console.warn(`Subsectors not found for initially selected sector: ${formData.naicsSector}`);
+                            setSubSectors([]);
+                        }
+                    }
+                } else {
+                    console.error("NAICS data is not an array:", allData);
+                    setSectors([]);
+                }
+            } catch (error) {
+                console.error("Error fetching NAICS data:", error);
+                setSectors([]);
+                setSubSectors([]);
+            } finally {
+                setIsSubSectorsLoading(false);
+            }
         };
-        loadSubSectors(formData.naicsSector);
+        fetchNaicsData();
+    }, []); // <-- Solo se ejecuta una vez
+    
+    // V--- NUEVO useEffect para actualizar subsectores CUANDO CAMBIA el sector ---V
+    useEffect(() => {
+        if (!formData.naicsSector || sectors.length === 0) {
+            setSubSectors([]);
+            return;
+        }
+        // Busca en los datos YA CARGADOS
+        const selectedSectorData = sectors.find(s => s.name === formData.naicsSector);
+    
+        if (selectedSectorData && Array.isArray(selectedSectorData.subSectors)) {
+            setSubSectors(selectedSectorData.subSectors);
+        } else {
+            console.warn(`Subsectors not found for selected sector: ${formData.naicsSector}`);
+            setSubSectors([]);
+        }
     }, [formData.naicsSector, sectors]);
 
 
@@ -132,8 +153,8 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
             [ScoringAreas.WORKFORCE]: { title: "Develop Workforce & Leadership", rationale: "A strong, autonomous management team and clear accountability structures reduce owner dependency, a key risk factor that lowers business value. Engaged, well-managed teams are also more productive.", actionSteps: ["Define the Top 3 Key Performance Indicators (KPIs) for one key role (besides your own).","Hold a dedicated meeting with your key team member(s) to discuss their roles, responsibilities, and how their performance links to business goals.","Identify one key task currently only you perform and create a plan to delegate it within the next quarter."], maxScore: 20 },
             [ScoringAreas.MARKET]: { title: "Solidify Robust Market Position", rationale: "Operating in a growing market with a diversified customer base and a strong competitive position reduces risk and signals significant future potential, boosting valuation multiples.", actionSteps: ["Calculate the percentage of revenue coming from your top 3 customers over the last 12 months.","Clearly write down your Unique Selling Proposition (USP): What makes you different and better than your top 2 competitors?","Research and document the estimated size (TAM) and growth rate of your primary market niche."], maxScore: 25 },
             [ScoringAreas.PROFITABILITY]: { title: "Enhance Profitability Metrics", rationale: "Consistent, predictable, and healthy profit margins are fundamental to business valuation. Higher, more reliable profits directly translate to a higher business value.", actionSteps: ["Review your pricing structure for your main product/service – when was it last updated compared to competitors and costs?","Identify your top 2-3 sources of recurring revenue (or brainstorm ways to create some).","Implement a simple monthly review of your Profit & Loss statement, focusing on Gross Profit Margin trends."], maxScore: 20 },
-            [ScoringAreas.MARKETING]: { title: "Build Marketing & Brand Equity", rationale: "A strong brand and a predictable lead generation engine demonstrate scalable customer acquisition, reducing risk and indicating future growth potential, which buyers value highly.", actionSteps: ["Ask 3 current ideal clients how they found you and why they chose you over alternatives.","Set up basic conversion tracking on your website (e.g., form submissions, calls booked) using Google Analytics or similar.","Define your Cost Per Lead (CPL) for one marketing channel: Total Spend / Number of Leads Generated."], maxScore: 20 },
-            [ScoringAreas.OFFERING]: { title: "Achieve Offering Excellence", rationale: "High customer satisfaction, strong differentiation, and consistent quality build reputation and recurring revenue, reducing churn and supporting premium pricing – all positive valuation factors.", actionSteps: ["Implement a simple customer feedback mechanism (e.g., a 1-question post-service email survey or using Net Promoter Score - NPS).","Map out your core service/product delivery process and identify one key step where quality could be improved or standardized.","Analyze your top competitor's main offering – list 2 things they do well and 1 thing your offering does better."], maxScore: 20 },
+            [ScoringAreas.MARKETING]: { title: "Build Marketing & Brand Equity", rationale: "A strong offering combined with an effective sales process ensures customer value is delivered and captured efficiently, maximizing growth and profitability.",actionSteps: ["Map your current sales process stages from lead generation to closed deal.","Identify key conversion metrics for each stage (e.g., lead-to-opportunity rate, opportunity-to-close rate).","Review customer feedback (from off1/NPS) to identify areas for offering improvement."], maxScore: 20 },
+            [ScoringAreas.OFFERING_SALES]: { title: "Improve Offering & Sales Effectiveness", rationale: "High customer satisfaction, strong differentiation, and consistent quality build reputation and recurring revenue, reducing churn and supporting premium pricing – all positive valuation factors.", actionSteps: ["Implement a simple customer feedback mechanism (e.g., a 1-question post-service email survey or using Net Promoter Score - NPS).","Map out your core service/product delivery process and identify one key step where quality could be improved or standardized.","Analyze your top competitor's main offering – list 2 things they do well and 1 thing your offering does better."], maxScore: 20 },
             [ScoringAreas.EXPANSION]: { title: "Develop Expansion Capability", rationale: "Demonstrating the ability to scale operations into new markets, services, or partnerships significantly increases perceived future value and strategic options for potential acquirers.", actionSteps: ["Outline the basic steps required to launch your service/product in a new neighboring city or region.","Identify one potential strategic partner (e.g., a complementary business) and brainstorm 2 ways you could collaborate.","Assess your current team/systems: What would be the biggest bottleneck if demand doubled next month?"], maxScore: 20 }
         };
         if (!scores || typeof scores !== 'object' || Object.keys(scores).length === 0) { return []; }
@@ -168,77 +189,165 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
     }, [errors]);
 
     const handleSubmit = useCallback(async () => {
-      console.log("handleSubmit: Iniciando..."); // <--- LOG 1
-      setIsSubmitting(true); setSubmissionResult(null); setCalculationResult(null); setErrors({});
-      
-      let localCalcResult = null;
-      try {
-          console.log("handleSubmit: Dentro del try, antes de validaciones."); // <--- LOG 2
-          // --- Validaciones (Mantener) ---
-          const requiredFinancials = ['currentRevenue', 'ebitda'];
-          // ... resto de validaciones ...
-          if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
-          console.log("handleSubmit: Validaciones pasadas."); // <--- LOG 3
+        console.log("handleSubmit: Iniciando..."); // LOG 1
+        setIsSubmitting(true);
+        setSubmissionResult(null);
+        setCalculationResult(null);
+        setErrors({});
+        let localCalcResult = null;
+    
+        try {
+            console.log("handleSubmit: Dentro del try, antes de validaciones."); // LOG 2
+            // --- Validaciones ---
+            if (!formData || !formData.userEmail) throw new Error("Internal Error: formData or userEmail missing before validation."); // <-- Verificación extra
+            const requiredFinancials = ['currentRevenue', 'ebitda'];
+            const missingFinancials = requiredFinancials.filter(key => formData[key] == null || isNaN(formData[key]));
+            if (missingFinancials.length > 0) throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
+            if (!formData.naicsSector) throw new Error("Industry Sector is required.");
+            if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
+            console.log("handleSubmit: Validaciones pasadas."); // LOG 3
+    
+            // --- Aislar error en Cálculos ---
+            console.log("handleSubmit: Preparando para calcular adjEbitda...");
+            if (typeof formData.ebitda === 'undefined' || typeof formData.ebitdaAdjustments === 'undefined') { // <-- Verificación extra
+                 throw new Error("Internal Error: formData.ebitda or ebitdaAdjustments undefined before adjEbitda calc.");
+            }
+            const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
+            console.log("handleSubmit: adjEbitda calculado =", adjEbitda);
+    
+            console.log("handleSubmit: Preparando para llamar a getValuationParameters...");
+            if (typeof getValuationParameters !== 'function') throw new Error("Internal Error: getValuationParameters is not a function."); // <-- Verificación extra
+            const valuationParams = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
+            console.log("handleSubmit: getValuationParameters ejecutado. Resultado:", valuationParams);
+            if (!valuationParams || typeof valuationParams.stage === 'undefined') throw new Error("getValuationParameters did not return expected structure."); // <-- Verificación extra
+            const { stage, baseMultiple, maxMultiple } = valuationParams; // Desestructurar después de verificar
+    
+            console.log("handleSubmit: Preparando para llamar a calculateScores...");
+            if (typeof calculateScores !== 'function') throw new Error("Internal Error: calculateScores is not a function."); // <-- Verificación extra
+            const scores = calculateScores(formData);
+            console.log("handleSubmit: calculateScores ejecutado. Resultado:", scores);
+            if (!scores || typeof scores !== 'object') throw new Error("calculateScores did not return a valid object."); // <-- Verificación extra
+    
+            // --- Resto de los cálculos (puedes añadir más logs si es necesario) ---
+            console.log("handleSubmit: Preparando para calcular scorePercentage...");
+            const maxPossible = calculateMaxPossibleScore();
+            const scorePercentage = maxPossible > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / maxPossible) : 0;
+            const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
+            const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
+            const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
+    
+            console.log("handleSubmit: Preparando para llamar a generateImprovementRoadmap...");
+            if (typeof generateImprovementRoadmap !== 'function') throw new Error("Internal Error: generateImprovementRoadmap is not a function."); // <-- Verificación extra
+            const roadmapData = generateImprovementRoadmap(scores, stage);
+            console.log("handleSubmit: generateImprovementRoadmap ejecutado. Resultado:", roadmapData);
+    
+            // Asignar localCalcResult
+            localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
+            console.log("handleSubmit: localCalcResult final asignado:", localCalcResult);
+    
+            // --- Preparar Payload y Enviar ---
+            console.log("handleSubmit: localCalcResult final asignado:", localCalcResult); // LOG CALC 10
 
-      const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
-      const { stage, baseMultiple, maxMultiple } = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
-      const scores = calculateScores(formData); // calculateScores usa la versión simplificada de isQualitative, puede fallar
-      const scorePercentage = calculateMaxPossibleScore() > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / calculateMaxPossibleScore()) : 0;
-      const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
-      const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
-      const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
-      const roadmapData = generateImprovementRoadmap(scores, stage); // generateImprovementRoadmap también puede fallar
-      localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
-  
-          // --- Cálculos Locales (Comentados) ---
-          // ...
-          //localCalcResult = { stage: 'DebugStage', estimatedValuation: 1000, scores: {} };
-  
-          // --- Preparar Payload y Enviar ---
-          const payloadToSend = {
-            formData: formData,     // Incluye todos los datos del formulario
-            results: localCalcResult // Incluye los resultados (stage, valuation, etc.)
-                                     // Asegúrate que localCalcResult tenga 'stage' y 'scores' como espera el backend
-        };
-          console.log("handleSubmit: Payload preparado:", payloadToSend); // <--- LOG 4
-          if (!functionsBaseUrl) { console.error("handleSubmit: ERROR - functionsBaseUrl no está definida"); throw new Error("Function URL Base not configured."); } // <--- LOG 5 (Error)
-          const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
-          console.log(`handleSubmit: Enviando a: ${functionUrl}`); // <--- LOG 6
-  
-          const response = await fetch(functionUrl, {
-    method: 'POST', // Especifica el método POST
-    headers: {
-        'Content-Type': 'application/json', // Indica que envías JSON
-        // Puedes añadir otros headers si son necesarios
-    },
-    body: JSON.stringify(payloadToSend) // Convierte tu payload a string JSON
-});
-          console.log("handleSubmit: Respuesta fetch recibida, status:", response.status); // <--- LOG 7
-  
-          const result = await response.json(); // Puede fallar si la respuesta no es JSON
-          console.log("handleSubmit: Respuesta parseada a JSON:", result); // <--- LOG 8
-  
-          if (!response.ok) {
-              console.error("handleSubmit: Error de backend:", result); // <--- LOG 9 (Error)
-              throw new Error(result.error || 'Failed to save submission.');
-          }
-  
-          // --- Éxito ---
-          console.log("handleSubmit: Éxito en backend:", result); // <--- LOG 10
-          setCalculationResult(localCalcResult);
-          setSubmissionResult({ success: true, message: result.message || "Submission processed! (DEBUG MODE)" });
-          localStorage.removeItem(LOCAL_STORAGE_KEY); localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
-          console.log("handleSubmit: Estado de éxito actualizado."); // <--- LOG 11
-  
-      } catch (error) {
-          console.error("handleSubmit: ERROR en bloque catch:", error); // <--- LOG 12 (Error)
-          setSubmissionResult({ success: false, message: `Submission Failed: ${error.message}` });
-          // Considera qué hacer con calculationResult aquí, quizás setCalculationResult(null);
-      } finally {
-          console.log("handleSubmit: Bloque finally ejecutado."); // <--- LOG 13
-          setIsSubmitting(false);
-      }
-  }, [formData /*, otras dependencias si las hubiera, como functionsBaseUrl si viniera de props/state */]);
+            // --- Preparar Payload y Enviar (con más logs) ---
+            const payloadToSend = {
+                formData: formData,
+                results: localCalcResult
+            };
+            console.log("handleSubmit: Payload preparado:", payloadToSend); // LOG 4
+    
+            // VVV--- Logs y Verificaciones Adicionales ---VVV
+            console.log("handleSubmit: Verificando functionsBaseUrl...");
+            if (!functionsBaseUrl) {
+                console.error("handleSubmit: ERROR - functionsBaseUrl está vacío o no definido.");
+                throw new Error("Function URL Base not configured."); // Forzar error si falta
+            }
+            console.log("handleSubmit: functionsBaseUrl =", functionsBaseUrl);
+    
+            console.log("handleSubmit: Construyendo functionUrl...");
+            const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
+            console.log("handleSubmit: functionUrl =", functionUrl);
+    
+            console.log("handleSubmit: Intentando JSON.stringify(payloadToSend)...");
+            let requestBody; // Declarar fuera del try/catch interno
+            try {
+                requestBody = JSON.stringify(payloadToSend);
+                 console.log("handleSubmit: JSON.stringify exitoso. Longitud:", requestBody.length);
+             } catch (stringifyError) {
+                 console.error("handleSubmit: ERROR al serializar payloadToSend a JSON:", stringifyError);
+                 // Loguear partes del objeto para ver qué podría fallar
+                 console.error("handleSubmit: formData keys:", Object.keys(formData || {}));
+                 console.error("handleSubmit: results keys:", Object.keys(localCalcResult || {}));
+                 if (localCalcResult && localCalcResult.scores) {
+                    console.error("handleSubmit: results.scores keys:", Object.keys(localCalcResult.scores));
+                 }
+                 if (localCalcResult && localCalcResult.roadmap) {
+                    console.error("handleSubmit: results.roadmap type:", typeof localCalcResult.roadmap, "Length:", localCalcResult.roadmap?.length);
+                 }
+    
+                 throw new Error(`Failed to stringify payload: ${stringifyError.message}`); // Lanza un error claro
+             }
+    
+             console.log("handleSubmit: Preparando para llamar a fetch..."); // <-- Log justo antes
+             // ^^^--- Fin Logs y Verificaciones Adicionales ---^^^
+    
+             const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: requestBody
+            });
+            console.log("handleSubmit: Respuesta fetch recibida, status:", response.status); // LOG 7
+
+            // VVV--- LEER COMO TEXTO PRIMERO ---VVV
+            console.log("handleSubmit: Intentando leer respuesta como texto...");
+            const responseText = await response.text(); // Lee como texto
+            console.log("handleSubmit: Respuesta como TEXTO:", responseText);
+            // AAA--- FIN LEER COMO TEXTO ---AAA
+
+            console.log("handleSubmit: Intentando parsear texto como JSON..."); // Log antes de parsear
+            const result = JSON.parse(responseText); // Intenta parsear el texto manualmente
+            console.log("handleSubmit: Respuesta parseada a JSON:", result); // LOG 8
+
+            // Ya no necesitamos response.ok porque response.text() no falla con 4xx/5xx
+            // if (!response.ok) { ... } // Podemos comentar o ajustar esta lógica si es necesario
+
+            // Verificar el contenido de 'result' parseado
+            if (!result || result.success !== true) { // Asumiendo que el backend SIEMPRE devuelve {success: boolean, ...}
+                 console.error("handleSubmit: Error lógico o de backend detectado en la respuesta parseada:", result);
+                 // Lanza un error basado en el contenido, no solo en response.ok
+                 throw new Error(result.error || 'Backend processing failed or returned unexpected format.');
+            }
+
+
+            // --- Éxito ---
+            console.log("handleSubmit: Éxito en backend:", result); // LOG 10 (Mantenido)
+
+            // Actualizar estados para mostrar resultados
+            console.log("handleSubmit: Intentando actualizar estado con setCalculationResult..."); // Log antes
+            setCalculationResult(localCalcResult);
+            console.log("handleSubmit: setCalculationResult llamado."); // Log después
+
+            console.log("handleSubmit: Intentando actualizar estado con setSubmissionResult..."); // Log antes
+            setSubmissionResult({ success: true, message: result.message || "Submission processed!" }); // Usar mensaje real
+            console.log("handleSubmit: setSubmissionResult llamado."); // Log después
+
+            console.log("handleSubmit: Intentando limpiar localStorage..."); // Log antes
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+            console.log("handleSubmit: localStorage limpiado."); // Log después
+
+            console.log("handleSubmit: Actualizaciones de estado de éxito completadas."); // Log final del bloque try
+
+        } catch (error) {
+            console.error("handleSubmit: ERROR en bloque catch:", error.message);
+            // console.error("handleSubmit: Full error object:", error); // Descomenta si necesitas más detalle del error
+            setSubmissionResult({ success: false, message: `Submission Failed: ${error.message}` });
+            setCalculationResult(null);
+        } finally {
+            console.log("handleSubmit: Bloque finally ejecutado.");
+            setIsSubmitting(false);
+        }
+     // Ajustar dependencias si es necesario (probablemente estén bien)
+    }, [formData, calculateScores, generateImprovementRoadmap, functionsBaseUrl]); // Añadido functionsBaseUrl por si acaso
 
     // handleNext (Usa handleSubmit)
     const handleNext = useCallback(() => {

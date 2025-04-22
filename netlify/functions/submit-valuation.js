@@ -127,7 +127,7 @@ const handler = async (event) => {
   score_expansion: `${scores[ScoringAreas.EXPANSION] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.EXPANSION)}`, // <-- Llamar nueva función
   score_marketing_brand: `${scores[ScoringAreas.MARKETING] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.MARKETING)}`, // <-- Llamar nueva función
   score_profitability: `${scores[ScoringAreas.PROFITABILITY] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.PROFITABILITY)}`, // <-- etc.
-  score_offering: `${scores[ScoringAreas.OFFERING] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.OFFERING)}`,
+  score_offering: `${scores[ScoringAreas.OFFERING_SALES] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.OFFERING_SALES)}`,
   score_workforce: `${scores[ScoringAreas.WORKFORCE] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.WORKFORCE)}`,
   score_systems: `${scores[ScoringAreas.SYSTEMS] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.SYSTEMS)}`,
   score_market: `${scores[ScoringAreas.MARKET] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.MARKET)}`,
