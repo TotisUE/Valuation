@@ -10,7 +10,7 @@ export const sections = [
 ];
 
 // --- MODIFICACIÓN: questionsData envuelto en una función ---
-const getQuestionsDataArray = () => {
+export const getQuestionsDataArray = () => {
     if (!sections || !ScoringAreas) { console.error("Error: Dependencias no listas para getQuestionsDataArray."); return []; }
     const theQuestionsArray = [
         // === Section 0: Your Profile ===

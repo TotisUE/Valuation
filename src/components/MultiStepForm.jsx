@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// --- COMENTAR TEMPORALMENTE ---
-// import { ScoringAreas, initialScores } from '../scoringAreas';
-// import {
-//     sections, getQuestionsForStep, calculateMaxPossibleScore,
-//     getValuationParameters,
-//     calculateMaxScoreForArea
-// } from '../questions';
-// --- FIN COMENTARIOS ---
+import { ScoringAreas, initialScores } from '../scoringAreas';
+import {sections, getQuestionsForStep, calculateMaxPossibleScore, getValuationParameters, calculateMaxScoreForArea} from '../questions';
 import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
 import ResultsDisplay from './results/ResultsDisplay';
 // --- Constantes ---
-// const TOTAL_STEPS = sections.length;
-const TOTAL_STEPS = 1; // <<< Valor fijo temporal
+const TOTAL_STEPS = sections.length;
+//const TOTAL_STEPS = 1; // <<< Valor fijo temporal
 const LOCAL_STORAGE_KEY = 'valuationFormData';
 const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 
@@ -173,6 +167,79 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
         if (errors[name]) { setErrors(prevErrors => { const newErrors = { ...prevErrors }; delete newErrors[name]; return newErrors; }); }
     }, [errors]);
 
+    const handleSubmit = useCallback(async () => {
+      console.log("handleSubmit: Iniciando..."); // <--- LOG 1
+      setIsSubmitting(true); setSubmissionResult(null); setCalculationResult(null); setErrors({});
+      
+      let localCalcResult = null;
+      try {
+          console.log("handleSubmit: Dentro del try, antes de validaciones."); // <--- LOG 2
+          // --- Validaciones (Mantener) ---
+          const requiredFinancials = ['currentRevenue', 'ebitda'];
+          // ... resto de validaciones ...
+          if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
+          console.log("handleSubmit: Validaciones pasadas."); // <--- LOG 3
+
+      const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
+      const { stage, baseMultiple, maxMultiple } = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
+      const scores = calculateScores(formData); // calculateScores usa la versión simplificada de isQualitative, puede fallar
+      const scorePercentage = calculateMaxPossibleScore() > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / calculateMaxPossibleScore()) : 0;
+      const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
+      const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
+      const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
+      const roadmapData = generateImprovementRoadmap(scores, stage); // generateImprovementRoadmap también puede fallar
+      localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
+  
+          // --- Cálculos Locales (Comentados) ---
+          // ...
+          //localCalcResult = { stage: 'DebugStage', estimatedValuation: 1000, scores: {} };
+  
+          // --- Preparar Payload y Enviar ---
+          const payloadToSend = {
+            formData: formData,     // Incluye todos los datos del formulario
+            results: localCalcResult // Incluye los resultados (stage, valuation, etc.)
+                                     // Asegúrate que localCalcResult tenga 'stage' y 'scores' como espera el backend
+        };
+          console.log("handleSubmit: Payload preparado:", payloadToSend); // <--- LOG 4
+          if (!functionsBaseUrl) { console.error("handleSubmit: ERROR - functionsBaseUrl no está definida"); throw new Error("Function URL Base not configured."); } // <--- LOG 5 (Error)
+          const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
+          console.log(`handleSubmit: Enviando a: ${functionUrl}`); // <--- LOG 6
+  
+          const response = await fetch(functionUrl, {
+    method: 'POST', // Especifica el método POST
+    headers: {
+        'Content-Type': 'application/json', // Indica que envías JSON
+        // Puedes añadir otros headers si son necesarios
+    },
+    body: JSON.stringify(payloadToSend) // Convierte tu payload a string JSON
+});
+          console.log("handleSubmit: Respuesta fetch recibida, status:", response.status); // <--- LOG 7
+  
+          const result = await response.json(); // Puede fallar si la respuesta no es JSON
+          console.log("handleSubmit: Respuesta parseada a JSON:", result); // <--- LOG 8
+  
+          if (!response.ok) {
+              console.error("handleSubmit: Error de backend:", result); // <--- LOG 9 (Error)
+              throw new Error(result.error || 'Failed to save submission.');
+          }
+  
+          // --- Éxito ---
+          console.log("handleSubmit: Éxito en backend:", result); // <--- LOG 10
+          setCalculationResult(localCalcResult);
+          setSubmissionResult({ success: true, message: result.message || "Submission processed! (DEBUG MODE)" });
+          localStorage.removeItem(LOCAL_STORAGE_KEY); localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+          console.log("handleSubmit: Estado de éxito actualizado."); // <--- LOG 11
+  
+      } catch (error) {
+          console.error("handleSubmit: ERROR en bloque catch:", error); // <--- LOG 12 (Error)
+          setSubmissionResult({ success: false, message: `Submission Failed: ${error.message}` });
+          // Considera qué hacer con calculationResult aquí, quizás setCalculationResult(null);
+      } finally {
+          console.log("handleSubmit: Bloque finally ejecutado."); // <--- LOG 13
+          setIsSubmitting(false);
+      }
+  }, [formData /*, otras dependencias si las hubiera, como functionsBaseUrl si viniera de props/state */]);
+
     // handleNext (Usa handleSubmit)
     const handleNext = useCallback(() => {
         console.log("handleNext called. Current Step:", currentStep);
@@ -192,65 +259,41 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
         }
     }, [currentStep, formData, handleSubmit]); // handleSubmit es dependencia
 
-    // handleSubmit (Llama a los helpers internos)
-    const handleSubmit = useCallback(async () => {
-      console.log("Attempting Submission with Data: ", formData);
-      setIsSubmitting(true); setSubmissionResult(null); setCalculationResult(null); setErrors({});
-      let localCalcResult = null;
-      try {
-          // --- Validaciones (Mantener) ---
-          const requiredFinancials = ['currentRevenue', 'ebitda'];
-          const missingFinancials = requiredFinancials.filter(key => formData[key] == null || isNaN(formData[key]));
-          if (missingFinancials.length > 0) throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
-          if (!formData.userEmail) throw new Error("Email is required.");
-          if (!formData.naicsSector) throw new Error("Industry Sector is required.");
-          if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
+    const handlePrevious = useCallback(() => {
+      if (currentStep > 0) {
+          setCurrentStep(prevStep => prevStep - 1);
+          setErrors({});
+      }
+  }, [currentStep]); 
 
-          // --- Cálculos Locales (COMENTAR TEMPORALMENTE) ---
-          console.log("Performing local calculations... (SKIPPED FOR DEBUG)");
-          /*  // <<<<<<< INICIO COMENTARIO
-          const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
-          const { stage, baseMultiple, maxMultiple } = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
-          const scores = calculateScores(formData); // calculateScores usa la versión simplificada de isQualitative, puede fallar
-          const scorePercentage = calculateMaxPossibleScore() > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / calculateMaxPossibleScore()) : 0;
-          const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
-          const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
-          const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
-          const roadmapData = generateImprovementRoadmap(scores, stage); // generateImprovementRoadmap también puede fallar
-          localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
-          */ // <<<<<<< FIN COMENTARIO
-          localCalcResult = { stage: 'DebugStage', estimatedValuation: 1000 }; // <<< VALORES FICTICIOS TEMPORALES
+  const handleStartOver = useCallback(() => {
+    console.log("handleStartOver called"); // Log para confirmar
+    // 1. Limpiar resultados para volver a mostrar el formulario
+    setSubmissionResult(null);
+    setCalculationResult(null);
+    // 2. Reiniciar el paso al inicio
+    setCurrentStep(0);
+    // 3. Reiniciar los datos del formulario (usa la misma lógica inicial)
+    const defaultStructure = { currentRevenue: null, grossProfit: null, ebitda: null, ebitdaAdjustments: 0, userEmail: '', naicsSector: '', naicsSubSector: '' };
+    setFormData(defaultStructure);
+    // 4. Limpiar errores
+    setErrors({});
+    // 5. Limpiar localStorage (importante para que no recargue datos viejos)
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+}, []);
 
-             // --- Preparar Payload y Enviar (Modificar para enviar menos datos) ---
-             const payloadToSend = {
-              formData: formData,
-              // Enviar resultados ficticios o mínimos ya que no los calculamos
-              results: { stage: localCalcResult?.stage || 'Debug', estimatedValuation: localCalcResult?.estimatedValuation || 0 }
-         };
-         console.log("Payload to send (DEBUG):", payloadToSend);
-         if (!functionsBaseUrl) throw new Error("Function URL Base not configured.");
-         const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
-         console.log(`Sending data to: ${functionUrl}`);
-         const response = await fetch(functionUrl, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadToSend) });
-         const result = await response.json();
-         if (!response.ok) { console.error("Backend Error:", result); throw new Error(result.error || 'Failed to save submission.'); }
-
-         // --- Éxito (Mostrar resultados ficticios) ---
-         console.log("Submission Success Response:", result);
-         setCalculationResult(localCalcResult); // Muestra los datos ficticios
-         setSubmissionResult({ success: true, message: result.message || "Submission processed! (DEBUG MODE)" });
-         localStorage.removeItem(LOCAL_STORAGE_KEY); localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
-
-     } catch (error) { /* ... (manejo de error sin cambios) ... */ }
-     finally { setIsSubmitting(false); }
- }, [formData]); // Quitar helpers de dependencias si se comentaron
-
-    // handlePrevious (Sin cambios)
-    const handlePrevious = useCallback(() => { /* ... */ }, [currentStep]);
-    // handleStartOver (Sin cambios)
-    const handleStartOver = useCallback(() => { /* ... */ }, []);
-    // handleBackToEdit (Sin cambios)
-    const handleBackToEdit = useCallback(() => { /* ... */ }, []);
+const handleBackToEdit = useCallback(() => {
+  console.log("handleBackToEdit called"); // Log para confirmar
+  // Simplemente limpia los resultados para que el renderizado condicional
+  // vuelva a mostrar el formulario en el último paso donde estaba.
+  // Los datos de formData y currentStep se mantienen.
+  setSubmissionResult(null);
+  setCalculationResult(null);
+  // Opcional: ¿Quizás deberíamos limpiar el localStorage aquí también
+  // si no queremos que se guarde el estado de "resultados mostrados"?
+  // Depende del comportamiento deseado. Por ahora lo dejamos fuera.
+}, []);
 
 
     // --- Get Questions and Title (Sin cambios) ---

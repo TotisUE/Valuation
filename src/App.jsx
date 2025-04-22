@@ -1,26 +1,21 @@
 // src/App.jsx
 import React from 'react';
-// --- DESCOMENTAR ESTA LÍNEA ---
-import MultiStepForm from './components/MultiStepForm'; // Ensure this path is correct
-import './App.css';
+import MultiStepForm from './components/MultiStepForm'; // Asegúrate que la ruta sea correcta
+import './App.css'; // Restaura la importación de CSS si la necesitas
 
 function App() {
+  // Asegúrate de que estás renderizando el MultiStepForm aquí
+  // Por ejemplo:
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Business Valuation Questionnaire</h1>
-        {/* Quitar mensaje de prueba */}
-      </header>
-      <main>
-        {/* --- DESCOMENTAR ESTA LÍNEA --- */}
-        <MultiStepForm />
-         {/* Quitar mensaje de prueba */}
-      </main>
-      <footer>
-        <p>© {new Date().getFullYear()}</p>
-      </footer>
+      {/* Puedes tener otros elementos aquí, como un encabezado */}
+      <MultiStepForm />
+      {/* Puedes tener otros elementos aquí, como un pie de página */}
     </div>
   );
+
+  // O si tu código original era diferente, restáuralo
+  // pero asegúrate de que MultiStepForm se importa y se usa.
 }
 
 export default App;

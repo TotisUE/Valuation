@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 // --- RESEND --- Importar Resend
 import { Resend } from 'resend';
 import { ScoringAreas } from '../../src/scoringAreas.js'; // Ruta CORREGIDA (dos niveles arriba, luego a src)
-import { questionsData } from '../../src/questions.js';
+import { getQuestionsDataArray } from '../../src/questions.js';
 
 // Helper ActiveCampaign (sin cambios)
 async function activeCampaignApiCall(apiUrl, apiKey, endpoint, method = 'GET', body = null) {
@@ -45,7 +45,10 @@ async function activeCampaignApiCall(apiUrl, apiKey, endpoint, method = 'GET', b
 }
 
 const handler = async (event) => {
+  console.log("--- submit-valuation function invoked ---"); // <-- NUEVO LOG
+  console.log("Received event.httpMethod:", event.httpMethod); // <-- NUEVO LOG
   if (event.httpMethod !== 'POST') {
+    console.log("Method is NOT POST, returning 405."); // <-- NUEVO LOG (opcional)
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }), headers: { 'Allow': 'POST' } };
   }
 
@@ -94,17 +97,20 @@ const handler = async (event) => {
 
     const calculateMaxScoreForArea = (areaName) => {
       if (!areaName) return 0;
-      // Filtrar questionsData para obtener solo las cualitativas
-      const qualitativeQuestions = questionsData.filter(q => q && q.scoringArea && Object.values(ScoringAreas).includes(q.scoringArea));
-  
+      // <<< CAMBIO AQUÍ: Llama a la función para obtener el array >>>
+      const allQuestions = getQuestionsDataArray();
+      if (!Array.isArray(allQuestions)) { // Buena idea añadir una verificación
+         console.error("calculateMaxScoreForArea: getQuestionsDataArray did not return an array");
+         return 0;
+      }
+    
+      // Filtrar allQuestions (antes 'questionsData') para obtener solo las cualitativas
+      const qualitativeQuestions = allQuestions.filter(q => q && q.scoringArea && Object.values(ScoringAreas).includes(q.scoringArea));
+    
       return qualitativeQuestions
         .filter(q => q.scoringArea === areaName)
         .reduce((total, q) => {
-          if (q.type === 'mcq' && q.options && q.options.length > 0) {
-            const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
-            return total + maxOptionScore;
-          }
-          return total;
+          // ... (resto de la función reduce igual) ...
         }, 0);
     };
 
