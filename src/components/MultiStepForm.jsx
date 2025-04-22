@@ -14,7 +14,9 @@ const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 // --- Leer VITE_NETLIFY_FUNCTIONS_BASE_URL ---
 const functionsBaseUrl = import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL || '';
 console.log("[MultiStepForm] Valor directo de import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL:", import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL);
+console.log("[MultiStepForm COMPONENT SCOPE] Valor directo:", import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL); 
 console.log("[MultiStepForm] Valor asignado a functionsBaseUrl:", functionsBaseUrl);
+console.log("[MultiStepForm COMPONENT SCOPE] functionsBaseUrl:", functionsBaseUrl);
 if (!functionsBaseUrl && import.meta.env.MODE !== 'test') {
     console.warn("MultiStepForm: VITE_NETLIFY_FUNCTIONS_BASE_URL not defined.");
 }
