@@ -12,11 +12,11 @@ const LOCAL_STORAGE_KEY = 'valuationFormData';
 const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 
 // --- Leer VITE_NETLIFY_FUNCTIONS_BASE_URL ---
-const functionsBaseUrl = import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL || '';
-console.log("[MultiStepForm] Valor directo de import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL:", import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL);
-console.log("[MultiStepForm COMPONENT SCOPE] Valor directo:", import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL); 
-console.log("[MultiStepForm] Valor asignado a functionsBaseUrl:", functionsBaseUrl);
-console.log("[MultiStepForm COMPONENT SCOPE] functionsBaseUrl:", functionsBaseUrl);
+//const functionsBaseUrl = import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL || '';
+//console.log("[MultiStepForm] Valor directo de import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL:", import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL);
+//console.log("[MultiStepForm COMPONENT SCOPE] Valor directo:", import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL); 
+//console.log("[MultiStepForm] Valor asignado a functionsBaseUrl:", functionsBaseUrl);
+//console.log("[MultiStepForm COMPONENT SCOPE] functionsBaseUrl:", functionsBaseUrl);
 if (!functionsBaseUrl && import.meta.env.MODE !== 'test') {
     console.warn("MultiStepForm: VITE_NETLIFY_FUNCTIONS_BASE_URL not defined.");
 }
@@ -248,58 +248,44 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
             // Asignar localCalcResult
             localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
             console.log("handleSubmit: localCalcResult final asignado:", localCalcResult);
-    
-            // --- Preparar Payload y Enviar ---
-            console.log("handleSubmit: localCalcResult final asignado:", localCalcResult); // LOG CALC 10
 
-            // --- Preparar Payload y Enviar (con más logs) ---
-            const payloadToSend = {
-                formData: formData,
-                results: localCalcResult
-            };
-            console.log("handleSubmit: Payload preparado:", payloadToSend); // LOG 4
+            // --- Preparar Payload y Enviar ---
+            const payloadToSend = { formData: formData, results: localCalcResult };
+            console.log("handleSubmit: Payload preparado:", payloadToSend);
     
-            // VVV--- Logs y Verificaciones Adicionales ---VVV
-            console.log("handleSubmit: Verificando functionsBaseUrl...");
-            if (!functionsBaseUrl) {
-                console.error("handleSubmit: ERROR - functionsBaseUrl está vacío o no definido.");
-                throw new Error("Function URL Base not configured."); // Forzar error si falta
+            // VVV--- LÓGICA CONDICIONAL PARA functionUrl ---VVV
+            let functionUrl;
+            const functionPath = '/.netlify/functions/submit-valuation'; // Ruta relativa siempre usada
+    
+            if (import.meta.env.DEV) {
+                // **En Desarrollo (netlify dev):** Leer la base del .env y añadir la ruta
+                const devBaseUrl = import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL || ''; // Leer SÓLO para DEV
+                console.log("handleSubmit [DEV]: Leyendo VITE_NETLIFY_FUNCTIONS_BASE_URL para devBaseUrl:", devBaseUrl);
+                if (!devBaseUrl) {
+                    console.error("handleSubmit [DEV]: VITE_NETLIFY_FUNCTIONS_BASE_URL no definida en .env para desarrollo local!");
+                    throw new Error("Function URL Base not configured for local development in .env file.");
+                }
+                functionUrl = `${devBaseUrl}${functionPath}`;
+            } else {
+                // **En Producción (desplegado en Netlify):** Usar SÓLO la ruta relativa
+                functionUrl = functionPath;
+                console.log("handleSubmit [PROD]: Usando ruta relativa para producción.");
             }
-            console.log("handleSubmit: functionsBaseUrl =", functionsBaseUrl);
-    
-            console.log("handleSubmit: Construyendo functionUrl...");
-            const functionUrl = `${functionsBaseUrl}/.netlify/functions/submit-valuation`;
-            console.log("handleSubmit: functionUrl =", functionUrl);
+            console.log(`handleSubmit: URL final de la función: ${functionUrl}`); // Log de la URL final
+            // AAA--- FIN LÓGICA CONDICIONAL ---AAA
     
             console.log("handleSubmit: Intentando JSON.stringify(payloadToSend)...");
-            let requestBody; // Declarar fuera del try/catch interno
-            try {
-                requestBody = JSON.stringify(payloadToSend);
-                 console.log("handleSubmit: JSON.stringify exitoso. Longitud:", requestBody.length);
-             } catch (stringifyError) {
-                 console.error("handleSubmit: ERROR al serializar payloadToSend a JSON:", stringifyError);
-                 // Loguear partes del objeto para ver qué podría fallar
-                 console.error("handleSubmit: formData keys:", Object.keys(formData || {}));
-                 console.error("handleSubmit: results keys:", Object.keys(localCalcResult || {}));
-                 if (localCalcResult && localCalcResult.scores) {
-                    console.error("handleSubmit: results.scores keys:", Object.keys(localCalcResult.scores));
-                 }
-                 if (localCalcResult && localCalcResult.roadmap) {
-                    console.error("handleSubmit: results.roadmap type:", typeof localCalcResult.roadmap, "Length:", localCalcResult.roadmap?.length);
-                 }
+            let requestBody = JSON.stringify(payloadToSend); // Simplificado, quitado el try/catch extra aquí
+            console.log("handleSubmit: JSON.stringify exitoso. Longitud:", requestBody.length);
     
-                 throw new Error(`Failed to stringify payload: ${stringifyError.message}`); // Lanza un error claro
-             }
+            console.log("handleSubmit: Preparando para llamar a fetch...");
     
-             console.log("handleSubmit: Preparando para llamar a fetch..."); // <-- Log justo antes
-             // ^^^--- Fin Logs y Verificaciones Adicionales ---^^^
-    
-             const response = await fetch(functionUrl, {
+            const response = await fetch(functionUrl, { // <-- Usa la functionUrl condicional
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: requestBody
             });
-            console.log("handleSubmit: Respuesta fetch recibida, status:", response.status); // LOG 7
+            console.log("handleSubmit: Respuesta fetch recibida, status:", response.status);
 
             // VVV--- LEER COMO TEXTO PRIMERO ---VVV
             console.log("handleSubmit: Intentando leer respuesta como texto...");
