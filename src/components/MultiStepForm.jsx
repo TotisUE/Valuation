@@ -5,6 +5,8 @@ import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
 import ResultsDisplay from './results/ResultsDisplay';
+import { getFunctionsBaseUrl } from '../utils/urlHelpers';
+
 // --- Constantes ---
 const TOTAL_STEPS = sections.length;
 const LOCAL_STORAGE_KEY = 'valuationFormData';
@@ -23,15 +25,27 @@ if (!functionsBaseUrl && import.meta.env.MODE !== 'test') {
 // ^^^--- FIN BLOQUE ELIMINADO/COMENTADO ---^^^
 
 // --- Componente Principal ---
-function MultiStepForm() { // Sin props de Magic Link por ahora
+function MultiStepForm({ initialFormData = null }) { // Sin props de Magic Link por ahora
 
     // --- Estados (Completos) ---
     const [currentStep, setCurrentStep] = useState(() => {
+        if (initialFormData) {
+            console.log("MultiStepForm: Received initialFormData, starting at step 0.");
+            localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+            return 0; // CORRECCIÓN: Simplemente devolver 0
+        }
         const savedStep = localStorage.getItem(LOCAL_STORAGE_STEP_KEY);
         const initialStep = savedStep ? parseInt(savedStep, 10) : 0;
         return !isNaN(initialStep) && initialStep >= 0 && initialStep < TOTAL_STEPS ? initialStep : 0;
     });
     const [formData, setFormData] = useState(() => {
+        if (initialFormData) {
+            console.log("MultiStepForm: Initializing state with initialFormData:", initialFormData);
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            const defaultStructure = { currentRevenue: null, grossProfit: null, ebitda: null, ebitdaAdjustments: 0, userEmail: '', naicsSector: '', naicsSubSector: '' };
+            return { ...defaultStructure, ...initialFormData };
+        }
+        console.log("MultiStepForm: Initializing state from localStorage (if available).");
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
         const defaultStructure = { currentRevenue: null, grossProfit: null, ebitda: null, ebitdaAdjustments: 0, userEmail: '', naicsSector: '', naicsSubSector: '' };
         let baseData = {};
@@ -45,6 +59,8 @@ function MultiStepForm() { // Sin props de Magic Link por ahora
     const [sectors, setSectors] = useState([]);
     const [subSectors, setSubSectors] = useState([]);
     const [isSubSectorsLoading, setIsSubSectorsLoading] = useState(false);
+    const [isSendingLink, setIsSendingLink] = useState(false); // Nuevo estado
+const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: '' }); // Para feedback
 
 
     // --- Effects (Completos - NAICS Refactorizados) ---
@@ -337,7 +353,95 @@ const handleBackToEdit = useCallback(() => {
   setCalculationResult(null);
 }, []);
 
+// --- Nuevo Handler ---
+const handleSaveAndSendLink = useCallback(async () => {
+    console.log("handleSaveAndSendLink: Iniciando...");
+    setIsSendingLink(true);
+    setSendLinkResult({ status: 'idle', message: '' }); // Resetear feedback
 
+    // --- Validación rápida: ¿Tenemos email? ---
+    if (!formData.userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.userEmail)) {
+        console.warn("handleSaveAndSendLink: Email inválido o faltante en formData.");
+        setSendLinkResult({ status: 'error', message: 'Please enter a valid client email first.' });
+        setIsSendingLink(false);
+        return;
+    }
+
+    // Obtener base de URL de funciones
+    const functionsBase = getFunctionsBaseUrl(); // Usa la función helper que ya tenemos
+    const functionsPath = '/.netlify/functions';
+    let currentAssessmentId = null; // Necesitaremos el ID
+
+    try {
+        // --- Paso 1: Guardar Progreso (Upsert) ---
+        // Necesitamos saber si ya existe un ID para esta sesión.
+        // Por ahora, asumimos que si no está en formData, no existe.
+        // Una mejor approche sería guardar el ID en el estado cuando se crea/guarda por primera vez.
+        // Simplificación: Lo pasamos como null, save-partial se encargará de crear/actualizar
+        // y devolverá el ID correcto.
+        console.log("handleSaveAndSendLink: Saving partial assessment...");
+        const savePayload = {
+            assessment_id: formData.assessmentId || null, // ¿Guardamos el ID en formData? Si no, enviar null
+            userEmail: formData.userEmail,
+            formData: formData
+        };
+        const saveUrl = `${functionsBase}${functionsPath}/save-partial-assessment`;
+        const saveResponse = await fetch(saveUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(savePayload)
+        });
+
+        if (!saveResponse.ok) {
+            const errorText = await saveResponse.text(); // Leer error si no es OK
+            throw new Error(`Failed to save progress (Status ${saveResponse.status}): ${errorText.substring(0,150)}`);
+        }
+
+        const saveResult = await saveResponse.json();
+        if (!saveResult.success || !saveResult.assessment_id) {
+            throw new Error(saveResult.error || 'Failed to save progress or get assessment ID.');
+        }
+
+        currentAssessmentId = saveResult.assessment_id;
+        console.log(`handleSaveAndSendLink: Progress saved. Assessment ID: ${currentAssessmentId}`);
+        // Opcional: Guardar el ID en el estado formData para futuras llamadas
+        // setFormData(prev => ({ ...prev, assessmentId: currentAssessmentId }));
+
+        // --- Paso 2: Enviar el Link ---
+        console.log("handleSaveAndSendLink: Sending continuation link...");
+        const sendPayload = {
+            assessment_id: currentAssessmentId,
+            userEmail: formData.userEmail
+        };
+        const sendUrl = `${functionsBase}${functionsPath}/send-continuation-link`;
+        const sendResponse = await fetch(sendUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sendPayload)
+        });
+
+         if (!sendResponse.ok) {
+            const errorText = await sendResponse.text();
+            throw new Error(`Failed to send link (Status ${sendResponse.status}): ${errorText.substring(0,150)}`);
+        }
+
+        const sendResult = await sendResponse.json();
+        if (!sendResult.success) {
+            throw new Error(sendResult.error || 'Failed to send continuation link.');
+        }
+
+        // --- Éxito Total ---
+        console.log("handleSaveAndSendLink: Link sent successfully.");
+        setSendLinkResult({ status: 'success', message: `Continuation link sent to ${formData.userEmail}` });
+
+    } catch (error) {
+        console.error("handleSaveAndSendLink: ERROR:", error);
+        setSendLinkResult({ status: 'error', message: error.message || 'An unexpected error occurred.' });
+    } finally {
+        setIsSendingLink(false); // Terminar estado de carga
+    }
+
+}, [formData]);
     // --- Get Questions and Title ---
     // Movido getQuestionsForStep aquí para asegurar que se llame con el currentStep actualizado
     const currentQuestions = getQuestionsForStep(currentStep);
@@ -375,6 +479,9 @@ const handleBackToEdit = useCallback(() => {
                     onPrevious={handlePrevious}
                     onNext={handleNext}
                     isSubmitting={isSubmitting}
+                    onSaveAndSendLink={handleSaveAndSendLink}
+                    isSendingLink={isSendingLink}
+                    sendLinkResult={sendLinkResult}
                 />
             </form>
         </div>

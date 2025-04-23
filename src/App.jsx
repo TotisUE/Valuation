@@ -1,21 +1,30 @@
 // src/App.jsx
 import React from 'react';
-import MultiStepForm from './components/MultiStepForm'; // Asegúrate que la ruta sea correcta
-import './App.css'; // Restaura la importación de CSS si la necesitas
+import { Routes, Route } from 'react-router-dom';
+import MultiStepForm from './components/MultiStepForm';
+import AssessmentContinuation from './components/AssessmentContinuation'; // Aún comentado
+import './App.css';
 
 function App() {
-  // Asegúrate de que estás renderizando el MultiStepForm aquí
-  // Por ejemplo:
   return (
     <div className="App">
-      {/* Puedes tener otros elementos aquí, como un encabezado */}
-      <MultiStepForm />
-      {/* Puedes tener otros elementos aquí, como un pie de página */}
+      {/* <Header /> */}
+      <Routes>
+        <Route path="/" element={<MultiStepForm />} />
+        <Route
+          path="/assessment/continue"
+          element={
+            <div>
+             element={<AssessmentContinuation />}
+            </div>
+          }
+        />
+        {/* <Route path="*" element={<div><h2>Page Not Found</h2></div>} /> */}
+      </Routes>
+      {/* <Footer /> */}
     </div>
   );
-
-  // O si tu código original era diferente, restáuralo
-  // pero asegúrate de que MultiStepForm se importa y se usa.
 }
 
 export default App;
+// -----------> ¡NADA MÁS DESPUÉS DE ESTA LÍNEA! <-----------
