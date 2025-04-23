@@ -25,3 +25,8 @@
   # Puedes descomentar la siguiente línea si encuentras problemas de compatibilidad
   # o quieres forzar el uso de esbuild (más moderno y rápido).
   # node_bundler = "esbuild"
+  
+  [[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
