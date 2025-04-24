@@ -15,8 +15,8 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
-    padding: 30, // Margen de la página
-    fontFamily: 'Helvetica', // Fuente por defecto
+    padding: 30,
+    fontFamily: 'Helvetica',
     fontSize: 10,
     lineHeight: 1.4,
   },
@@ -25,7 +25,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
     color: '#333',
-    // fontFamily: 'Oswald', // Si registraste la fuente
   },
   section: {
     marginBottom: 15,
@@ -35,7 +34,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Usar 'bold' directamente
     marginBottom: 8,
     color: '#1a1a1a',
   },
@@ -50,13 +49,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
+    // Añadir wrap para textos largos (opcional, puede necesitar más ajustes)
+    // flexWrap: 'wrap',
   },
   label: {
     fontWeight: 'bold',
     color: '#555555',
+    // width: '40%', // Opcional: asignar ancho fijo si hay problemas de alineación
   },
   value: {
     textAlign: 'right',
+    // width: '60%', // Opcional: asignar ancho fijo
+    // flexShrink: 1, // Permitir que el texto se ajuste si es muy largo
   },
   textBlock: {
       marginBottom: 5,
@@ -118,35 +122,40 @@ const formatScore = (scoreString) => {
 }
 
 // --- El Componente del Documento PDF ---
+// --- El Componente del Documento PDF ---
 function ValuationReportPDF({ calculationResult, formData, chartImage }) {
 
-  console.log("--- ValuationReportPDF: chartImage prop received (snippet):", chartImage ? chartImage.substring(0, 60) + '...' : 'NO IMAGE PROP');
+  console.log("--- ValuationReportPDF: Rendering PDF. chartImage received:", !!chartImage);
 
-  // Extraer datos con valores por defecto por seguridad
+  // Extraer datos de calculationResult (sin cambios)
   const {
-    stage = 'N/A',
-    adjEbitda = 0,
-    baseMultiple = 0,
-    maxMultiple = 0,
-    finalMultiple = 0,
-    estimatedValuation = 0,
-    scores = {}, // Objeto con scores por area (ej: { SYSTEMS: 15, ... })
-    roadmap = [], // Array de objetos roadmap
-    scorePercentage = 0
+    stage = 'N/A', adjEbitda = 0, baseMultiple = 0, maxMultiple = 0,
+    finalMultiple = 0, estimatedValuation = 0, scores = {},
+    roadmap = [], scorePercentage = 0
   } = calculationResult || {};
 
+  // --- MODIFICACIÓN: Extraer TODOS los campos relevantes de formData ---
   const {
+    // Campos originales que ya estaban
     userEmail = 'N/A',
-    currentRevenue = null,
-    grossProfit = null,
-    ebitda = null,
-    ebitdaAdjustments = 0,
+    currentRevenue = null, // Se muestra en sección financiera
+    grossProfit = null,    // Se muestra en sección financiera
+    ebitda = null,         // Se muestra en sección financiera
+    ebitdaAdjustments = 0, // Se muestra en sección financiera
     naicsSector = 'N/A',
     naicsSubSector = 'N/A',
-    // ... incluir otras claves de formData si quieres mostrarlas ...
-    // ownerRole = 'N/A',
-    // yearsInvolved = 'N/A',
+    // Campos originales del Paso 1 que deben mostrarse aquí
+    ownerRole = 'N/A',
+    yearsInvolved = 'N/A',
+    // NUEVOS campos del Issue #27
+    employeeCountRange = 'N/A',
+    locationState = 'N/A',
+    locationZip = 'N/A',
+    revenueSourceBalance = 'N/A',
+    customerTypeBalance = 'N/A',
+    // ... cualquier otro campo que quieras añadir ...
   } = formData || {};
+  // --- FIN MODIFICACIÓN --
 
   const formattedScores = Object.values(ScoringAreas).reduce((acc, areaKey) => {
         const scoreValue = scores[areaKey] ?? 0;
@@ -160,17 +169,28 @@ function ValuationReportPDF({ calculationResult, formData, chartImage }) {
     <Document>
       <Page size="A4" style={styles.page}>
 
-        {/* --- Cabecera --- */}
+        {/* --- Cabecera (sin cambios) --- */}
         <Text style={styles.header}>Business Valuation Summary</Text>
 
-        {/* --- Información Básica --- */}
+        {/* --- MODIFICACIÓN: Sección "Basic Information" ampliada --- */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Basic Information</Text>
+          {/* Cambiar título para más claridad */}
+          <Text style={styles.sectionTitle}>Business Profile & Contact</Text>
+
+          {/* --- Añadir campos nuevos y originales del Paso 1 --- */}
           <View style={styles.row}>
-            <Text style={styles.label}>Email:</Text>
+            <Text style={styles.label}>Contact Email:</Text>
             <Text style={styles.value}>{userEmail}</Text>
           </View>
-           <View style={styles.row}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Contact Role:</Text>
+            <Text style={styles.value}>{ownerRole}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Years Involved:</Text>
+            <Text style={styles.value}>{yearsInvolved}</Text>
+          </View>
+          <View style={styles.row}>
             <Text style={styles.label}>Industry Sector:</Text>
             <Text style={styles.value}>{naicsSector}</Text>
           </View>
@@ -178,9 +198,29 @@ function ValuationReportPDF({ calculationResult, formData, chartImage }) {
             <Text style={styles.label}>Industry Sub-Sector:</Text>
             <Text style={styles.value}>{naicsSubSector}</Text>
           </View>
-          {/* Añadir más campos de formData si se desea */}
+          <View style={styles.row}>
+            <Text style={styles.label}>State:</Text>
+            <Text style={styles.value}>{locationState}</Text>
+          </View>
+           <View style={styles.row}>
+            <Text style={styles.label}>Zip Code:</Text>
+            <Text style={styles.value}>{locationZip}</Text>
+          </View>
+           <View style={styles.row}>
+            <Text style={styles.label}>Employee Size:</Text>
+            <Text style={styles.value}>{employeeCountRange}</Text>
+          </View>
+           <View style={styles.row}>
+            <Text style={styles.label}>Revenue Source Model:</Text>
+            <Text style={styles.value}>{revenueSourceBalance}</Text>
+          </View>
+           <View style={styles.row}>
+            <Text style={styles.label}>Customer Type:</Text>
+            <Text style={styles.value}>{customerTypeBalance}</Text>
+          </View>
+          {/* --- Fin de campos añadidos --- */}
         </View>
-
+        {/* --- FIN MODIFICACIÓN --- */}
         {/* --- Entradas Financieras --- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Financial Inputs (Last Full Year)</Text>

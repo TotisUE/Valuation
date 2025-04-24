@@ -19,36 +19,38 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
     const [formData, setFormData] = useState(() => {
         // Define la estructura base incluyendo los nuevos campos
         const defaultStructure = {
-            // --- Nuevos campos ---
-            businessName: '',
-            contactName: '',
-            location: '',
-            // --- Campos existentes ---
-            ownerRole: '', // De la antigua sección 'Your Profile'
-            yearsInvolved: '', // De la antigua sección 'Your Profile'
-            userEmail: '',
-            naicsSector: '',
-            naicsSubSector: '',
-            currentRevenue: null,
-            grossProfit: null,
-            ebitda: null,
-            ebitdaAdjustments: 0,
-            // totalDebt: null, // Añadir si implementas la pregunta de deuda
-            // ...otros campos que puedan existir o se añadan después...
-            assessmentId: null // Mantener si usas esto para guardar/continuar
+            // --- Campos originales existentes ---
+            currentRevenue: null, // Movido a paso 0, pero mantener en estado
+            grossProfit: null,    // Permanece en paso 8
+            ebitda: null,         // Permanece en paso 8
+            ebitdaAdjustments: 0, // Permanece en paso 8
+            userEmail: '',        // Originalmente en paso 0
+            ownerRole: '',        // Originalmente en paso 0
+            yearsInvolved: '',    // Originalmente en paso 0
+            naicsSector: '',      // Movido a paso 0
+            naicsSubSector: '',   // Movido a paso 0
+            // --- NUEVOS CAMPOS REQUERIDOS POR ISSUE #27 ---
+            employeeCountRange: '',     // NUEVO (Step 0)
+            locationState: '',          // NUEVO (Step 0)
+            locationZip: '',            // NUEVO (Step 0)
+            revenueSourceBalance: '',   // NUEVO (Step 0)
+            customerTypeBalance: '',    // NUEVO (Step 0)
+            // --- FIN NUEVOS CAMPOS ---
+            // ... otros campos existentes que ya tenías ...
+            assessmentId: null // Mantener si se usa para save/continue
         };
 
         if (initialFormData) {
             console.log("MultiStepForm: Initializing state with initialFormData:", initialFormData);
             localStorage.removeItem(LOCAL_STORAGE_KEY);
-            // Asegurarse de que initialFormData se fusione correctamente con la nueva estructura
+            // Se fusionan initialFormData con la nueva defaultStructure
             return { ...defaultStructure, ...initialFormData };
         }
         console.log("MultiStepForm: Initializing state from localStorage (if available).");
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
         let baseData = {};
         if (savedData) { try { baseData = JSON.parse(savedData); if (typeof baseData !== 'object' || baseData === null) { baseData = {}; } } catch (error) { /* Ignorar */ } }
-        // Fusionar datos guardados con la nueva estructura por defecto
+        // Se fusionan datos guardados con la nueva defaultStructure
         return { ...defaultStructure, ...baseData };
     });
     const [currentStep, setCurrentStep] = useState(() => {
