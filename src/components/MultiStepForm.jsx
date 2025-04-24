@@ -1,3 +1,4 @@
+// src/components/MultiStepForm.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScoringAreas, initialScores } from '../scoringAreas';
 import { sections, getQuestionsForStep, calculateMaxPossibleScore, getValuationParameters, calculateMaxScoreForArea } from '../questions';
@@ -5,34 +6,23 @@ import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
 import ResultsDisplay from './results/ResultsDisplay';
-import { getFunctionsBaseUrl } from '../utils/urlHelpers';
+import { getFunctionsBaseUrl } from '../utils/urlHelpers'; // Asegúrate que la ruta sea correcta
 
 // --- Constantes ---
 const TOTAL_STEPS = sections.length;
 const LOCAL_STORAGE_KEY = 'valuationFormData';
 const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 
-// --- Leer VITE_NETLIFY_FUNCTIONS_BASE_URL ---
-// La variable a nivel de módulo se elimina o comenta, ya que la lógica ahora está en handleSubmit
-// const functionsBaseUrl = import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL || '';
-
-// VVV--- EL BLOQUE if HUÉRFANO HA SIDO ELIMINADO/COMENTADO ---VVV
-/*
-if (!functionsBaseUrl && import.meta.env.MODE !== 'test') {
-    console.warn("MultiStepForm: VITE_NETLIFY_FUNCTIONS_BASE_URL not defined.");
-}
-*/
-// ^^^--- FIN BLOQUE ELIMINADO/COMENTADO ---^^^
-
 // --- Componente Principal ---
-function MultiStepForm({ initialFormData = null }) { // Sin props de Magic Link por ahora
+function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
 
     // --- Estados (Completos) ---
+    // (Tu lógica de inicialización corregida anteriormente)
     const [currentStep, setCurrentStep] = useState(() => {
         if (initialFormData) {
             console.log("MultiStepForm: Received initialFormData, starting at step 0.");
             localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
-            return 0; // CORRECCIÓN: Simplemente devolver 0
+            return 0;
         }
         const savedStep = localStorage.getItem(LOCAL_STORAGE_STEP_KEY);
         const initialStep = savedStep ? parseInt(savedStep, 10) : 0;
@@ -49,7 +39,7 @@ function MultiStepForm({ initialFormData = null }) { // Sin props de Magic Link 
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
         const defaultStructure = { currentRevenue: null, grossProfit: null, ebitda: null, ebitdaAdjustments: 0, userEmail: '', naicsSector: '', naicsSubSector: '' };
         let baseData = {};
-        if (savedData) { try { baseData = JSON.parse(savedData); if (typeof baseData !== 'object' || baseData === null) { baseData = {}; } } catch (error) { /* Ignorar error de parseo */ } }
+        if (savedData) { try { baseData = JSON.parse(savedData); if (typeof baseData !== 'object' || baseData === null) { baseData = {}; } } catch (error) { /* Ignorar */ } }
         return { ...defaultStructure, ...baseData };
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,14 +49,13 @@ function MultiStepForm({ initialFormData = null }) { // Sin props de Magic Link 
     const [sectors, setSectors] = useState([]);
     const [subSectors, setSubSectors] = useState([]);
     const [isSubSectorsLoading, setIsSubSectorsLoading] = useState(false);
-    const [isSendingLink, setIsSendingLink] = useState(false); // Nuevo estado
-const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: '' }); // Para feedback
+    const [isSendingLink, setIsSendingLink] = useState(false);
+    const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: '' });
 
 
     // --- Effects (Completos - NAICS Refactorizados) ---
     useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData)); }, [formData]);
     useEffect(() => { localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString()); }, [currentStep]);
-
     useEffect(() => {
         const fetchNaicsData = async () => {
             setIsSubSectorsLoading(true);
@@ -93,7 +82,6 @@ const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: 
         };
         fetchNaicsData();
     }, []);
-
     useEffect(() => {
         if (!formData.naicsSector || sectors.length === 0) { setSubSectors([]); return; }
         const selectedSectorData = sectors.find(s => s.name === formData.naicsSector);
@@ -102,9 +90,16 @@ const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: 
         } else { console.warn(`Subsectors not found for selected sector: ${formData.naicsSector}`); setSubSectors([]); }
     }, [formData.naicsSector, sectors]);
 
+    const allQuestionsForStep = getQuestionsForStep(currentStep);
+    const currentSectionTitle = sections[currentStep];
+    const currentQuestions = operatingMode === 'vc'
+        ? allQuestionsForStep.filter(q => q.isEssentialForVC === true)
+        : allQuestionsForStep;
+    // Logs de depuración que añadiste (puedes mantenerlos o quitarlos)
+    console.log(`DEBUG: Step ${currentStep} - ALL questions from getQuestionsForStep:`, allQuestionsForStep);
+    console.log(`DEBUG: Step ${currentStep} (Mode: ${operatingMode}) - Filtered questions (currentQuestions):`, currentQuestions);
 
     // --- **Helpers Definidos DENTRO del Componente con useCallback** ---
-
     const calculateScores = useCallback((formDataToScore) => {
         // console.log("Calculating scores for:", Object.keys(formDataToScore).length > 0 ? formDataToScore : "(empty)");
         const scores = initialScores ? { ...initialScores } : {};
@@ -125,7 +120,6 @@ const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: 
         // console.log("Calculated Scores:", scores);
         return scores;
     }, []); // Quitado [sections, getQuestionsForStep] ya que vienen de import
-
     const generateImprovementRoadmap = useCallback((scores, stage) => {
         // console.log("Generating roadmap for stage:", stage);
         const roadmapItems = [];
@@ -164,10 +158,7 @@ const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: 
         return roadmapItems;
      // Quitado [calculateMaxScoreForArea] ya que viene de import
     }, []);
-
-
     // --- Handlers ---
-
     const handleChange = useCallback((event) => {
         // console.log('handleChange -> Name:', event.target.name, 'Value:', event.target.value);
         const { name, value, type } = event.target;
@@ -311,22 +302,37 @@ const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: 
 
     // handleNext (Usa handleSubmit)
     const handleNext = useCallback(() => {
-        // console.log("handleNext called. Current Step:", currentStep);
-        const questionsForThisStep = getQuestionsForStep(currentStep);
-        const stepErrors = {}; let isValid = true;
+        const questionsToValidate = currentQuestions; // Usa la variable definida arriba
+
+        const stepErrors = {};
+        let isValid = true;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        questionsForThisStep.forEach(q => {
-            const value = formData[q.valueKey]; let isEmpty = value == null || value === '' || (typeof value === 'number' && isNaN(value));
+
+        questionsToValidate.forEach(q => {
+            const value = formData[q.valueKey];
+            let isEmpty = value == null || value === '' || (typeof value === 'number' && isNaN(value));
             if (q.valueKey === 'ebitdaAdjustments' && value === 0) { isEmpty = false; }
-            if (q.required && isEmpty) { stepErrors[q.valueKey] = true; isValid = false; }
-            else if (q.type === 'email' && value && !emailRegex.test(value)) { stepErrors[q.valueKey] = true; isValid = false; }
+
+            if (q.required && isEmpty) {
+                stepErrors[q.valueKey] = true;
+                isValid = false;
+            } else if (q.type === 'email' && value && !emailRegex.test(value)) {
+                stepErrors[q.valueKey] = true;
+                isValid = false;
+            }
         });
-        setErrors(stepErrors); // console.log(`Step ${currentStep} Validation: isValid=${isValid}`, stepErrors);
+
+        setErrors(stepErrors);
+
         if (isValid) {
-            if (currentStep < TOTAL_STEPS - 1) { setCurrentStep(prevStep => prevStep + 1); }
-            else { handleSubmit(); }
+            if (currentStep < TOTAL_STEPS - 1) {
+                setCurrentStep(prevStep => prevStep + 1);
+            } else {
+                handleSubmit();
+            }
         }
-    }, [currentStep, formData, handleSubmit, getQuestionsForStep]); // Añadido getQuestionsForStep
+    // Dependencias correctas
+    }, [currentStep, formData, handleSubmit, currentQuestions]);
 
     const handlePrevious = useCallback(() => {
       if (currentStep > 0) {
@@ -442,10 +448,10 @@ const handleSaveAndSendLink = useCallback(async () => {
     }
 
 }, [formData]);
+
+
     // --- Get Questions and Title ---
     // Movido getQuestionsForStep aquí para asegurar que se llame con el currentStep actualizado
-    const currentQuestions = getQuestionsForStep(currentStep);
-    const currentSectionTitle = sections[currentStep];
 
 
     // --- Conditional Rendering Logic ---
@@ -463,12 +469,12 @@ const handleSaveAndSendLink = useCallback(async () => {
             <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={sections} />
             <form onSubmit={(e) => e.preventDefault()}>
                 <Step
-                    key={currentStep} // Usar currentStep como key puede ser problemático si reutilizas steps, mejor un ID único si es posible
+                    key={currentStep}
                     stepIndex={currentStep}
-                    questions={currentQuestions} // Usa las questions obtenidas arriba
+                    questions={currentQuestions} // <--- Usa la variable correcta
                     formData={formData}
                     handleChange={handleChange}
-                    sectionTitle={currentSectionTitle} // Usa el title obtenido arriba
+                    sectionTitle={currentSectionTitle} // <--- Usa la variable correcta
                     errors={errors}
                     dynamicOptions={{ sectors, subSectors }}
                     isSubSectorsLoading={isSubSectorsLoading}
@@ -477,7 +483,7 @@ const handleSaveAndSendLink = useCallback(async () => {
                     currentStep={currentStep}
                     totalSteps={TOTAL_STEPS}
                     onPrevious={handlePrevious}
-                    onNext={handleNext}
+                    onNext={handleNext} // <--- Pasa la función handleNext correcta
                     isSubmitting={isSubmitting}
                     onSaveAndSendLink={handleSaveAndSendLink}
                     isSendingLink={isSendingLink}

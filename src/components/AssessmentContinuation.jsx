@@ -118,7 +118,7 @@ function AssessmentContinuation() {
     if (assessmentData) {
         console.log("AssessmentContinuation: Rendering MultiStepForm with initial data:", assessmentData);
        // ¡IMPORTANTE! Aún necesitamos modificar MultiStepForm (Paso 5)
-       return <MultiStepForm initialFormData={assessmentData} />;
+       return <MultiStepForm initialFormData={assessmentData} operatingMode={'seller'} />;
    }
 
    // Si llegamos aquí, algo salió mal O el token era inválido desde el principio
