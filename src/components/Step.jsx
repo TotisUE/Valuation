@@ -16,11 +16,6 @@ function Step({
     isSubSectorsLoading
 }) {
 
-    // --- QUITAR: El estado 'dependentOptions' y su 'useEffect' ya no son necesarios ---
-    // const [dependentOptions, setDependentOptions] = useState({});
-    // useEffect(() => { ... }, [formData, questions]); // Eliminar todo este bloque
-
-
     // --- Handle case with no questions (Sin cambios) ---
     if (!questions || questions.length === 0) {
         return (
@@ -142,6 +137,23 @@ function Step({
                             />
                         )}
 
+                        {/* --- NUEVO: Text Input --- */}
+                        {q.type === 'text' && (
+                            <input
+                                type="text"
+                                id={q.valueKey}
+                                name={q.valueKey}
+                                value={getValue(q.valueKey)} // Usar getValue
+                                onChange={handleChange}
+                                placeholder={q.placeholder || 'Enter text'}
+                                required={q.required}
+                                className={`text-input ${hasError ? 'input-error-field' : ''}`}
+                                aria-invalid={hasError}
+                                autoComplete="off" // Opcional, ajusta según el campo (e.g., "organization" para businessName)
+                            />
+                        )}
+                        {/* --- FIN NUEVO --- */}
+                        
                         {/* --- MODIFICACIÓN: Standard Select (Dropdown para SECTOR) --- */}
                         {/* Asumimos que la pregunta con valueKey 'naicsSector' es de tipo 'select' */}
                         {q.type === 'select' && q.valueKey === 'naicsSector' && (

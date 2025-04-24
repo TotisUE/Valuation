@@ -16,8 +16,41 @@ const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 // --- Componente Principal ---
 function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
 
-    // --- Estados (Completos) ---
-    // (Tu lógica de inicialización corregida anteriormente)
+    const [formData, setFormData] = useState(() => {
+        // Define la estructura base incluyendo los nuevos campos
+        const defaultStructure = {
+            // --- Nuevos campos ---
+            businessName: '',
+            contactName: '',
+            location: '',
+            // --- Campos existentes ---
+            ownerRole: '', // De la antigua sección 'Your Profile'
+            yearsInvolved: '', // De la antigua sección 'Your Profile'
+            userEmail: '',
+            naicsSector: '',
+            naicsSubSector: '',
+            currentRevenue: null,
+            grossProfit: null,
+            ebitda: null,
+            ebitdaAdjustments: 0,
+            // totalDebt: null, // Añadir si implementas la pregunta de deuda
+            // ...otros campos que puedan existir o se añadan después...
+            assessmentId: null // Mantener si usas esto para guardar/continuar
+        };
+
+        if (initialFormData) {
+            console.log("MultiStepForm: Initializing state with initialFormData:", initialFormData);
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            // Asegurarse de que initialFormData se fusione correctamente con la nueva estructura
+            return { ...defaultStructure, ...initialFormData };
+        }
+        console.log("MultiStepForm: Initializing state from localStorage (if available).");
+        const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        let baseData = {};
+        if (savedData) { try { baseData = JSON.parse(savedData); if (typeof baseData !== 'object' || baseData === null) { baseData = {}; } } catch (error) { /* Ignorar */ } }
+        // Fusionar datos guardados con la nueva estructura por defecto
+        return { ...defaultStructure, ...baseData };
+    });
     const [currentStep, setCurrentStep] = useState(() => {
         if (initialFormData) {
             console.log("MultiStepForm: Received initialFormData, starting at step 0.");
@@ -28,20 +61,7 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
         const initialStep = savedStep ? parseInt(savedStep, 10) : 0;
         return !isNaN(initialStep) && initialStep >= 0 && initialStep < TOTAL_STEPS ? initialStep : 0;
     });
-    const [formData, setFormData] = useState(() => {
-        if (initialFormData) {
-            console.log("MultiStepForm: Initializing state with initialFormData:", initialFormData);
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            const defaultStructure = { currentRevenue: null, grossProfit: null, ebitda: null, ebitdaAdjustments: 0, userEmail: '', naicsSector: '', naicsSubSector: '' };
-            return { ...defaultStructure, ...initialFormData };
-        }
-        console.log("MultiStepForm: Initializing state from localStorage (if available).");
-        const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        const defaultStructure = { currentRevenue: null, grossProfit: null, ebitda: null, ebitdaAdjustments: 0, userEmail: '', naicsSector: '', naicsSubSector: '' };
-        let baseData = {};
-        if (savedData) { try { baseData = JSON.parse(savedData); if (typeof baseData !== 'object' || baseData === null) { baseData = {}; } } catch (error) { /* Ignorar */ } }
-        return { ...defaultStructure, ...baseData };
-    });
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionResult, setSubmissionResult] = useState(null);
     const [calculationResult, setCalculationResult] = useState(null);
@@ -466,24 +486,25 @@ const handleSaveAndSendLink = useCallback(async () => {
     // --- Renderizado principal del formulario ---
     return (
         <div className="multi-step-form">
-            <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={sections} />
+            {/* ProgressIndicator usará sections.length actualizado */}
+            <ProgressIndicator currentStep={currentStep + 1} totalSteps={sections.length} sections={sections} />
             <form onSubmit={(e) => e.preventDefault()}>
                 <Step
-                    key={currentStep}
+                    key={currentStep} // Clave importante para remonta/actualización
                     stepIndex={currentStep}
-                    questions={currentQuestions} // <--- Usa la variable correcta
-                    formData={formData}
-                    handleChange={handleChange}
-                    sectionTitle={currentSectionTitle} // <--- Usa la variable correcta
+                    questions={currentQuestions} // Usará las preguntas del paso actual
+                    formData={formData} // Pasará el estado completo
+                    handleChange={handleChange} // El mismo handler funciona
+                    sectionTitle={currentSectionTitle} // Título del paso actual
                     errors={errors}
-                    dynamicOptions={{ sectors, subSectors }}
-                    isSubSectorsLoading={isSubSectorsLoading}
+                    dynamicOptions={{ sectors, subSectors }} // Sigue siendo necesario para NAICS en paso 0
+                    isSubSectorsLoading={isSubSectorsLoading} // Sigue siendo necesario para NAICS en paso 0
                 />
                 <Navigation
                     currentStep={currentStep}
-                    totalSteps={TOTAL_STEPS}
+                    totalSteps={sections.length} // Usará la longitud actualizada
                     onPrevious={handlePrevious}
-                    onNext={handleNext} // <--- Pasa la función handleNext correcta
+                    onNext={handleNext}
                     isSubmitting={isSubmitting}
                     onSaveAndSendLink={handleSaveAndSendLink}
                     isSendingLink={isSendingLink}
