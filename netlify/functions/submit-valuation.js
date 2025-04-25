@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import { Resend } from 'resend';
 // Ajusta la ruta según la estructura real desde netlify/functions/submit-valuation/
 import { ScoringAreas } from '../../src/scoringAreas.js';
-import { getQuestionsDataArray } from '../../src/questions.js';
+import { getQuestionsDataArray, calculateMaxScoreForArea } from '../../src/questions.js'; 
 
 // --- Cabeceras CORS comunes ---
 const corsHeaders = {
@@ -113,32 +113,9 @@ export const handler = async (event) => {
         }
 
         // Helper calculateMaxScoreForArea (interno)
-        const calculateMaxScoreForArea = (areaName) => {
-            if (!areaName) return 0;
-             try {
-                const allQuestions = getQuestionsDataArray(); // Obtener datos frescos
-                if (!Array.isArray(allQuestions)) {
-                     console.error("calculateMaxScoreForArea: getQuestionsDataArray did not return an array");
-                    return 0;
-                }
-                const qualitativeQuestions = allQuestions.filter(q => q?.scoringArea && Object.values(ScoringAreas).includes(q.scoringArea));
-                return qualitativeQuestions
-                    .filter(q => q.scoringArea === areaName)
-                    .reduce((total, q) => {
-                        // Asumiendo que la opción con mayor score es el máximo para esa pregunta
-                        const maxOptionScore = q.options ? Math.max(0, ...q.options.map(o => typeof o.score === 'number' ? o.score : 0)) : 0;
-                        return total + maxOptionScore;
-                    }, 0);
-             } catch (err) {
-                  console.error(`Error in calculateMaxScoreForArea for ${areaName}:`, err);
-                  return 0; // Devolver 0 si hay error en la lógica
-             }
-        };
-
-        // --- 1. Insertar en Supabase ---
         const dataToInsert = {
+            // --- Campos existentes que mapean a columnas ---
             user_email: formData.userEmail,
-            form_data: formData, // Guardar todo el formData
             stage: results.stage,
             estimated_valuation: results.estimatedValuation,
             final_multiple: results.finalMultiple,
@@ -150,9 +127,20 @@ export const handler = async (event) => {
             score_workforce: `${scores[ScoringAreas.WORKFORCE] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.WORKFORCE)}`,
             score_systems: `${scores[ScoringAreas.SYSTEMS] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.SYSTEMS)}`,
             score_market: `${scores[ScoringAreas.MARKET] ?? 0} / ${calculateMaxScoreForArea(ScoringAreas.MARKET)}`,
-            // Marcar como completado
             is_complete: true,
-            status: 'complete'
+            status: 'complete',
+
+            form_data: formData,
+
+            // --- NUEVOS CAMPOS DEL ISSUE #27 ---
+            // Asegúrate de que los nombres de clave (izquierda) coincidan EXACTAMENTE
+            // con los nombres de columna que creaste en Supabase.
+            employee_count_range: formData.employeeCountRange, // Mapea formData.employeeCountRange a la columna employee_count_range
+            location_state: formData.locationState,             // Mapea formData.locationState a location_state
+            location_zip: formData.locationZip,                 // Mapea formData.locationZip a location_zip
+            revenue_source_balance: formData.revenueSourceBalance, // Mapea formData.revenueSourceBalance a revenue_source_balance
+            customer_type_balance: formData.customerTypeBalance     // Mapea formData.customerTypeBalance a customer_type_balance
+            // --- FIN NUEVOS CAMPOS ---
         };
         console.log("Data to Insert into Supabase:", "Structure looks ok, logging only keys:", Object.keys(dataToInsert)); // Evitar loguear datos sensibles
 
