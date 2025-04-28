@@ -1,19 +1,50 @@
 /* src/App.css */
+html, body, #root { /* Mantenemos esta por si acaso */
+  width: 100%;
+  /* height: 100%; */ /* Comentamos o quitamos height: 100% si causa problemas */
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: sans-serif;
   line-height: 1.6;
   margin: 0;
-  background-color: #f4f7f6;
+  background-color: #fff; /* Fondo blanco */
   color: #333;
+  min-height: 100vh; /* <<< AÑADIR ESTA LÍNEA */
+                     /* vh = viewport height */
 }
 
 .App {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 1rem 2rem;
-  background-color: #fff;
+  /* --- Estilos Base (Desktop First) --- */
+  display: block; /* Asegurar que sea bloque para que margin:auto funcione */
+  width: 100%;
+  max-width: 800px; /* Ancho máximo del contenedor principal */
+  margin: 2rem auto; /* Centrado horizontal y margen vertical */
+  padding: 1rem 2rem; /* Padding interno */
+  background-color: #fff; /* Fondo blanco para el contenedor del form */
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+@media (max-width: 850px) {
+  .App {
+    max-width: 95%;
+    padding: 1.5rem;
+    margin: 1.5rem auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .App {
+    max-width: 100%;
+    margin: 0;
+    padding: 1rem 1rem;
+    border-radius: 0;
+    box-shadow: none;
+  }
 }
 
 .App-header {
@@ -218,12 +249,6 @@ body {
   color: #D8000C; /* Rojo oscuro para el texto del label */
   /* font-weight: bold; */ /* Puedes descomentar esto si también quieres negrita */
 }
-
-/* Elimina o comenta las otras reglas que añadimos antes para: */
-/* .question.input-error input, ... */
-/* .question.input-error .options ... */
-/* .error-message ... */
-
 .back-to-edit-button {
   /* Estilos similares a otros botones, o diferentes */
   padding: 10px 20px;
