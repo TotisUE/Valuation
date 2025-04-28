@@ -17,7 +17,9 @@ const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
 
     const [formData, setFormData] = useState(() => {
+        console.log("MultiStepForm: Initializing formData state...");
         // Define la estructura base incluyendo los nuevos campos
+
         const defaultStructure = {
             // --- Campos originales existentes ---
             currentRevenue: null, // Movido a paso 0, pero mantener en estado
@@ -41,17 +43,79 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
         };
 
         if (initialFormData) {
-            console.log("MultiStepForm: Initializing state with initialFormData:", initialFormData);
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            // Se fusionan initialFormData con la nueva defaultStructure
+            console.log("MultiStepForm: Initializing with initialFormData prop:", initialFormData);
+            localStorage.removeItem(LOCAL_STORAGE_KEY); // Limpiar local si vienen datos iniciales
+            localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+             // Fusionar con default para asegurar todos los campos, dando prioridad a initialFormData
             return { ...defaultStructure, ...initialFormData };
         }
-        console.log("MultiStepForm: Initializing state from localStorage (if available).");
+
+        // 2. Leer datos de localStorage (si no hay initialFormData)
+        console.log("MultiStepForm: Checking localStorage...");
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        let baseData = {};
-        if (savedData) { try { baseData = JSON.parse(savedData); if (typeof baseData !== 'object' || baseData === null) { baseData = {}; } } catch (error) { /* Ignorar */ } }
-        // Se fusionan datos guardados con la nueva defaultStructure
-        return { ...defaultStructure, ...baseData };
+        let dataFromStorage = {};
+        if (savedData) {
+            try {
+                dataFromStorage = JSON.parse(savedData);
+                if (typeof dataFromStorage !== 'object' || dataFromStorage === null) {
+                    dataFromStorage = {}; // Resetear si no es un objeto válido
+                }
+                 console.log("MultiStepForm: Data loaded from localStorage:", dataFromStorage);
+            } catch (error) {
+                console.error("MultiStepForm: Error parsing localStorage data", error);
+                dataFromStorage = {};
+            }
+        } else {
+             console.log("MultiStepForm: No data found in localStorage.");
+        }
+
+        // 3. Leer parámetro 'email' de la URL
+        let emailFromUrl = null;
+        try {
+             // Asegurarse que window está definido (evita errores en SSR si se usara)
+             if (typeof window !== 'undefined') {
+                const params = new URLSearchParams(window.location.search);
+                emailFromUrl = params.get('email');
+                 if (emailFromUrl) {
+                    console.log(`MultiStepForm: Found 'email' parameter in URL: ${emailFromUrl}`);
+                 } else {
+                    // console.log("MultiStepForm: No 'email' parameter found in URL."); // Log opcional
+                 }
+            }
+        } catch (error) {
+             console.error("MultiStepForm: Error reading URL parameters", error);
+             emailFromUrl = null;
+        }
+
+
+        // 4. Validar el email de la URL (expresión regular simple)
+        let validatedEmailFromUrl = null;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Regex simple
+        if (emailFromUrl && emailRegex.test(emailFromUrl)) {
+            validatedEmailFromUrl = emailFromUrl;
+            console.log(`MultiStepForm: Email from URL (${validatedEmailFromUrl}) is valid.`);
+        } else if (emailFromUrl) {
+             console.log(`MultiStepForm: Email from URL (${emailFromUrl}) is INVALID.`);
+        }
+
+        // 5. Combinar fuentes para el estado inicial
+        // Empezar con la estructura por defecto
+        let finalInitialState = { ...defaultStructure };
+        // Fusionar datos de localStorage
+        finalInitialState = { ...finalInitialState, ...dataFromStorage };
+         // Si hay un email VÁLIDO de la URL, SOBRESCRIBIR el campo userEmail
+        if (validatedEmailFromUrl) {
+             console.log(`MultiStepForm: Overwriting userEmail with validated URL email: ${validatedEmailFromUrl}`);
+            finalInitialState.userEmail = validatedEmailFromUrl;
+        } else if (finalInitialState.userEmail) {
+             console.log(`MultiStepForm: Keeping userEmail from localStorage/defaults: ${finalInitialState.userEmail}`);
+        } else {
+             console.log(`MultiStepForm: No valid email from URL or localStorage. userEmail remains default ('${finalInitialState.userEmail}').`);
+        }
+
+
+        console.log("MultiStepForm: Final initial formData state:", finalInitialState);
+        return finalInitialState;
     });
     const [currentStep, setCurrentStep] = useState(() => {
         if (initialFormData) {
@@ -141,9 +205,8 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
         });
         // console.log("Calculated Scores:", scores);
         return scores;
-    }, []); // Quitado [sections, getQuestionsForStep] ya que vienen de import
-    const generateImprovementRoadmap = useCallback((scores, stage) => {
-        // console.log("Generating roadmap for stage:", stage);
+    }, []); 
+    const generateImprovementRoadmap = useCallback((scores, stage, formData) => {
         const roadmapItems = [];
         const numberOfAreasToShow = 3;
         const stageToUrlMap = {
@@ -162,24 +225,112 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
             [ScoringAreas.MARKETING]: { title: "Build Marketing & Brand Equity", rationale: "A strong offering combined with an effective sales process ensures customer value is delivered and captured efficiently, maximizing growth and profitability.",actionSteps: ["Map your current sales process stages from lead generation to closed deal.","Identify key conversion metrics for each stage (e.g., lead-to-opportunity rate, opportunity-to-close rate).","Review customer feedback (from off1/NPS) to identify areas for offering improvement."], maxScore: 20 },
             [ScoringAreas.OFFERING_SALES]: { title: "Improve Offering & Sales Effectiveness", rationale: "High customer satisfaction, strong differentiation, and consistent quality build reputation and recurring revenue, reducing churn and supporting premium pricing – all positive valuation factors.", actionSteps: ["Implement a simple customer feedback mechanism (e.g., a 1-question post-service email survey or using Net Promoter Score - NPS).","Map out your core service/product delivery process and identify one key step where quality could be improved or standardized.","Analyze your top competitor's main offering – list 2 things they do well and 1 thing your offering does better."], maxScore: 20 },
             [ScoringAreas.EXPANSION]: { title: "Develop Expansion Capability", rationale: "Demonstrating the ability to scale operations into new markets, services, or partnerships significantly increases perceived future value and strategic options for potential acquirers.", actionSteps: ["Outline the basic steps required to launch your service/product in a new neighboring city or region.","Identify one potential strategic partner (e.g., a complementary business) and brainstorm 2 ways you could collaborate.","Assess your current team/systems: What would be the biggest bottleneck if demand doubled next month?"], maxScore: 20 }
-        };
-        if (!scores || typeof scores !== 'object' || Object.keys(scores).length === 0) { return []; }
-        const sortedScores = Object.entries(scores)
+};
+  // --- Validación básica de entradas ---
+  if (!scores || typeof scores !== 'object' || Object.keys(scores).length === 0) {
+    console.warn("generateImprovementRoadmap: Scores inválidos o vacíos.");
+    return [];
+}
+ if (!formData || typeof formData !== 'object') {
+    console.warn("generateImprovementRoadmap: formData inválido o faltante.");
+     return []; // Esencial para la lógica condicional
+ }
+
+// ***** INICIO: BLOQUE DE LÓGICA CONDICIONAL FALTANTE REINSERTADO *****
+let executeConditionalLogic = false; // Declaración
+const marketingAreaKey = ScoringAreas.MARKETING;
+const marketingScore = scores[marketingAreaKey] || 0;
+const maxMarketingScore = calculateMaxScoreForArea(marketingAreaKey); // Necesitas tener calculateMaxScoreForArea disponible
+const marketingScorePercent = maxMarketingScore > 0 ? marketingScore / maxMarketingScore : 0;
+
+const revenueBalance = formData.revenueSourceBalance;
+const directSalesRevenueBalances = [
+    "Mostly/All Direct (>80% Direct Revenue)",
+    "Primarily Direct (approx. 60-80% Direct Revenue)",
+    "Roughly Balanced Mix (approx. 40-60% Direct Revenue)"
+];
+
+// Verificar la condición de activación
+if (marketingScorePercent < 0.80 && directSalesRevenueBalances.includes(revenueBalance)) {
+    console.log("generateImprovementRoadmap: CONDICIÓN PRIORIZAR MARKETING CUMPLIDA.");
+    executeConditionalLogic = true; // Asignación
+} else {
+    console.log("generateImprovementRoadmap: Condición marketing no cumplida, usando lógica estándar.");
+    // executeConditionalLogic permanece false (su valor inicial)
+}
+        // --- Construcción del Roadmap ---
+        if (executeConditionalLogic) {
+            // 1. Añadir Marketing primero
+            const marketingContent = roadmapContent[marketingAreaKey];
+            if (marketingContent) {
+                const linkText = `-> Watch the "${stage}" section on Acquisition.com for guidance on ${marketingContent.title}`;
+                roadmapItems.push({
+                    areaName: marketingAreaKey,
+                    title: marketingContent.title,
+                    areaScore: marketingScore,
+                    maxScore: maxMarketingScore,
+                    rationale: marketingContent.rationale,
+                    actionSteps: marketingContent.actionSteps,
+                    linkText: linkText,
+                    linkUrl: targetUrl
+                });
+            } else {
+                 console.warn("generateImprovementRoadmap: Contenido del roadmap para Marketing no encontrado.");
+            }
+
+            // 2. Encontrar las siguientes 2 áreas más bajas (excluyendo Marketing)
+            const otherScores = Object.entries(scores)
+            .filter(([areaKey]) => areaKey !== marketingAreaKey && Object.values(ScoringAreas).includes(areaKey) && roadmapContent[areaKey])
+            .sort(([, scoreA], [, scoreB]) => (scoreA || 0) - (scoreB || 0));
+        const nextLowestAreas = otherScores.slice(0, numberOfAreasToShow - 1);
+
+            // 3. Añadir las siguientes 2 áreas al roadmap
+            nextLowestAreas.forEach(([areaKey, areaScore]) => {
+                const content = roadmapContent[areaKey];
+                if (content) {
+                    const maxScoreForArea = calculateMaxScoreForArea(areaKey);
+                    const linkText = `-> Watch the "${stage}" section on Acquisition.com for guidance on ${content.title}`;
+                    roadmapItems.push({
+                        areaName: areaKey,
+                        title: content.title,
+                        areaScore: areaScore || 0,
+                        maxScore: maxScoreForArea,
+                        rationale: content.rationale,
+                        actionSteps: content.actionSteps,
+                        linkText: linkText,
+                        linkUrl: targetUrl
+                    });
+                }
+            });
+
+        } else {
+            // --- Lógica Original: Tomar las 3 áreas con menor puntuación general ---
+            const sortedScores = Object.entries(scores)
             .filter(([areaKey]) => Object.values(ScoringAreas).includes(areaKey) && roadmapContent[areaKey])
             .sort(([, scoreA], [, scoreB]) => (scoreA || 0) - (scoreB || 0));
         const areasToImprove = sortedScores.slice(0, numberOfAreasToShow);
         areasToImprove.forEach(([areaKey, areaScore]) => {
             const content = roadmapContent[areaKey];
             if (content) {
-                const maxScoreForArea = calculateMaxScoreForArea(areaKey);
-                const linkText = `-> Watch the "${stage}" section on Acquisition.com for guidance on ${content.title}`;
-                roadmapItems.push({ areaName: areaKey, title: content.title, areaScore: areaScore || 0, maxScore: maxScoreForArea, rationale: content.rationale, actionSteps: content.actionSteps, linkText: linkText, linkUrl: targetUrl });
-            }
-        });
-        // console.log("Generated roadmap items:", roadmapItems);
+                    const maxScoreForArea = calculateMaxScoreForArea(areaKey); // Necesitas calculateMaxScoreForArea
+                    const linkText = `-> Watch the "${stage}" section on Acquisition.com for guidance on ${content.title}`;
+                    roadmapItems.push({
+                        areaName: areaKey,
+                        title: content.title,
+                        areaScore: areaScore || 0,
+                        maxScore: maxScoreForArea,
+                        rationale: content.rationale,
+                        actionSteps: content.actionSteps,
+                        linkText: linkText,
+                        linkUrl: targetUrl
+                    });
+                }
+            });
+        }
+        console.log("Generated roadmap items:", roadmapItems);
         return roadmapItems;
-     // Quitado [calculateMaxScoreForArea] ya que viene de import
-    }, []);
+ 
+    }, [calculateMaxScoreForArea]);
     // --- Handlers ---
     const handleChange = useCallback((event) => {
         // console.log('handleChange -> Name:', event.target.name, 'Value:', event.target.value);
@@ -215,39 +366,33 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
                  throw new Error("Internal Error: formData.ebitda or ebitdaAdjustments undefined before adjEbitda calc.");
             }
             const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
-            console.log("handleSubmit: adjEbitda calculado =", adjEbitda);
-
-            console.log("handleSubmit: Preparando para llamar a getValuationParameters...");
+            
             if (typeof getValuationParameters !== 'function') throw new Error("Internal Error: getValuationParameters is not a function.");
             const valuationParams = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
-            console.log("handleSubmit: getValuationParameters ejecutado. Resultado:", valuationParams);
+           
             if (!valuationParams || typeof valuationParams.stage === 'undefined') throw new Error("getValuationParameters did not return expected structure.");
             const { stage, baseMultiple, maxMultiple } = valuationParams;
 
-            console.log("handleSubmit: Preparando para llamar a calculateScores...");
+           
             if (typeof calculateScores !== 'function') throw new Error("Internal Error: calculateScores is not a function.");
             const scores = calculateScores(formData);
-            console.log("handleSubmit: calculateScores ejecutado. Resultado:", scores);
+          
             if (!scores || typeof scores !== 'object') throw new Error("calculateScores did not return a valid object.");
 
-            console.log("handleSubmit: Preparando para calcular scorePercentage...");
             const maxPossible = calculateMaxPossibleScore();
             const scorePercentage = maxPossible > 0 ? (Object.values(scores).reduce((sum, s) => sum + (s || 0), 0) / maxPossible) : 0;
             const clampedScorePercentage = Math.max(0, Math.min(1, scorePercentage));
             const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedScorePercentage;
             const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
 
-            console.log("handleSubmit: Preparando para llamar a generateImprovementRoadmap...");
             if (typeof generateImprovementRoadmap !== 'function') throw new Error("Internal Error: generateImprovementRoadmap is not a function.");
-            const roadmapData = generateImprovementRoadmap(scores, stage);
-            console.log("handleSubmit: generateImprovementRoadmap ejecutado. Resultado:", roadmapData);
+            const roadmapData = generateImprovementRoadmap(scores, stage, formData);
 
             localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
-            console.log("handleSubmit: localCalcResult final asignado:", localCalcResult);
+          
 
             // --- Preparar Payload y Enviar ---
             const payloadToSend = { formData: formData, results: localCalcResult };
-            console.log("handleSubmit: Payload preparado:", payloadToSend);
 
             // --- LÓGICA CONDICIONAL PARA functionUrl ---
             let functionUrl;
@@ -257,7 +402,6 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
                 const devBaseUrl = import.meta.env.VITE_NETLIFY_FUNCTIONS_BASE_URL || '';
                 // console.log("handleSubmit [DEV]: Leyendo VITE_NETLIFY_FUNCTIONS_BASE_URL para devBaseUrl:", devBaseUrl); // Log opcional para dev
                 if (!devBaseUrl) {
-                    console.error("handleSubmit [DEV]: VITE_NETLIFY_FUNCTIONS_BASE_URL no definida en .env para desarrollo local!");
                     throw new Error("Function URL Base not configured for local development in .env file.");
                 }
                 functionUrl = `${devBaseUrl}${functionPath}`;
@@ -267,54 +411,35 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
             }
             // console.log(`handleSubmit: URL final de la función: ${functionUrl}`); // Log opcional
 
-            console.log("handleSubmit: Intentando JSON.stringify(payloadToSend)...");
+            
             let requestBody = JSON.stringify(payloadToSend);
             // console.log("handleSubmit: JSON.stringify exitoso. Longitud:", requestBody.length); // Log opcional
 
-            console.log("handleSubmit: Preparando para llamar a fetch...");
+            
 
             const response = await fetch(functionUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: requestBody
             });
-            console.log("handleSubmit: Respuesta fetch recibida, status:", response.status);
-
-            console.log("handleSubmit: Intentando leer respuesta como texto...");
             const responseText = await response.text();
-            console.log("handleSubmit: Respuesta como TEXTO:", responseText);
-
-            console.log("handleSubmit: Intentando parsear texto como JSON...");
             const result = JSON.parse(responseText);
-            console.log("handleSubmit: Respuesta parseada a JSON:", result);
 
             if (!result || result.success !== true) {
-                 console.error("handleSubmit: Error lógico o de backend detectado en la respuesta parseada:", result);
                  throw new Error(result.error || 'Backend processing failed or returned unexpected format.');
             }
 
             // --- Éxito ---
-            console.log("handleSubmit: Éxito en backend:", result);
-
-            console.log("handleSubmit: Intentando actualizar estado con setCalculationResult...");
             setCalculationResult(localCalcResult);
-            console.log("handleSubmit: setCalculationResult llamado.");
-
-            console.log("handleSubmit: Intentando actualizar estado con setSubmissionResult...");
             setSubmissionResult({ success: true, message: result.message || "Submission processed!" });
-            console.log("handleSubmit: setSubmissionResult llamado.");
 
-            console.log("handleSubmit: Intentando limpiar localStorage...");
             localStorage.removeItem(LOCAL_STORAGE_KEY);
             localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
-            console.log("handleSubmit: localStorage limpiado.");
 
-            console.log("handleSubmit: Actualizaciones de estado de éxito completadas.");
-
-        } catch (error) {
-            console.error("handleSubmit: ERROR en bloque catch:", error.message);
-            setSubmissionResult({ success: false, message: `Submission Failed: ${error.message}` });
-            setCalculationResult(null);
+        } catch (error) { 
+           console.error("handleSubmit: ERROR en bloque catch:", error.message); 
+           setSubmissionResult({ success: false, message: `Submission Failed: ${error.message}` });
+           setCalculationResult(null);
         } finally {
             console.log("handleSubmit: Bloque finally ejecutado.");
             setIsSubmitting(false);
@@ -488,33 +613,37 @@ const handleSaveAndSendLink = useCallback(async () => {
     // --- Renderizado principal del formulario ---
     return (
         <div className="multi-step-form">
-            {/* ProgressIndicator usará sections.length actualizado */}
             <ProgressIndicator currentStep={currentStep + 1} totalSteps={sections.length} sections={sections} />
             <form onSubmit={(e) => e.preventDefault()}>
                 <Step
-                    key={currentStep} // Clave importante para remonta/actualización
+                    key={currentStep}
                     stepIndex={currentStep}
-                    questions={currentQuestions} // Usará las preguntas del paso actual
-                    formData={formData} // Pasará el estado completo
-                    handleChange={handleChange} // El mismo handler funciona
-                    sectionTitle={currentSectionTitle} // Título del paso actual
+                    questions={currentQuestions}
+                    formData={formData}
+                    handleChange={handleChange}
+                    sectionTitle={currentSectionTitle}
                     errors={errors}
-                    dynamicOptions={{ sectors, subSectors }} // Sigue siendo necesario para NAICS en paso 0
-                    isSubSectorsLoading={isSubSectorsLoading} // Sigue siendo necesario para NAICS en paso 0
+                    dynamicOptions={{ sectors, subSectors }}
+                    isSubSectorsLoading={isSubSectorsLoading}
+                    // ¿Hay algún prop `jsx={true}` añadido aquí accidentalmente?
                 />
                 <Navigation
                     currentStep={currentStep}
-                    totalSteps={sections.length} // Usará la longitud actualizada
+                    totalSteps={sections.length}
                     onPrevious={handlePrevious}
                     onNext={handleNext}
                     isSubmitting={isSubmitting}
                     onSaveAndSendLink={handleSaveAndSendLink}
                     isSendingLink={isSendingLink}
                     sendLinkResult={sendLinkResult}
+                     // ¿O aquí? ¿O dentro de algún div/button interno?
                 />
             </form>
+            {/* ¿O en el renderizado condicional de ResultsDisplay? */}
+             {/* {submissionResult && calculationResult ? <ResultsDisplay ... /> : null} */}
         </div>
     );
+     // ***** FIN DE LA BÚSQUEDA *****
 }
 
 export default MultiStepForm;

@@ -18,7 +18,6 @@ export const sections = [
 // --- questionsData envuelto en una función ---
 export const getQuestionsDataArray = () => {
     if (!sections || !ScoringAreas || !ScoringAreas.OFFERING_SALES) {
-        console.error("Error: Dependencias (sections, ScoringAreas, ScoringAreas.OFFERING_SALES) no listas para getQuestionsDataArray.");
         return [];
     }
 
@@ -220,13 +219,11 @@ const isQualitativeQuestion = (q) => {
 // getQuestionsForStep (Usa getQuestionsDataArray y el NUEVO 'sections')
 export const getQuestionsForStep = (stepIndex) => {
     if (!Array.isArray(sections) || stepIndex < 0 || stepIndex >= sections.length) {
-        console.error(`Invalid stepIndex or sections array not ready: ${stepIndex}`);
         return [];
     }
     const sectionName = sections[stepIndex];
     const allQuestions = getQuestionsDataArray(); // Obtiene el array completo
     if (!Array.isArray(allQuestions)) {
-         console.error("getQuestionsDataArray did not return an array");
          return [];
     }
     // Filtra por el nombre de la sección correspondiente al índice del NUEVO array 'sections'
@@ -265,68 +262,57 @@ export const calculateMaxScoreForArea = (areaName) => {
         }, 0);
 };
 
-// --- Estructura ebitdaTiers (SIN CAMBIOS) ---
-export const ebitdaTiers = [   { threshold: 5000000, stageName: "Mature Scaleup", baseMultiple: 7.0, maxMultiple: 10.0 },
-    { threshold: 2000000, stageName: "Scale Up", baseMultiple: 6.0, maxMultiple: 8.5 },
-    { threshold: 1000000, stageName: "Mature Grow-up", baseMultiple: 5.0, maxMultiple: 7.0 },
-    { threshold: 500000,  stageName: "Grow-up", baseMultiple: 4.0, maxMultiple: 6.0 },
-    { threshold: 250000,  stageName: "Mature Start-up", baseMultiple: 3.0, maxMultiple: 5.0 },
-    { threshold: 0,       stageName: "Startup", baseMultiple: 2.0, maxMultiple: 4.0 },
+// --- Estructura ebitdaTiers ---
+export const ebitdaTiers = [
+    { threshold: 4000000, stageName: "Mature Scaleup", baseMultiple: 5.0, maxMultiple: 6.5 },
+    { threshold: 3000000, stageName: "Mature Scaleup", baseMultiple: 4.5, maxMultiple: 6.0 },
+    { threshold: 2000000, stageName: "Scale Up", baseMultiple: 4.0, maxMultiple: 5.5 },
+    { threshold: 1500000, stageName: "Mature Grow-up", baseMultiple: 3.5, maxMultiple: 5.0 },
+    { threshold: 1000000, stageName: "Grow-up", baseMultiple: 3.0, maxMultiple: 4.5 },
+    { threshold: 500000,  stageName: "Mature Start-up", baseMultiple: 2.5, maxMultiple: 3.5 },
+    { threshold: 0,       stageName: "Startup", baseMultiple: 2.0, maxMultiple: 3.0 },
 ];
 
 // --- getValuationParameters (SIN CAMBIOS) ---
 export const getValuationParameters = (adjEbitda, sectorName, subSectorName) => {
-    console.log("[getValuationParameters] START - adjEbitda:", adjEbitda, "sector:", sectorName, "subSector:", subSectorName);
     const validAdjEbitda = typeof adjEbitda === 'number' && !isNaN(adjEbitda) ? adjEbitda : -1;
-    console.log("[getValuationParameters] validAdjEbitda:", validAdjEbitda);
 
     if (!Array.isArray(ebitdaTiers) || ebitdaTiers.length === 0) {
-         console.error("[getValuationParameters] ERROR: ebitdaTiers not available or empty.");
-         return { stage: "Error: Tiers not configured", baseMultiple: 0, maxMultiple: 0, industryAdjustment: 1 }; // Devuelve un objeto con stage de error
-    }
-    console.log("[getValuationParameters] ebitdaTiers:", ebitdaTiers);
+        console.error("[getValuationParameters] ERROR: ebitdaTiers not available or empty.");
+        return { stage: "Error: Tiers not configured", baseMultiple: 0, maxMultiple: 0, industryAdjustment: 1 }; // Devuelve un objeto con stage de error
+   }
 
     const tier = ebitdaTiers.find(t => validAdjEbitda >= t.threshold);
-    console.log("[getValuationParameters] Found tier:", tier);
-
     if (!tier) {
-         console.warn("[getValuationParameters] No tier found for adjEbitda. Returning default pre-revenue values.");
          return { stage: "Pre-Revenue / Negative EBITDA", baseMultiple: 0, maxMultiple: 0, industryAdjustment: 1 };
     }
-
-    console.log("[getValuationParameters] Calling getIndustryAdjustmentFactor...");
     let industryAdjustment = 1; // Default
     try {
          if (typeof getIndustryAdjustmentFactor !== 'function') {
-              console.error("[getValuationParameters] ERROR: getIndustryAdjustmentFactor is not a function!");
               // Mantener adjustment en 1
          } else {
              industryAdjustment = getIndustryAdjustmentFactor(sectorName, subSectorName);
              // Verificar si el ajuste es un número válido
              if (typeof industryAdjustment !== 'number' || isNaN(industryAdjustment)) {
-                 console.warn("[getValuationParameters] industryAdjustment is not a valid number. Using 1. Value received:", industryAdjustment);
+                 
                  industryAdjustment = 1;
              }
          }
-         console.log("[getValuationParameters] industryAdjustment:", industryAdjustment);
+        
      } catch (error) {
-         console.error("[getValuationParameters] ERROR calling getIndustryAdjustmentFactor:", error);
          industryAdjustment = 1; // Usar valor por defecto en caso de error
      }
 
     const baseMultiplier = typeof tier.baseMultiple === 'number' ? tier.baseMultiple : 0;
     const maxMultiplier = typeof tier.maxMultiple === 'number' ? tier.maxMultiple : 0;
      if (typeof tier.baseMultiple !== 'number' || typeof tier.maxMultiple !== 'number') {
-         console.warn("[getValuationParameters] tier.baseMultiple or tier.maxMultiple are not numbers. Tier:", tier);
      }
 
     const adjustedBaseMultiple = baseMultiplier * industryAdjustment;
     const adjustedMaxMultiple = maxMultiplier * industryAdjustment;
-    console.log("[getValuationParameters] adjustedBaseMultiple:", adjustedBaseMultiple, "adjustedMaxMultiple:", adjustedMaxMultiple);
 
     const stageName = tier.stageName || "Unknown Stage";
     if (!tier.stageName) {
-         console.warn("[getValuationParameters] tier.stageName is not defined in the found tier. Tier:", tier);
     }
 
     const result = {
@@ -335,6 +321,5 @@ export const getValuationParameters = (adjEbitda, sectorName, subSectorName) => 
         maxMultiple: adjustedMaxMultiple,
         industryAdjustment: industryAdjustment // Puedes incluirlo si quieres mostrarlo/usarlo después
      };
-    console.log("[getValuationParameters] FINAL RESULT:", result);
     return result;
 };
