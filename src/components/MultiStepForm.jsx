@@ -175,7 +175,20 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
             setSubSectors(selectedSectorData.subSectors);
         } else { console.warn(`Subsectors not found for selected sector: ${formData.naicsSector}`); setSubSectors([]); }
     }, [formData.naicsSector, sectors]);
+    useEffect(() => {
+        // Esta función se ejecutará cada vez que 'currentStep' cambie
+        console.log(`MultiStepForm: Step changed to ${currentStep}. Scrolling to top.`);
 
+        // La forma más simple: scroll al inicio de la página
+        window.scrollTo(0, 0);
+
+        // Alternativa (si quieres hacer scroll a un elemento específico, como el título del paso):
+        // const stepElement = document.getElementById('step-content-container'); // Necesitarías añadir este ID al div que contiene el Step
+        // if (stepElement) {
+        //     stepElement.scrollIntoView({ behavior: 'smooth' }); // 'smooth' para animación suave
+        // }
+
+    }, [currentStep]); 
     const allQuestionsForStep = getQuestionsForStep(currentStep);
     const currentSectionTitle = sections[currentStep];
     const currentQuestions = operatingMode === 'vc'
