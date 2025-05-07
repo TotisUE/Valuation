@@ -8,13 +8,28 @@ import './App.css';
 import AdminLogin from './components/AdminLogin';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminSubmissionsPage from './pages/AdminSubmissionsPage';
+import logoImage from './assets/ACQUIRA-REGULAR.png';
 
 function App() {
   const location = useLocation();
 
   return (
     <div className="App">
-      {console.log("DEBUG: App.jsx - Rendering <Routes>...")}
+      {/* ENCABEZADO SOLO CON EL BANNER AZUL DE FONDO */}
+      <header className="app-global-header">
+        <div className="app-global-header-banner">
+          {/* Este div será la franja azul de fondo */}
+        </div>
+      </header>
+      {/* FIN DEL ENCABEZADO */}
+
+      {/* CONTENIDO PRINCIPAL (LA "TARJETA BLANCA" QUE FLOTA) */}
+      <main className="app-main-content">
+        {/* LOGO AHORA DENTRO DE LA TARJETA BLANCA PRINCIPAL */}
+        <div className="main-content-logo-container"> {/* Nuevo contenedor para el logo dentro de main */}
+          <img src={logoImage} alt="Logo de la Empresa" className="app-logo" />
+        </div>
+        
       <Routes>
         {/* === Rutas Públicas === */}
         <Route path="/" element={<MultiStepForm />} />
@@ -58,6 +73,7 @@ function App() {
         <Route path="*" element={<div><h2>404 - Page Not Found</h2></div>} /> 
 
       </Routes>
+      </main>
     </div>
   );
 }

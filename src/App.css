@@ -1,13 +1,10 @@
 /* src/App.css */
 /* AL INICIO DE App.css */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; /* Buena base de fuentes */
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  /* Establecer el tema claro como el único para toda la aplicación */
-  color: #213547; /* Color de texto oscuro principal */
-  background-color: #ffffff; /* Fondo blanco principal */
+  color: #213547; /* Color de texto oscuro por defecto */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -22,69 +19,110 @@ html {
   box-sizing: inherit;
 }
 
-html, body { /* Simplificamos, #root no necesita estilos aquí si hereda de body */
-  width: 100%;
+html, body { /* ASEGURAR QUE ESTÉN PEGADOS AL TOPE */
   margin: 0;
   padding: 0;
-  /* font-family ya está en :root */
+  width: 100%;
+  height: 100%; /* Ocupar toda la altura del viewport */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+               Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #f4f6f8; /* Fondo GRIS general de la página */
+  color: #333;
 }
 
 a {
   font-weight: 500;
-  color: #646cff; /* O #747bff si prefieres el tono del "modo claro" original */
-  text-decoration: inherit; /* Mantiene la eliminación del subrayado */
+  color: #646cff;
+  text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2; /* O #747bff si el color base cambió */
+  color: #535bf2;
 }
 
-body {
-  /* line-height: 1.6; -- Puedes decidir si quieres 1.5 de :root o 1.6 */
-  /* background-color y color ya están en :root */
-  min-height: 100vh;
-  /* display: flex; place-items: center; de index.css se puede omitir si .App se centra con margin:auto */
-}
-
+/* --- LAYOUT PRINCIPAL DE LA APLICACIÓN --- */
 .App {
-  /* --- Estilos Base (Desktop First) --- */
-  display: block; /* Asegurar que sea bloque para que margin:auto funcione */
   width: 100%;
-  max-width: 800px; /* Ancho máximo del contenedor principal */
-  margin: 2rem auto; /* Centrado horizontal y margen vertical */
-  padding: 1rem 2rem; /* Padding interno */
-  background-color: #fff; /* Fondo blanco para el contenedor del form */
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  box-sizing: border-box;
+  min-height: 100vh; /* Asegura que .App ocupe al menos toda la altura de la ventana */
+  position: relative; /* Contexto de posicionamiento para el banner */
+  /* SIN MARGIN O PADDING AQUÍ para que el banner pueda empezar en top:0 del viewport */
 }
 
+.app-global-header {
+  /* Este div no necesita estilos que le den dimensiones o espaciado,
+     ya que su único hijo .app-global-header-banner es posicionado absolutamente.
+     Si se quiere, se le puede dar un height:0 para asegurar que no ocupe espacio
+     en el flujo normal, aunque con un hijo absoluto no debería. */
+     /* height: 0; */ /* Opcional, para asegurar que no interfiera */
+}
+
+.app-global-header-banner {
+  background-color: #5DADE2; /* TU COLOR AZUL */
+  height: 250px;             /* Altura total del banner azul de fondo */
+  width: 100%;
+  position: absolute;        /* Posicionado con respecto a .App (o el viewport) */
+  top: 0;                    /* PEGA EL BANNER AL TOPE DEL CONTENEDOR POSICIONADO */
+  left: 0;
+  z-index: 1;                /* Detrás de .app-main-content */
+}
+
+.app-main-content { /* La "tarjeta blanca" que contiene logo y formulario */
+  background-color: #ffffff;
+  max-width: 800px;   
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 2rem; 
+  padding: 20px 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative; /* Para el contexto de apilamiento */
+  z-index: 2;         /* Encima del banner */
+}
+
+.main-content-logo-container {
+  text-align: left; 
+  margin-bottom: 25px; 
+  padding-top: 10px;
+}
+
+.app-logo {
+  display: inline-block; 
+  height: 45px;
+  width: auto;
+}
+
+/* --- MEDIA QUERIES --- */
 @media (max-width: 850px) {
-  .App {
+  .app-main-content {
     max-width: 95%;
-    padding: 1.5rem;
-    margin: 1.5rem auto;
+    margin-top: 70px; 
+  }
+  .app-global-header-banner {
+    height: 220px; 
   }
 }
 
 @media (max-width: 600px) {
-  .App {
+  .app-main-content {
     max-width: 100%;
-    margin: 0;
-    padding: 1rem 1rem;
-    border-radius: 0;
+    margin-top: 60px; 
+    border-radius: 0; 
     box-shadow: none;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    padding: 15px 1rem;
   }
-}
-
-.App-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
-}
-
-.App-header h1 {
-    color: #2c3e50;
+  .app-global-header-banner {
+    height: 180px;
+  }
+  .main-content-logo-container {
+    text-align: center; 
+    padding-top: 5px;
+    margin-bottom: 20px;
+  }
+  .app-logo {
+    height: 40px;
+  }
 }
 
 /* Form Specific Styles */
@@ -99,7 +137,6 @@ body {
   border-radius: 5px;
   background-color: #fdfdfd;
 }
-
 .step h2 {
     margin-top: 0;
     color: #3498db;
@@ -107,22 +144,14 @@ body {
     padding-bottom: 0.5rem;
     margin-bottom: 1.5rem;
 }
-
 .question {
   margin-bottom: 1.5rem;
 }
-
-.question > label { /* The main question text */
+.question > label {
   display: block;
   font-weight: bold;
   margin-bottom: 0.75rem;
   color: #555;
-}
-
-.options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem; /* Space between radio buttons */
 }
 
 .option {
