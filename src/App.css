@@ -1,19 +1,48 @@
 /* src/App.css */
-html, body, #root { /* Mantenemos esta por si acaso */
+/* AL INICIO DE App.css */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; /* Buena base de fuentes */
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Establecer el tema claro como el único para toda la aplicación */
+  color: #213547; /* Color de texto oscuro principal */
+  background-color: #ffffff; /* Fondo blanco principal */
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  box-sizing: border-box;
+}
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+html, body { /* Simplificamos, #root no necesita estilos aquí si hereda de body */
   width: 100%;
-  /* height: 100%; */ /* Comentamos o quitamos height: 100% si causa problemas */
   margin: 0;
   padding: 0;
+  /* font-family ya está en :root */
+}
+
+a {
+  font-weight: 500;
+  color: #646cff; /* O #747bff si prefieres el tono del "modo claro" original */
+  text-decoration: inherit; /* Mantiene la eliminación del subrayado */
+}
+a:hover {
+  color: #535bf2; /* O #747bff si el color base cambió */
 }
 
 body {
-  font-family: sans-serif;
-  line-height: 1.6;
-  margin: 0;
-  background-color: #fff; /* Fondo blanco */
-  color: #333;
-  min-height: 100vh; /* <<< AÑADIR ESTA LÍNEA */
-                     /* vh = viewport height */
+  /* line-height: 1.6; -- Puedes decidir si quieres 1.5 de :root o 1.6 */
+  /* background-color y color ya están en :root */
+  min-height: 100vh;
+  /* display: flex; place-items: center; de index.css se puede omitir si .App se centra con margin:auto */
 }
 
 .App {

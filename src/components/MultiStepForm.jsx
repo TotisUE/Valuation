@@ -14,7 +14,7 @@ const LOCAL_STORAGE_KEY = 'valuationFormData';
 const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
 
 // --- Componente Principal ---
-function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
+function MultiStepForm({ initialFormData = null }) {
 
     const [formData, setFormData] = useState(() => {
         console.log("MultiStepForm: Initializing formData state...");
@@ -191,12 +191,13 @@ function MultiStepForm({ initialFormData = null, operatingMode = 'vc' }) {
     }, [currentStep]); 
     const allQuestionsForStep = getQuestionsForStep(currentStep);
     const currentSectionTitle = sections[currentStep];
-    const currentQuestions = operatingMode === 'vc'
-        ? allQuestionsForStep.filter(q => q.isEssentialForVC === true)
-        : allQuestionsForStep;
+    // MODIFICACIÓN: Siempre usar todas las preguntas del paso
+    const currentQuestions = allQuestionsForStep;
+    
     // Logs de depuración que añadiste (puedes mantenerlos o quitarlos)
+    // El segundo log ahora mostrará lo mismo que el primero respecto a las preguntas filtradas.
     console.log(`DEBUG: Step ${currentStep} - ALL questions from getQuestionsForStep:`, allQuestionsForStep);
-    console.log(`DEBUG: Step ${currentStep} (Mode: ${operatingMode}) - Filtered questions (currentQuestions):`, currentQuestions);
+   console.log(`DEBUG: Step ${currentStep} - Filtered questions (currentQuestions - now always all):`, currentQuestions);
 
     // --- **Helpers Definidos DENTRO del Componente con useCallback** ---
     const calculateScores = useCallback((formDataToScore) => {

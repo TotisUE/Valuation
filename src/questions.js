@@ -209,8 +209,6 @@ export const getQuestionsDataArray = () => {
     return theQuestionsArray;
 }; // Fin de getQuestionsDataArray
 
-// --- Helper Functions and Derived Data --- (SIN NINGÚN CAMBIO)
-
 // isQualitativeQuestion (definición interna)
 const isQualitativeQuestion = (q) => {
     return q && q.scoringArea && typeof ScoringAreas === 'object' && Object.values(ScoringAreas).includes(q.scoringArea);

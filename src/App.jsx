@@ -17,7 +17,7 @@ function App() {
       {console.log("DEBUG: App.jsx - Rendering <Routes>...")}
       <Routes>
         {/* === Rutas Públicas === */}
-        <Route path="/" element={<MultiStepForm operatingMode={'vc'} />} />
+        <Route path="/" element={<MultiStepForm />} />
         <Route path="/assessment/continue" element={<AssessmentContinuation />} />
         <Route path="/request-link" element={<RequestNewLink />} />
 
