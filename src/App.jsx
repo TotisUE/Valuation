@@ -8,7 +8,7 @@ import './App.css';
 import AdminLogin from './components/AdminLogin';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminSubmissionsPage from './pages/AdminSubmissionsPage';
-import logoImage from './assets/ACQUIRA-REGULAR.png';
+import logoImage from './assets/logobrain.png';
 
 function App() {
   const location = useLocation();

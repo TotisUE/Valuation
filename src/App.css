@@ -121,7 +121,8 @@ a:hover {
     margin-bottom: 20px;
   }
   .app-logo {
-    height: 40px;
+    width: 500px;
+    height: auto;
   }
 }
 
