@@ -159,17 +159,43 @@ const TOTAL_STEPS = visibleSections.length;
 
 
     // --- Effects (Completos - NAICS Refactorizados) ---
-    useEffect(() => {
-    if (currentStep >= TOTAL_STEPS && TOTAL_STEPS > 0) { // Añadir TOTAL_STEPS > 0
-        setCurrentStep(TOTAL_STEPS - 1);
-    } else if (TOTAL_STEPS === 0 && currentStep !== 0) { // Caso extremo si no hay secciones visibles
-        setCurrentStep(0);
+useEffect(() => {
+    console.log("[MultiStepForm Effect] Adjusting currentStep if needed. currentStep:", currentStep, "TOTAL_STEPS:", TOTAL_STEPS);
+    if (TOTAL_STEPS === 0) {
+        if (currentStep !== 0) {
+            console.log("[MultiStepForm Effect] No visible sections, setting currentStep to 0.");
+            setCurrentStep(0);
+        }
+    } else { // Solo ajustar si TOTAL_STEPS > 0
+        if (currentStep >= TOTAL_STEPS) {
+            console.log(`[MultiStepForm Effect] currentStep (${currentStep}) >= TOTAL_STEPS (${TOTAL_STEPS}). Setting to ${TOTAL_STEPS - 1}.`);
+            setCurrentStep(TOTAL_STEPS - 1);
+        } else if (currentStep < 0) { // Por si acaso
+             console.log(`[MultiStepForm Effect] currentStep (${currentStep}) < 0. Setting to 0.`);
+             setCurrentStep(0);
+        }
     }
 }, [currentStep, TOTAL_STEPS]);
 
 
+
+
     useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData)); }, [formData]);
     useEffect(() => { localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString()); }, [currentStep]);
+    useEffect(() => {
+    // Este efecto ahora solo se enfoca en el localStorage y el scroll,
+    // el ajuste de currentStep se hará en su propio useEffect más específico.
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
+}, [formData]);
+
+
+useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString());
+    window.scrollTo(0, 0); // Mover el scroll aquí también
+    console.log(`MultiStepForm: Step changed to ${currentStep}.`);
+}, [currentStep]);
+
+
     useEffect(() => {
         const fetchNaicsData = async () => {
             setIsSubSectorsLoading(true);
@@ -441,7 +467,12 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
             // Añade 'grossProfit' aquí si también es un campo requerido de esa sección
             // requiredFinancials.push('grossProfit');
         }
-            const missingFinancials = requiredFinancials.filter(key => formData[key] == null || isNaN(formData[key]));
+            const missingFinancials = requiredFinancials.filter(key => 
+    formData[key] == null || 
+    (typeof formData[key] === 'string' && formData[key].trim() === '') || 
+    isNaN(parseFloat(formData[key])) 
+);
+
             if (missingFinancials.length > 0) throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
             if (!formData.naicsSector) throw new Error("Industry Sector is required.");
             if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
