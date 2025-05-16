@@ -70,10 +70,10 @@ function ProtectedRoute({ children }) {
 
     // 3. Si la carga terminó y NO hay sesión, redirigir a la página de login
     if (!isLoadingSession && !session) {
-        console.log("ProtectedRoute: Redirecting to /admin/login (unauthenticated).");
+        console.log("ProtectedRoute: Redirecting to /login (unauthenticated).");
         // Usa el componente Navigate de react-router-dom para redirigir
         // 'replace' evita que la página protegida quede en el historial del navegador
-        return <Navigate to="/admin/login" replace />;
+        return <Navigate to="/login" replace />;
     }
 
      // Como fallback (no debería llegar aquí si la lógica anterior es correcta)

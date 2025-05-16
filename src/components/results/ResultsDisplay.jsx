@@ -1,5 +1,5 @@
 // src/components/results/ResultsDisplay.jsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef,useMemo,useEffect} from 'react';
 import { pdf } from '@react-pdf/renderer'; // Necesario para generar el PDF
 //import { toPng } from 'html-to-image';     // Necesario para capturar el gráfico
 import { toJpeg } from 'html-to-image'; 
@@ -13,13 +13,26 @@ import ValuationReportPDF from './ValuationReportPDF'; // Componente que define 
 import ScoreRadarChart from './ScoreRadarChart';   // Componente del gráfico (para el div oculto)
 import { ScoringAreas } from '../../scoringAreas.js';
 
-// Definición de las pestañas
-const TABS = [
-  { id: 'snapshot', label: 'Valuation Summary' },
-  { id: 'scores', label: 'Score Detail' },
-  { id: 'roadmap', label: 'Roadmap' },
-  { id: 'discuss', label: 'Discuss Your Results' },
+// src/components/results/ResultsDisplay.jsx
+// CERCA DEL INICIO DEL ARCHIVO, ANTES DEL COMPONENTE:
+
+// ANTES:
+// const TABS = [
+//   { id: 'snapshot', label: 'Valuation Summary' },
+//   { id: 'scores', label: 'Score Detail' },
+//   { id: 'roadmap', label: 'Roadmap' },
+//   { id: 'discuss', label: 'Discuss Your Results' },
+// ];
+
+// DESPUÉS (NUEVA DEFINICIÓN):
+const ALL_TABS_CONFIG = [
+  { id: 'snapshot', label: 'Valuation Summary', componentBuilder: (props) => <ValuationSnapshot {...props} /> },
+  { id: 'scores', label: 'Score Detail', componentBuilder: (props) => <ScoreDetails scores={props.scores} /> },
+  { id: 'roadmap', label: 'Roadmap', componentBuilder: (props) => <RoadmapSection roadmap={props.roadmap} stage={props.stage} /> }, // roadmap y stage vienen de calculationResult
+  { id: 'discuss', label: 'Discuss Your Results', componentBuilder: (props) => <DiscussTabContent calendlyLink={props.consultantCalendlyLink} userEmail={props.userEmail} /> },
 ];
+
+
 
 // El componente principal de resultados
 function ResultsDisplay({
@@ -31,7 +44,6 @@ function ResultsDisplay({
   formData
 }) {
   // --- Estados ---
-  const [activeTab, setActiveTab] = useState(TABS[0].id);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   // Ref para el contenedor OCULTO del gráfico
   const hiddenChartRef = useRef(null);
@@ -51,8 +63,31 @@ function ResultsDisplay({
     estimatedValuation = 0,
     scores = {},
     roadmap = [],
-    scorePercentage = 0
+    scorePercentage = 0,
+    isOwner
   } = calculationResult || {};
+
+   const visibleTabs = useMemo(() => {
+    if (isOwner) {
+      return ALL_TABS_CONFIG;
+    } else {
+      return ALL_TABS_CONFIG.filter(tab => tab.id === 'scores' || tab.id === 'roadmap');
+    }
+  }, [isOwner]);
+
+  const [activeTab, setActiveTab] = useState(() => visibleTabs.length > 0 ? visibleTabs[0].id : '');
+
+  useEffect(() => {
+    // Si las pestañas visibles cambian (ej. por cambio de rol) y la activa ya no está,
+    // o si inicialmente no había pestañas visibles y ahora sí.
+    if (visibleTabs.length > 0 && !visibleTabs.find(tab => tab.id === activeTab)) {
+        setActiveTab(visibleTabs[0].id);
+    } else if (visibleTabs.length === 0 && activeTab !== '') {
+        setActiveTab(''); 
+    }
+  }, [visibleTabs, activeTab]);
+
+
 
   // --- FUNCIÓN FINAL PARA DESCARGAR PDF CON GRÁFICO ---
   const handleDownloadPdfWithChart = async () => {
@@ -123,49 +158,55 @@ function ResultsDisplay({
   // --- FIN FUNCIÓN DE DESCARGA ---
 
   // --- FUNCIÓN CORRECTA PARA RENDERIZAR CONTENIDO DE PESTAÑA ---
-  const renderTabContent = () => {
-      console.log(`--- renderTabContent: activeTab = '${activeTab}'`);
-      switch (activeTab) {
-        case 'snapshot':
-          return <ValuationSnapshot
-                    stage={stage} adjEbitda={adjEbitda} baseMultiple={baseMultiple}
-                    maxMultiple={maxMultiple} finalMultiple={finalMultiple}
-                    estimatedValuation={estimatedValuation} scorePercentage={scorePercentage}
-                 />;
-        case 'scores':
-          // ScoreDetails ya no necesita la ref
-          return <ScoreDetails scores={scores} />;
-        case 'roadmap':
-           return <RoadmapSection roadmap={roadmap} stage={stage} />;
-        case 'discuss':
-          return <DiscussTabContent
-                    calendlyLink={consultantCalendlyLink} userEmail={userEmail}
-                 />;
-        default:
-          console.log("--- renderTabContent: Reached DEFAULT case!");
-          return <div>Select a tab</div>;
-      }
-  };
+ const renderTabContent = () => {
+    console.log(`--- renderTabContent: activeTab = '${activeTab}'`);
+    const currentTabConfig = visibleTabs.find(tab => tab.id === activeTab);
+    if (!currentTabConfig) {
+        // Esto podría pasar si activeTab es '' porque no hay pestañas visibles
+        if (visibleTabs.length > 0) {
+            // Si hay pestañas visibles pero ninguna coincide, podría ser un error de estado transitorio.
+            // Opcionalmente, mostrar la primera visible.
+            // setActiveTab(visibleTabs[0].id); // Cuidado con bucles de renderizado aquí
+            return <div>No tab content available.</div>;
+        }
+        return <div>Please select a tab.</div>; // O un mensaje más apropiado
+    }
+
+    // Props que se pasarán a los componentes de las pestañas
+    const tabComponentProps = {
+        stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation,
+        scorePercentage, scores, roadmap,
+        consultantCalendlyLink, // Pasa las props que vienen de ResultsDisplay
+        userEmail,             // Pasa las props que vienen de ResultsDisplay
+        formData,                // Pasa formData si es necesario para algún componente de tab
+        // Puedes añadir más props específicas si los componentes de las pestañas las necesitan
+        // calculationResult // Podrías pasar todo el objeto si es más fácil
+    };
+    return currentTabConfig.componentBuilder(tabComponentProps);
+};
+
+
   // --- FIN renderTabContent ---
 
 
   return (
-    <div className="submission-result results-display">
+  <div className="submission-result results-display">
+    {/* Navegación de Pestañas */}
+    <div className="results-tabs-nav" style={styles.tabNav}>
+      {/* MODIFICACIÓN: Iterar sobre visibleTabs */}
+      {visibleTabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          style={activeTab === tab.id ? styles.tabButtonActive : styles.tabButton}
+          // ... (resto de las clases y props del botón)
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
 
-      {/* Navegación de Pestañas */}
-      <div className="results-tabs-nav" style={styles.tabNav}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            // Usar estilos directamente
-            style={activeTab === tab.id ? styles.tabButtonActive : styles.tabButton}
-            className={`tab-button ${activeTab === tab.id ? 'active' : ''} ${tab.id === 'discuss' ? 'discuss-tab-button' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+
 
       {/* Contenido de la Pestaña Activa */}
       <div className="results-tab-content" style={styles.tabContent}>

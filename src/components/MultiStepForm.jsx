@@ -1,17 +1,22 @@
 // src/components/MultiStepForm.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; // MODIFICACIÓN: Añadir useMemo
 import { ScoringAreas, initialScores } from '../scoringAreas';
-import { sections, getQuestionsForStep, calculateMaxPossibleScore, getValuationParameters, calculateMaxScoreForArea } from '../questions';
+// MODIFICACIÓN: Importar 'sections' como 'allAppSections' para evitar confusión
+import { sections as allAppSections, getQuestionsForStep, calculateMaxPossibleScore, getValuationParameters, calculateMaxScoreForArea, getQuestionsDataArray } from '../questions';
 import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
 import ResultsDisplay from './results/ResultsDisplay';
-import { getFunctionsBaseUrl } from '../utils/urlHelpers'; // Asegúrate que la ruta sea correcta
+import { getFunctionsBaseUrl } from '../utils/urlHelpers';
 
-// --- Constantes ---
-const TOTAL_STEPS = sections.length;
+
+
+
+
+  // --- Constantes ---
 const LOCAL_STORAGE_KEY = 'valuationFormData';
 const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
+
 
 // --- Componente Principal ---
 function MultiStepForm({ initialFormData = null }) {
@@ -117,6 +122,20 @@ function MultiStepForm({ initialFormData = null }) {
         console.log("MultiStepForm: Final initial formData state:", finalInitialState);
         return finalInitialState;
     });
+    const [isOwner, setIsOwner] = useState(true); // Asumir dueño inicialmente
+
+const visibleSections = useMemo(() => {
+    return allAppSections.filter((sectionName) => {
+        if (sectionName === "Your Financials & Industry" && !isOwner) {
+            return false;
+        }
+        return true;
+    });
+}, [isOwner]); // 'allAppSections' es el array original de questions.js
+
+const TOTAL_STEPS = visibleSections.length;
+
+
     const [currentStep, setCurrentStep] = useState(() => {
         if (initialFormData) {
             console.log("MultiStepForm: Received initialFormData, starting at step 0.");
@@ -140,6 +159,15 @@ function MultiStepForm({ initialFormData = null }) {
 
 
     // --- Effects (Completos - NAICS Refactorizados) ---
+    useEffect(() => {
+    if (currentStep >= TOTAL_STEPS && TOTAL_STEPS > 0) { // Añadir TOTAL_STEPS > 0
+        setCurrentStep(TOTAL_STEPS - 1);
+    } else if (TOTAL_STEPS === 0 && currentStep !== 0) { // Caso extremo si no hay secciones visibles
+        setCurrentStep(0);
+    }
+}, [currentStep, TOTAL_STEPS]);
+
+
     useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData)); }, [formData]);
     useEffect(() => { localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString()); }, [currentStep]);
     useEffect(() => {
@@ -189,22 +217,12 @@ function MultiStepForm({ initialFormData = null }) {
         // }
 
     }, [currentStep]); 
-    const allQuestionsForStep = getQuestionsForStep(currentStep);
-    const currentSectionTitle = sections[currentStep];
-    // MODIFICACIÓN: Siempre usar todas las preguntas del paso
-    const currentQuestions = allQuestionsForStep;
-    
-    // Logs de depuración que añadiste (puedes mantenerlos o quitarlos)
-    // El segundo log ahora mostrará lo mismo que el primero respecto a las preguntas filtradas.
-    console.log(`DEBUG: Step ${currentStep} - ALL questions from getQuestionsForStep:`, allQuestionsForStep);
-   console.log(`DEBUG: Step ${currentStep} - Filtered questions (currentQuestions - now always all):`, currentQuestions);
-
     // --- **Helpers Definidos DENTRO del Componente con useCallback** ---
     const calculateScores = useCallback((formDataToScore) => {
         // console.log("Calculating scores for:", Object.keys(formDataToScore).length > 0 ? formDataToScore : "(empty)");
         const scores = initialScores ? { ...initialScores } : {};
         const allQuestions = [];
-        sections.forEach((_, index) => { allQuestions.push(...getQuestionsForStep(index)); });
+        allAppSections.forEach((_, index) => { allQuestions.push(...getQuestionsForStep(index)); });
         const isQualitative = (q) => q && q.scoringArea && typeof ScoringAreas === 'object' && Object.values(ScoringAreas).includes(q.scoringArea);
         const qualitativeQuestionsNow = allQuestions.filter(isQualitative);
         if (!Array.isArray(qualitativeQuestionsNow)) { console.error("calculateScores: Could not get qualitative questions."); return scores; }
@@ -345,15 +363,61 @@ if (marketingScorePercent < 0.80 && directSalesRevenueBalances.includes(revenueB
         return roadmapItems;
  
     }, [calculateMaxScoreForArea]);
+
+console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${currentStep}, visibleSections:`, visibleSections);
+ const currentSectionName = visibleSections[currentStep];
+ console.log("[MultiStepForm] currentSectionName DEFINED AS:", currentSectionName);
+
+ const currentQuestions = useMemo(() => {
+     console.log("[MultiStepForm] useMemo for currentQuestions. currentSectionName:", currentSectionName);
+     if (currentSectionName === undefined) {
+         console.warn("[MultiStepForm] currentSectionName is UNDEFINED in useMemo for currentQuestions. currentStep:", currentStep, "visibleSections:", visibleSections);
+         return [];
+     }
+     const allDefinedQuestions = getQuestionsDataArray();
+     if (!Array.isArray(allDefinedQuestions)) {
+         console.error("[MultiStepForm] getQuestionsDataArray did not return an array!");
+         return [];
+     }
+     const questions = allDefinedQuestions.filter(q => q.section === currentSectionName);
+     console.log(`[MultiStepForm] Questions for ${currentSectionName}:`, questions.length);
+     return questions;
+ }, [currentSectionName]);
+
+
     // --- Handlers ---
     const handleChange = useCallback((event) => {
-        // console.log('handleChange -> Name:', event.target.name, 'Value:', event.target.value);
-        const { name, value, type } = event.target;
-        let resetData = {};
-        if (name === 'naicsSector') { resetData.naicsSubSector = ''; setSubSectors([]); }
-        setFormData(prevData => ({ ...prevData, ...resetData, [name]: type === 'number' ? (value === '' ? null : parseFloat(value)) : value }));
-        if (errors[name]) { setErrors(prevErrors => { const newErrors = { ...prevErrors }; delete newErrors[name]; return newErrors; }); }
-    }, [errors]); // Dependencia correcta
+    const { name, value, type } = event.target;
+    let resetData = {};
+    if (name === 'naicsSector') {
+        resetData.naicsSubSector = '';
+        setSubSectors([]); // Esto está bien aquí si setSubSectors es un setter de estado
+    }
+
+    setFormData(prevData => {
+        const newFormData = {
+            ...prevData,
+            ...resetData,
+            [name]: type === 'number' ? (value === '' ? null : parseFloat(value)) : value
+        };
+
+        // Actualizar isOwner DENTRO del callback de setFormData, usando el 'value' del evento
+        if (name === 'ownerRole') {
+            setIsOwner(value === 'Owner/Founder');
+        }
+        return newFormData; // Este return es para el callback de setFormData
+    });
+
+    // Limpiar errores para el campo actual
+    if (errors[name]) {
+        setErrors(prevErrors => {
+            const newErrors = { ...prevErrors };
+            delete newErrors[name];
+            return newErrors;
+        });
+    }
+}, [errors, setIsOwner]);
+
 
     const handleSubmit = useCallback(async () => {
         console.log("handleSubmit: Iniciando...");
@@ -367,7 +431,13 @@ if (marketingScorePercent < 0.80 && directSalesRevenueBalances.includes(revenueB
             console.log("handleSubmit: Dentro del try, antes de validaciones.");
             // --- Validaciones ---
             if (!formData || !formData.userEmail) throw new Error("Internal Error: formData or userEmail missing before validation.");
-            const requiredFinancials = ['currentRevenue', 'ebitda'];
+             // === INICIO DE MODIFICACIÓN DE VALIDACIÓN ===
+        let requiredFinancials = ['currentRevenue'];
+        if (isOwner) { // Solo validar estos si es dueño
+            requiredFinancials.push('ebitda');
+            // Añade 'grossProfit' aquí si también es un campo requerido de esa sección
+            // requiredFinancials.push('grossProfit');
+        }
             const missingFinancials = requiredFinancials.filter(key => formData[key] == null || isNaN(formData[key]));
             if (missingFinancials.length > 0) throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
             if (!formData.naicsSector) throw new Error("Industry Sector is required.");
@@ -402,7 +472,8 @@ if (marketingScorePercent < 0.80 && directSalesRevenueBalances.includes(revenueB
             if (typeof generateImprovementRoadmap !== 'function') throw new Error("Internal Error: generateImprovementRoadmap is not a function.");
             const roadmapData = generateImprovementRoadmap(scores, stage, formData);
 
-            localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, roadmap: roadmapData };
+            localCalcResult = { stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation, scores, scorePercentage: clampedScorePercentage, 
+                roadmap: roadmapData,isOwner: isOwner };
           
 
             // --- Preparar Payload y Enviar ---
@@ -493,7 +564,7 @@ if (marketingScorePercent < 0.80 && directSalesRevenueBalances.includes(revenueB
             }
         }
     // Dependencias correctas
-    }, [currentStep, formData, handleSubmit, currentQuestions]);
+    }, [currentStep, formData, handleSubmit, currentQuestions,TOTAL_STEPS]);
 
     const handlePrevious = useCallback(() => {
       if (currentStep > 0) {
@@ -627,23 +698,25 @@ const handleSaveAndSendLink = useCallback(async () => {
     // --- Renderizado principal del formulario ---
     return (
         <div className="multi-step-form">
-            <ProgressIndicator currentStep={currentStep + 1} totalSteps={sections.length} sections={sections} />
+            <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={visibleSections} />
             <form onSubmit={(e) => e.preventDefault()}>
-                <Step
-                    key={currentStep}
-                    stepIndex={currentStep}
-                    questions={currentQuestions}
-                    formData={formData}
-                    handleChange={handleChange}
-                    sectionTitle={currentSectionTitle}
-                    errors={errors}
-                    dynamicOptions={{ sectors, subSectors }}
-                    isSubSectorsLoading={isSubSectorsLoading}
-                    // ¿Hay algún prop `jsx={true}` añadido aquí accidentalmente?
-                />
+            <Step
+                key={currentSectionName || currentStep} // Es buena idea usar currentSectionName aquí para el key si es estable
+                stepIndex={currentStep}
+                questions={currentQuestions}
+                formData={formData}
+                handleChange={handleChange}
+                sectionTitle={currentSectionName} // === CAMBIO REALIZADO AQUÍ ===
+                errors={errors}
+                dynamicOptions={{ sectors, subSectors }}
+                isSubSectorsLoading={isSubSectorsLoading}
+            />
+
+
+
                 <Navigation
                     currentStep={currentStep}
-                    totalSteps={sections.length}
+                    totalSteps={TOTAL_STEPS}
                     onPrevious={handlePrevious}
                     onNext={handleNext}
                     isSubmitting={isSubmitting}
@@ -658,6 +731,6 @@ const handleSaveAndSendLink = useCallback(async () => {
         </div>
     );
      // ***** FIN DE LA BÚSQUEDA *****
-}
+};
 
 export default MultiStepForm;
