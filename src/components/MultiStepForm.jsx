@@ -429,6 +429,9 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
 
         try {
             console.log("handleSubmit: Dentro del try, antes de validaciones.");
+               console.log("handleSubmit: formData.currentRevenue =", formData.currentRevenue); // <--- AÑADE ESTO
+    console.log("handleSubmit: typeof formData.currentRevenue =", typeof formData.currentRevenue); 
+
             // --- Validaciones ---
             if (!formData || !formData.userEmail) throw new Error("Internal Error: formData or userEmail missing before validation.");
              // === INICIO DE MODIFICACIÓN DE VALIDACIÓN ===
@@ -540,18 +543,17 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
         let isValid = true;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        questionsToValidate.forEach(q => {
-            const value = formData[q.valueKey];
-            let isEmpty = value == null || value === '' || (typeof value === 'number' && isNaN(value));
-            if (q.valueKey === 'ebitdaAdjustments' && value === 0) { isEmpty = false; }
+questionsToValidate.forEach(q => {
+    const value = formData[q.valueKey];
+    // Ajustar la condición de isEmpty para campos numéricos que pueden ser 0
+    let isEmpty = value == null || (typeof value === 'string' && value.trim() === '');
+    if (q.type === 'number' && value === 0) isEmpty = false; // 0 es un valor válido
 
-            if (q.required && isEmpty) {
-                stepErrors[q.valueKey] = true;
-                isValid = false;
-            } else if (q.type === 'email' && value && !emailRegex.test(value)) {
-                stepErrors[q.valueKey] = true;
-                isValid = false;
-            }
+    if (q.required && isEmpty) {
+        stepErrors[q.valueKey] = true;
+        isValid = false;
+    }
+
         });
 
         setErrors(stepErrors);
