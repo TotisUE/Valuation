@@ -42,6 +42,14 @@ export const getQuestionsDataArray = () => {
             type: "select_dependent", dependsOn: "naicsSector", valueKey: "naicsSubSector",
             required: true, isEssentialForVC: true
         },
+        {
+    id: "finRev", // MOVIDA
+    section: sections[0], // Asignada a sections[0]
+    text: "What is your approximate Last Full Year Revenue?",
+    type: "number", valueKey: "currentRevenue", placeholder: "e.g., $ 1,500,000",
+    required: true, helpText: "...", isEssentialForVC: true
+},
+
         // --- Preguntas Originales de sections[0] (se mantienen aquí) ---
          {
             id: "profile1",
