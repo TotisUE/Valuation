@@ -412,37 +412,52 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
 
 
     // --- Handlers ---
-    const handleChange = useCallback((event) => {
-    const { name, value, type } = event.target;
-    let resetData = {};
-    if (name === 'naicsSector') {
-        resetData.naicsSubSector = '';
-        setSubSectors([]); // Esto está bien aquí si setSubSectors es un setter de estado
-    }
+ const handleChange = useCallback((event) => {
+     const { name, value, type } = event.target;
+     let resetData = {};
+     if (name === 'naicsSector') {
+         resetData.naicsSubSector = '';
+         setSubSectors([]);
+     }
 
-    setFormData(prevData => {
-        const newFormData = {
-            ...prevData,
-            ...resetData,
-            [name]: type === 'number' ? (value === '' ? null : parseFloat(value)) : value
-        };
 
-        // Actualizar isOwner DENTRO del callback de setFormData, usando el 'value' del evento
-        if (name === 'ownerRole') {
-            setIsOwner(value === 'Owner/Founder');
-        }
-        return newFormData; // Este return es para el callback de setFormData
-    });
+     setFormData(prevData => {
+         let processedValue = value;
+         if (type === 'number') {
+             if (value === '') {
+                 processedValue = null; // Guardar como null si el campo numérico se vacía
+             } else {
+                 const num = parseFloat(value);
+                 processedValue = isNaN(num) ? null : num; // Guardar como número o null si no es un número válido
+             }
+         }
 
-    // Limpiar errores para el campo actual
-    if (errors[name]) {
-        setErrors(prevErrors => {
-            const newErrors = { ...prevErrors };
-            delete newErrors[name];
-            return newErrors;
-        });
-    }
-}, [errors, setIsOwner]);
+
+         const newFormData = {
+             ...prevData,
+             ...resetData,
+             [name]: processedValue
+         };
+
+
+         if (name === 'ownerRole') {
+             console.log(`[MultiStepForm] ownerRole changed to: ${value}. Setting isOwner.`);
+             setIsOwner(value === 'Owner/Founder');
+         }
+         console.log(`[MultiStepForm] handleChange - Field: ${name}, Value Set:`, newFormData[name]); // LOG PARA VER QUÉ SE GUARDA
+         return newFormData;
+     });
+
+
+     if (errors[name]) {
+         setErrors(prevErrors => {
+             const newErrors = { ...prevErrors };
+             delete newErrors[name];
+             return newErrors;
+         });
+     }
+ }, [errors, setIsOwner]); // Asegúrate que setIsOwner esté aquí
+
 
 
     const handleSubmit = useCallback(async () => {
@@ -454,26 +469,31 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
         let localCalcResult = null;
 
         try {
-            console.log("handleSubmit: Dentro del try, antes de validaciones.");
-               console.log("handleSubmit: formData.currentRevenue =", formData.currentRevenue); // <--- AÑADE ESTO
-    console.log("handleSubmit: typeof formData.currentRevenue =", typeof formData.currentRevenue); 
+        console.log("[MultiStepForm] handleSubmit - Initial formData:", JSON.parse(JSON.stringify(formData))); // Log profundo del formData
+        console.log("[MultiStepForm] handleSubmit - formData.currentRevenue:", formData.currentRevenue, "Type:", typeof formData.currentRevenue);
+        console.log("[MultiStepForm] handleSubmit - isOwner:", isOwner);
 
-            // --- Validaciones ---
-            if (!formData || !formData.userEmail) throw new Error("Internal Error: formData or userEmail missing before validation.");
-             // === INICIO DE MODIFICACIÓN DE VALIDACIÓN ===
+        if (!formData || !formData.userEmail) throw new Error("Internal Error: formData or userEmail missing before validation.");
+        
         let requiredFinancials = ['currentRevenue'];
-        if (isOwner) { // Solo validar estos si es dueño
+        if (isOwner) {
             requiredFinancials.push('ebitda');
-            // Añade 'grossProfit' aquí si también es un campo requerido de esa sección
-            // requiredFinancials.push('grossProfit');
         }
-            const missingFinancials = requiredFinancials.filter(key => 
-    formData[key] == null || 
-    (typeof formData[key] === 'string' && formData[key].trim() === '') || 
-    isNaN(parseFloat(formData[key])) 
-);
+        console.log("[MultiStepForm] handleSubmit - requiredFinancials:", requiredFinancials);
 
-            if (missingFinancials.length > 0) throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
+        const missingFinancials = requiredFinancials.filter(key => {
+            const value = formData[key];
+            // 0 es un valor válido para campos numéricos
+            const isMissing = (value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || (typeof value !== 'number' && isNaN(parseFloat(value))) ) && value !== 0;
+            console.log(`[MultiStepForm] handleSubmit - Validating financial key: ${key}, Value: ${value}, IsMissing: ${isMissing}`);
+            return isMissing;
+        });
+        
+        if (missingFinancials.length > 0) {
+            console.error("[MultiStepForm] handleSubmit - Missing financials detected:", missingFinancials);
+            throw new Error(`Missing/invalid financials: ${missingFinancials.join(', ')}.`);
+        }
+
             if (!formData.naicsSector) throw new Error("Industry Sector is required.");
             if (!formData.naicsSubSector) throw new Error("Industry Sub-Sector is required.");
             console.log("handleSubmit: Validaciones pasadas.");
@@ -564,47 +584,62 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
             setIsSubmitting(false);
         }
     // Limpiadas dependencias innecesarias de importaciones directas
-    }, [formData, calculateScores, generateImprovementRoadmap]);
+   }, [formData, calculateScores, generateImprovementRoadmap, isOwner, errors, currentQuestions, TOTAL_STEPS, visibleSections /* y otras dependencias */]);
 
     // handleNext (Usa handleSubmit)
     const handleNext = useCallback(() => {
-        const questionsToValidate = currentQuestions; // Usa la variable definida arriba
+     const questionsToValidate = currentQuestions;
+     const stepErrors = {};
+     let isValid = true;
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        const stepErrors = {};
-        let isValid = true;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-questionsToValidate.forEach(q => {
-    const value = formData[q.valueKey];
-    // Ajustar la condición de isEmpty para campos numéricos que pueden ser 0
-    let isEmpty = value == null || (typeof value === 'string' && value.trim() === '');
-    if (q.type === 'number' && value === 0) isEmpty = false; // 0 es un valor válido
+     console.log("[MultiStepForm] handleNext - Validating step:", currentStep, "Questions:", questionsToValidate); // LOG
 
-    if (q.required && isEmpty) {
-        stepErrors[q.valueKey] = true;
-        isValid = false;
-    }
 
-        });
+     questionsToValidate.forEach(q => {
+         const value = formData[q.valueKey];
+         let isEmptyOrInvalid = false;
 
-        setErrors(stepErrors);
 
-        if (isValid) {
-            if (currentStep < TOTAL_STEPS - 1) {
-                setCurrentStep(prevStep => prevStep + 1);
-            } else {
-                handleSubmit();
-            }
-        }
-    // Dependencias correctas
-    }, [currentStep, formData, handleSubmit, currentQuestions,TOTAL_STEPS]);
+         if (q.type === 'number') {
+             // Para números: null, undefined, o NaN (después de intentar parsear si fuera string) se considera vacío/inválido
+             // Si el valor es 0, NO es vacío.
+             isEmptyOrInvalid = (value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || isNaN(Number(value))) && value !== 0;
+         } else {
+             // Para otros tipos: null, undefined, o string vacío se considera vacío
+             isEmptyOrInvalid = value == null || (typeof value === 'string' && value.trim() === '');
+         }
+         
+         console.log(`[MultiStepForm] handleNext - Validating Q: ${q.valueKey}, Value: ${value}, Required: ${q.required}, IsEmptyOrInvalid: ${isEmptyOrInvalid}`); // LOG
 
-    const handlePrevious = useCallback(() => {
-      if (currentStep > 0) {
-          setCurrentStep(prevStep => prevStep - 1);
-          setErrors({});
-      }
-  }, [currentStep]);
+
+         if (q.required && isEmptyOrInvalid) {
+             stepErrors[q.valueKey] = `${q.text || 'This field'} is required.`; // Mensaje más descriptivo
+             isValid = false;
+         } else if (q.type === 'email' && value && !emailRegex.test(value)) {
+             stepErrors[q.valueKey] = "Invalid email format.";
+             isValid = false;
+         }
+         // Podrías añadir más validaciones específicas aquí si es necesario
+     });
+
+
+     setErrors(stepErrors);
+     console.log("[MultiStepForm] handleNext - Validation complete. isValid:", isValid, "Errors:", stepErrors); // LOG
+
+
+     if (isValid) {
+         if (currentStep < TOTAL_STEPS - 1) {
+             setCurrentStep(prevStep => prevStep + 1);
+         } else {
+             // Solo llamar a handleSubmit si es el último paso Y es válido
+             console.log("[MultiStepForm] handleNext - Last step, calling handleSubmit.");
+             handleSubmit();
+         }
+     }
+ }, [currentStep, formData, handleSubmit, currentQuestions, TOTAL_STEPS, errors]);
+
 
   const handleStartOver = useCallback(() => {
     // console.log("handleStartOver called");
