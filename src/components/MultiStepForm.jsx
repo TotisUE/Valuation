@@ -177,11 +177,6 @@ useEffect(() => {
     }
 }, [currentStep, TOTAL_STEPS]);
 
-
-
-
-    useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData)); }, [formData]);
-    useEffect(() => { localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString()); }, [currentStep]);
     useEffect(() => {
     // Este efecto ahora solo se enfoca en el localStorage y el scroll,
     // el ajuste de currentStep se hará en su propio useEffect más específico.
@@ -388,7 +383,7 @@ if (marketingScorePercent < 0.80 && directSalesRevenueBalances.includes(revenueB
         console.log("Generated roadmap items:", roadmapItems);
         return roadmapItems;
  
-    }, [calculateMaxScoreForArea]);
+    }, [formData, calculateMaxScoreForArea, ScoringAreas]);
 
 console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${currentStep}, visibleSections:`, visibleSections);
  const currentSectionName = visibleSections[currentStep];
@@ -639,6 +634,14 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
          }
      }
  }, [currentStep, formData, handleSubmit, currentQuestions, TOTAL_STEPS, errors]);
+
+ const handlePrevious = useCallback(() => {
+  if (currentStep > 0) {
+      setCurrentStep(prevStep => prevStep - 1);
+      setErrors({}); // Opcional: Resetear errores al ir atrás
+  }
+}, [currentStep]);
+
 
 
   const handleStartOver = useCallback(() => {
