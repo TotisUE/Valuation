@@ -9,7 +9,7 @@ import './App.css';
 import LoginForm from './components/LoginForm';
 import SignupForm from './components/SignupForm';
 import logoImage from './assets/logobrain.png';
-
+import S2DResultsDisplayPage from './pages/S2DResultsDisplayPage';
 import { SupabaseContext } from './context/SupabaseProvider';
 import AddProductServicePage from './pages/AddProductServicePage';
 
@@ -94,6 +94,7 @@ function App() {
           <Route path="/signup" element={<SignupForm />} />
           <Route path="*" element={<div><h2>404 - Page Not Found</h2></div>} />
           <Route path="/add-product-service" element={<AddProductServicePage />} />
+           <Route path="/s2d-results" element={<S2DResultsDisplayPage />} />
         </Routes>
       </main>
     </div>

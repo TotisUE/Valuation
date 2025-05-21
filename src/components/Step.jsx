@@ -47,8 +47,7 @@ function Step({
                         </div>
 
                         {/* --- Renderizado Condicional de Tipos de Pregunta --- */}
-
-                        {/* MCQ */}
+        {/* MCQ (VERSIÓN ANTERIOR QUE FUNCIONABA PARA EL FORMULARIO PRINCIPAL) */}
                         {q.type === 'mcq' && (
                             <div className="options">
                                 {q.options.map((option, index) => (
@@ -57,9 +56,9 @@ function Step({
                                             type="radio"
                                             id={`${q.valueKey}-${index}`}
                                             name={q.valueKey}
-                                            value={option.text}
-                                            checked={getValue(q.valueKey) === option.text}
-                                            onChange={handleChange}
+                                            value={option.text} // <--- VOLVER A option.text
+                                            checked={getValue(q.valueKey) === option.text} // <--- VOLVER A COMPARAR CON option.text
+                                            onChange={handleChange} // Se pasa la prop handleChange directamente
                                             required={q.required}
                                             aria-invalid={hasError}
                                         />
@@ -80,15 +79,15 @@ function Step({
                                         id={q.valueKey}
                                         name={q.valueKey}
                                         value={displayValue}
-                                        onValueChange={(values) => {
-                                            handleChange({
-                                                target: {
-                                                    name: q.valueKey,
-                                                    value: values.floatValue === undefined ? null : values.floatValue,
-                                                    type: 'number',
-                                                }
-                                            });
-                                        }}
+                                      onValueChange={(values) => {
+    handleChange({
+        target: {
+            name: q.valueKey,
+            value: values.floatValue === undefined ? null : values.floatValue, // CORRECTO
+            type: 'number', // CORRECTO
+        }
+    });
+}}
                                         thousandSeparator=","
                                         allowNegative={q.valueKey === 'ebitda' || q.valueKey === 'ebitdaAdjustments'}
                                         decimalScale={0}
