@@ -11,6 +11,7 @@ import SignupForm from './components/SignupForm';
 import logoImage from './assets/logobrain.png';
 
 import { SupabaseContext } from './context/SupabaseProvider';
+import AddProductServicePage from './pages/AddProductServicePage';
 
 // --- PRIMERA Y ÚNICA DEFINICIÓN DE LogoutButton ---
 function LogoutButton() {
@@ -92,6 +93,7 @@ function App() {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/signup" element={<SignupForm />} />
           <Route path="*" element={<div><h2>404 - Page Not Found</h2></div>} />
+          <Route path="/add-product-service" element={<AddProductServicePage />} />
         </Routes>
       </main>
     </div>

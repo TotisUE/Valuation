@@ -132,10 +132,8 @@ export const handler = async (event) => {
 
             form_data: formData,
 
-            // --- NUEVOS CAMPOS DEL ISSUE #27 ---
-            // Asegúrate de que los nombres de clave (izquierda) coincidan EXACTAMENTE
-            // con los nombres de columna que creaste en Supabase.
-            employee_count_range: formData.employeeCountRange, // Mapea formData.employeeCountRange a la columna employee_count_range
+            //employee_count_range: formData.employeeCountRange, // Mapea formData.employeeCountRange a la columna employee_count_range
+            employee_count: formData.employeeCount, // Mapea formData.employeeCount a la columna employee_count
             location_state: formData.locationState,             // Mapea formData.locationState a location_state
             location_zip: formData.locationZip,                 // Mapea formData.locationZip a location_zip
             revenue_source_balance: formData.revenueSourceBalance, // Mapea formData.revenueSourceBalance a revenue_source_balance

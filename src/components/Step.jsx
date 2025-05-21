@@ -227,6 +227,22 @@ function Step({
                                   ))}
                               </select>
                           )}
+                          
+                   {q.type === 'textarea' && (
+                        <textarea
+                            id={q.valueKey}
+                            name={q.valueKey}
+                            value={getValue(q.valueKey)}
+                            onChange={handleChange}
+                            placeholder={q.placeholder || 'Enter details...'}
+                            required={q.required}
+                            className={`textarea-input ${hasError ? 'input-error-field' : ''}`} // Puedes añadir estilos CSS para textarea-input
+                            aria-invalid={hasError}
+                            rows={q.rows || 4} // Permitir especificar número de filas, default a 4
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '5px', minHeight: '80px' }} // Estilo básico
+                        />
+                    )}
+
 
                         {/* Mensaje de error */}
                         {hasError && (

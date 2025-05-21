@@ -122,7 +122,7 @@ function MultiStepForm({ initialFormData = null }) {
         console.log("MultiStepForm: Final initial formData state:", finalInitialState);
         return finalInitialState;
     });
-    const [isOwner, setIsOwner] = useState(true); // Asumir dueño inicialmente
+    const [isOwner, setIsOwner] = useState(true);
 
 const visibleSections = useMemo(() => {
     return allAppSections.filter((sectionName) => {
@@ -131,7 +131,7 @@ const visibleSections = useMemo(() => {
         }
         return true;
     });
-}, [isOwner]); // 'allAppSections' es el array original de questions.js
+}, [isOwner]);
 
 const TOTAL_STEPS = visibleSections.length;
 
@@ -437,7 +437,7 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
 
          if (name === 'ownerRole') {
              console.log(`[MultiStepForm] ownerRole changed to: ${value}. Setting isOwner.`);
-             setIsOwner(value === 'Owner/Founder');
+             setIsOwner(value === 'CEO/President');
          }
          console.log(`[MultiStepForm] handleChange - Field: ${name}, Value Set:`, newFormData[name]); // LOG PARA VER QUÉ SE GUARDA
          return newFormData;
@@ -451,7 +451,7 @@ console.log(`[MultiStepForm] Defining currentSectionName. currentStep: ${current
              return newErrors;
          });
      }
- }, [errors, setIsOwner]); // Asegúrate que setIsOwner esté aquí
+ }, [errors, setIsOwner]);
 
 
 

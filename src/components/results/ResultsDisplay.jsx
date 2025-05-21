@@ -4,7 +4,7 @@ import { pdf } from '@react-pdf/renderer'; // Necesario para generar el PDF
 //import { toPng } from 'html-to-image';     // Necesario para capturar el gráfico
 import { toJpeg } from 'html-to-image'; 
 import ValuationSnapshot from './ValuationSnapshot';
-
+import { useNavigate } from 'react-router-dom';
 import ScoreDetails from './ScoreDetails';
 import RoadmapSection from './RoadmapSection';
 import ResultsCTA from './ResultsCTA';
@@ -36,6 +36,7 @@ const ALL_TABS_CONFIG = [
 
 // El componente principal de resultados
 function ResultsDisplay({
+  
   calculationResult,
   onStartOver,
   onBackToEdit,
@@ -43,6 +44,7 @@ function ResultsDisplay({
   userEmail,
   formData
 }) {
+  const navigate = useNavigate();
   // --- Estados ---
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   // Ref para el contenedor OCULTO del gráfico
@@ -250,6 +252,34 @@ function ResultsDisplay({
                onDownloadClick={handleDownloadPdfWithChart}
                isLoading={isGeneratingPdf}
            />
+                     {/* ---- INICIO DE NUEVOS BOTONES ---- */}
+           <button
+               type="button"
+               onClick={() => {
+                   console.log('GENERATE PROMPT button clicked');
+                   // Lógica futura aquí
+               }}
+               style={styles.actionButton} // Reutilizamos el estilo existente
+               className="generate-prompt-button" // Clase opcional para estilos específicos
+           >
+               Generate Prompt
+           </button>
+
+           <button
+               type="button"
+               onClick={() => {
+                   console.log('CREATE FOR AN ADDITIONAL PRODUCT/SERVICE button clicked');
+           navigate('/add-product-service');
+                }}
+                style={styles.actionButton}
+                className="create-additional-product-button"
+            >
+
+               Create for an additional product/service
+           </button>
+           {/* ---- FIN DE NUEVOS BOTONES ---- */}
+
+
            {/* Botones originales */}
            <button type="button" onClick={onStartOver} className="start-over-button" style={styles.actionButton}>Start Over</button>
            <button type="button" onClick={onBackToEdit} className="back-to-edit-button" style={styles.actionButton}>Back to Edit</button>
