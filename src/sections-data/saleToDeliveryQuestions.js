@@ -1,10 +1,11 @@
 // src/sections-data/saleToDeliveryQuestions.js
 
-export const getSaleToDeliveryProcessQuestions = () => {
+export const getSaleToDeliveryProcessQuestions = (sectionName) => { 
     return [
         // --- Preguntas de Definición de Producto/Servicio ---
         {
             id: "s2d_productName",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "Name of Product/Service:",
             type: "text",
             valueKey: "s2d_productName",
@@ -12,6 +13,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_productDescription",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "Description of Product/Service:",
             type: "textarea",
             valueKey: "s2d_productDescription",
@@ -20,16 +22,18 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_productRevenue",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "Annual Revenue of Product/Service:",
-            type: "number", // El input será numérico, el formateo de comas es para visualización si se desea
+            type: "number",
             valueKey: "s2d_productRevenue",
-            placeholder: "e.g., 500000", // Evitar comas en el placeholder de un input numérico
+            placeholder: "e.g., 500000",
             required: true,
         },
 
         // --- 1. Contract and Payment Processing ---
         {
             id: "s2d_q1_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "1. Contract and Payment Processing: How would you describe your contract finalization and payment processing after a sale is made?",
             type: "mcq",
             valueKey: "s2d_q1_process",
@@ -44,6 +48,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q1_owner",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "How involved is the owner in the contract and payment processing?",
             type: "mcq",
             valueKey: "s2d_q1_owner",
@@ -59,6 +64,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         // --- 2. Internal Handoff from Sales to Delivery Team ---
         {
             id: "s2d_q2_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "2. Internal Handoff from Sales to Delivery Team: How effectively does information transfer from your sales team to your delivery team?",
             type: "mcq",
             valueKey: "s2d_q2_process",
@@ -73,6 +79,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q2_owner",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "How involved is the owner in the sales-to-delivery handoff process?",
             type: "mcq",
             valueKey: "s2d_q2_owner",
@@ -88,6 +95,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         // --- 3. Client Onboarding Process ---
         {
             id: "s2d_q3_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "3. Client Onboarding Process: How would you rate your client onboarding process after a sale?",
             type: "mcq",
             valueKey: "s2d_q3_process",
@@ -102,6 +110,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q3_owner",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "How involved is the owner in the client onboarding process?",
             type: "mcq",
             valueKey: "s2d_q3_owner",
@@ -117,6 +126,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         // --- 4. Asset and Information Collection ---
         {
             id: "s2d_q4_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "4. Asset and Information Collection: How efficiently do you collect necessary information and assets from clients to begin delivery?",
             type: "mcq",
             valueKey: "s2d_q4_process",
@@ -131,6 +141,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q4_owner",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "How involved is the owner in collecting client information and assets?",
             type: "mcq",
             valueKey: "s2d_q4_owner",
@@ -146,6 +157,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         // --- 5. Expectation Setting, Timeline and Success Metrics ---
         {
             id: "s2d_q5_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "5. Expectation Setting, Timeline and Success Metrics: How effectively do you establish and communicate expectations, timelines, milestones, and success metrics with clients after a sale?",
             type: "mcq",
             valueKey: "s2d_q5_process",
@@ -160,7 +172,8 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q5_owner",
-            text: "How involved is the owner in defining client expectations, timelines, and success metrics?", // Texto actualizado para el owner en la pregunta combinada
+            section: sectionName, // MODIFICACIÓN: Añadido
+            text: "How involved is the owner in defining client expectations, timelines, and success metrics?",
             type: "mcq",
             valueKey: "s2d_q5_owner",
             options: [
@@ -175,6 +188,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         // --- 6. Scheduling and Resource Allocation ---
         {
             id: "s2d_q6_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "6. Scheduling and Resource Allocation: How effectively do you schedule work and allocate resources after a sale?",
             type: "mcq",
             valueKey: "s2d_q6_process",
@@ -189,6 +203,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q6_owner",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "How involved is the owner in scheduling and resource allocation?",
             type: "mcq",
             valueKey: "s2d_q6_owner",
@@ -204,6 +219,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         // --- 7. Client Communication Plan ---
         {
             id: "s2d_q7_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "7. Client Communication Plan: How would you describe your communication planning with clients during the transition from sale to delivery?",
             type: "mcq",
             valueKey: "s2d_q7_process",
@@ -218,6 +234,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q7_owner",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "How involved is the owner in client communications during delivery?",
             type: "mcq",
             valueKey: "s2d_q7_owner",
@@ -233,6 +250,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         // --- 8. Technology and Tools Integration ---
         {
             id: "s2d_q8_process",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "8. Technology and Tools Integration: How well do your technologies and tools support the transition from sale to delivery?",
             type: "mcq",
             valueKey: "s2d_q8_process",
@@ -247,6 +265,7 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
         {
             id: "s2d_q8_owner",
+            section: sectionName, // MODIFICACIÓN: Añadido
             text: "How involved is the owner in managing the technologies used for sale-to-delivery processes?",
             type: "mcq",
             valueKey: "s2d_q8_owner",
@@ -260,4 +279,3 @@ export const getSaleToDeliveryProcessQuestions = () => {
         },
     ];
 };
-

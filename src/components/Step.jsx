@@ -31,13 +31,18 @@ function Step({
             {/* Mapeo sobre las preguntas para este paso */}
             {questions.map((q) => {
                 const hasError = errors && errors[q.valueKey];
-                const getValue = (key) => formData[key] ?? '';
+                // Si formData[key] es null o undefined, getValue devuelve ''.
+                // Esto es importante para que los inputs controlados no reciban null/undefined como valor.
+                const getValue = (key) => {
+                    const val = formData[key];
+                    return val == null ? '' : val; //  Covers null and undefined
+                }
 
                 return (
                     <div key={q.id} className={`question ${hasError ? 'input-error' : ''}`}>
                         {/* Contenedor de la etiqueta y ayuda */}
                         <div className="label-container">
-                            <label htmlFor={q.valueKey}>{q.text}</label>
+                            <label htmlFor={q.id || q.valueKey}>{q.text}</label> {/* Usar q.id para htmlFor si es más único */}
                             {q.required && <span className="required-asterisk" style={{color: 'red', marginLeft: '3px'}}>*</span>}
                             {q.helpText && (
                                 <span className="help-tooltip" title={q.helpText} style={{marginLeft: '5px', cursor: 'help', borderBottom: '1px dotted gray'}}>
@@ -47,47 +52,71 @@ function Step({
                         </div>
 
                         {/* --- Renderizado Condicional de Tipos de Pregunta --- */}
-        {/* MCQ (VERSIÓN ANTERIOR QUE FUNCIONABA PARA EL FORMULARIO PRINCIPAL) */}
+                        
+                        {/* ======================= INICIO BLOQUE MCQ MODIFICADO ======================= */}
                         {q.type === 'mcq' && (
                             <div className="options">
-                                {q.options.map((option, index) => (
-                                    <div key={index} className="option">
-                                        <input
-                                            type="radio"
-                                            id={`${q.valueKey}-${index}`}
-                                            name={q.valueKey}
-                                            value={option.text} // <--- VOLVER A option.text
-                                            checked={getValue(q.valueKey) === option.text} // <--- VOLVER A COMPARAR CON option.text
-                                            onChange={handleChange} // Se pasa la prop handleChange directamente
-                                            required={q.required}
-                                            aria-invalid={hasError}
-                                        />
-                                        <label htmlFor={`${q.valueKey}-${index}`}>{option.text}</label>
-                                    </div>
-                                ))}
+                                {q.options && q.options.map((option, index) => {
+                                    // Determinar qué valor usar para el radio input y para la comparación 'checked'.
+                                    // Si la opción tiene una propiedad 'value' definida explícitamente (como en S2D: "a", "b"), úsala.
+                                    // De lo contrario, usa option.text (comportamiento para las preguntas originales del form principal).
+                                    const valueForInput = option.hasOwnProperty('value') ? option.value : option.text;
+                                    
+                                    // Para id y key, una combinación que sea única.
+                                    // Usar option.value (si existe) o index para diferenciarlos.
+                                    const optionIdentifier = option.hasOwnProperty('value') ? option.value : index;
+
+                                    return (
+                                        <div key={`${q.id}-${optionIdentifier}`} className="option">
+                                            <input
+                                                type="radio"
+                                                id={`${q.id}-${optionIdentifier}`}
+                                                name={q.valueKey} // El name del grupo de radios es el valueKey de la pregunta
+                                                value={valueForInput} // <-- USA valueForInput
+                                                checked={getValue(q.valueKey) === valueForInput} // <-- USA valueForInput para la comparación
+                                                onChange={handleChange} // Pasa el evento directamente, handleChange en el padre lo procesará
+                                                required={q.required}
+                                                aria-invalid={hasError}
+                                            />
+                                            <label htmlFor={`${q.id}-${optionIdentifier}`}>{option.text}</label>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
+                        {/* ======================= FIN BLOQUE MCQ MODIFICADO ======================= */}
 
                         {/* Number Input */}
                         {q.type === 'number' && (() => {
-                            const isFinancialField = ['currentRevenue', 'grossProfit', 'ebitda', 'ebitdaAdjustments'].includes(q.valueKey);
-                            if (isFinancialField) {
-                                const displayValue = (q.valueKey === 'ebitdaAdjustments' && (getValue(q.valueKey) === 0 || getValue(q.valueKey) === ''))
-                                                    ? '' : getValue(q.valueKey);
+                            const financialFieldsForNumericFormat = [
+                                'currentRevenue', 
+                                'grossProfit', 
+                                'ebitda', 
+                                'ebitdaAdjustments',
+                                's2d_productRevenue' // Incluir la pregunta de revenue de S2D
+                            ];
+                            const useNumericFormat = financialFieldsForNumericFormat.includes(q.valueKey);
+                            
+                            let currentValue = getValue(q.valueKey); // getValue ya devuelve '' si es null/undefined
+
+                            if (useNumericFormat) {
+                                const displayValueForNumericFormat = (q.valueKey === 'ebitdaAdjustments' && (currentValue === 0 || currentValue === ''))
+                                                                    ? '' 
+                                                                    : currentValue;
                                 return (
                                     <NumericFormat
-                                        id={q.valueKey}
+                                        id={q.id || q.valueKey}
                                         name={q.valueKey}
-                                        value={displayValue}
-                                      onValueChange={(values) => {
-    handleChange({
-        target: {
-            name: q.valueKey,
-            value: values.floatValue === undefined ? null : values.floatValue, // CORRECTO
-            type: 'number', // CORRECTO
-        }
-    });
-}}
+                                        value={displayValueForNumericFormat}
+                                        onValueChange={(values) => {
+                                            handleChange({
+                                                target: {
+                                                    name: q.valueKey,
+                                                    value: values.floatValue === undefined ? null : values.floatValue,
+                                                    type: 'number',
+                                                }
+                                            });
+                                        }}
                                         thousandSeparator=","
                                         allowNegative={q.valueKey === 'ebitda' || q.valueKey === 'ebitdaAdjustments'}
                                         decimalScale={0}
@@ -99,14 +128,14 @@ function Step({
                                         autoComplete="off"
                                     />
                                 );
-                            } else {
+                            } else { // Para otros inputs numéricos (ej. employeeCount)
                                 return (
                                     <input
                                         type="number"
-                                        id={q.valueKey}
+                                        id={q.id || q.valueKey}
                                         name={q.valueKey}
-                                        value={getValue(q.valueKey)}
-                                        onChange={handleChange}
+                                        value={currentValue} // currentValue ya es '' si era null
+                                        onChange={handleChange} 
                                         placeholder={q.placeholder || 'Enter a number'}
                                         required={q.required}
                                         className={`number-input ${hasError ? 'input-error-field' : ''}`}
@@ -120,7 +149,7 @@ function Step({
                         {q.type === 'email' && (
                             <input
                                 type="email"
-                                id={q.valueKey}
+                                id={q.id || q.valueKey}
                                 name={q.valueKey}
                                 value={getValue(q.valueKey)}
                                 onChange={handleChange}
@@ -132,11 +161,11 @@ function Step({
                             />
                         )}
 
-                        {/* Text Input (para Estado, Zip Code) */}
+                        {/* Text Input */}
                         {q.type === 'text' && (
                             <input
                                 type="text"
-                                id={q.valueKey}
+                                id={q.id || q.valueKey}
                                 name={q.valueKey}
                                 value={getValue(q.valueKey)}
                                 onChange={handleChange}
@@ -150,10 +179,10 @@ function Step({
                             />
                         )}
 
-                        {/* Standard Select (Dropdown para SECTOR NAICS) */}
+                        {/* Standard Select (NAICS SECTOR) */}
                         {q.type === 'select' && q.valueKey === 'naicsSector' && (
                             <select
-                                id={q.valueKey}
+                                id={q.id || q.valueKey}
                                 name={q.valueKey}
                                 value={getValue(q.valueKey)}
                                 onChange={handleChange}
@@ -173,10 +202,10 @@ function Step({
                             </select>
                         )}
 
-                        {/* --- CORREGIDO: UNA SOLA VEZ Dependent Select (Dropdown para SUB-SECTOR NAICS) --- */}
+                        {/* Dependent Select (NAICS SUB-SECTOR) */}
                         {q.type === 'select_dependent' && q.valueKey === 'naicsSubSector' && (
                             <select
-                                id={q.valueKey}
+                                id={q.id || q.valueKey}
                                 name={q.valueKey}
                                 value={getValue(q.valueKey)}
                                 onChange={handleChange}
@@ -185,6 +214,7 @@ function Step({
                                 disabled={!formData.naicsSector || isSubSectorsLoading}
                                 aria-invalid={hasError}
                             >
+                                {/* ... tus options ... */}
                                 {!formData.naicsSector ? (
                                     <option value="" disabled>-- Select a sector first --</option>
                                 ) : isSubSectorsLoading ? (
@@ -204,13 +234,11 @@ function Step({
                                 )}
                             </select>
                         )}
-                        {/* --- FIN CORRECCIÓN --- */}
-
-
-                         {/* Otros Select Standard (si existieran) */}
+                        
+                         {/* Otros Select Standard (si los tienes) */}
                          {q.type === 'select' && q.valueKey !== 'naicsSector' && (
                               <select
-                                  id={q.valueKey}
+                                  id={q.id || q.valueKey}
                                   name={q.valueKey}
                                   value={getValue(q.valueKey)}
                                   onChange={handleChange}
@@ -219,41 +247,40 @@ function Step({
                                   aria-invalid={hasError}
                               >
                                   <option value="" disabled>-- Select an option --</option>
-                                  {q.options?.map((option, index) => (
+                                  {q.options?.map((option, index) => ( // Asume que q.options puede ser un array de strings o de objetos {text: string}
                                       typeof option === 'string' ?
                                       <option key={index} value={option}>{option}</option> :
-                                      <option key={index} value={option.text}>{option.text}</option>
+                                      <option key={option.value !== undefined ? option.value : option.text} value={option.value !== undefined ? option.value : option.text}>{option.text}</option>
                                   ))}
                               </select>
                           )}
                           
-                   {q.type === 'textarea' && (
-                        <textarea
-                            id={q.valueKey}
-                            name={q.valueKey}
-                            value={getValue(q.valueKey)}
-                            onChange={handleChange}
-                            placeholder={q.placeholder || 'Enter details...'}
-                            required={q.required}
-                            className={`textarea-input ${hasError ? 'input-error-field' : ''}`} // Puedes añadir estilos CSS para textarea-input
-                            aria-invalid={hasError}
-                            rows={q.rows || 4} // Permitir especificar número de filas, default a 4
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '5px', minHeight: '80px' }} // Estilo básico
-                        />
-                    )}
-
+                        {/* Textarea */}
+                        {q.type === 'textarea' && (
+                            <textarea
+                                id={q.id || q.valueKey}
+                                name={q.valueKey}
+                                value={getValue(q.valueKey)}
+                                onChange={handleChange}
+                                placeholder={q.placeholder || 'Enter details...'}
+                                required={q.required}
+                                className={`textarea-input ${hasError ? 'input-error-field' : ''}`}
+                                aria-invalid={hasError}
+                                rows={q.rows || 4}
+                                style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '5px', minHeight: '80px' }}
+                            />
+                        )}
 
                         {/* Mensaje de error */}
                         {hasError && (
                             <span className="error-message" role="alert" style={{ color: 'red', fontSize: '0.85em', display: 'block', marginTop: '5px' }}>
-                                This field is required or has an invalid format.
+                                {errors[q.valueKey] || "This field is required or has an invalid format."} {/* Mostrar mensaje específico si existe */}
                             </span>
                         )}
-
-                    </div> // Fin de .question
+                    </div>
                 );
-            })} {/* Fin de .map(questions) */}
-        </div> // Fin de .step
+            })}
+        </div>
     );
 }
 
