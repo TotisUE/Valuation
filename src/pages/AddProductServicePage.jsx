@@ -59,7 +59,7 @@ function AddProductServicePage() {
 
     const handleCancel = () => {
         console.log("S2D Assessment Canceled");
-        navigate(-1);
+        navigate('/');
     };
 
     return (

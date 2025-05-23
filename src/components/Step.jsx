@@ -50,7 +50,22 @@ function Step({
                                 </span>
                             )}
                         </div>
-
+                        
+   {q.industryContext && (
+                            <div className="industry-context" style={{ 
+                                fontSize: '0.85em', 
+                                color: '#555', 
+                                backgroundColor: '#f9f9f9', 
+                                borderLeft: '3px solid #007bff', 
+                                padding: '10px', 
+                                marginTop: '5px', // Ajusta este margen si es necesario
+                                marginBottom: '10px',
+                                whiteSpace: 'pre-line' 
+                            }}>
+                                <strong>Industry Examples:</strong>
+                                <p style={{margin: '5px 0 0 0'}}>{q.industryContext}</p>
+                            </div>
+                        )}
                         {/* --- Renderizado Condicional de Tipos de Pregunta --- */}
                         
                         {/* ======================= INICIO BLOQUE MCQ MODIFICADO ======================= */}

@@ -45,6 +45,7 @@ export const getSaleToDeliveryProcessQuestions = (sectionName) => {
                 { text: "We don't have a defined process for contracts and payments, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
+            industryContext: "Retail: Consider how you process purchase orders, payment terms for larger orders, or special orders requiring deposits\nManufacturing: Focus on how you handle purchase orders, payment terms, and order confirmations\nConstruction: Think about how you process proposals, bids, contracts, and payment schedules"
         },
         {
             id: "s2d_q1_owner",
@@ -76,6 +77,7 @@ export const getSaleToDeliveryProcessQuestions = (sectionName) => {
                 { text: "There's no formal handoff process, or I'm not sure how information transfers between sales and delivery.", value: "e", score: 0 }
             ],
             required: true,
+            industryContext: "Retail: Consider how customer orders or special requests move from sales staff to fulfillment\nManufacturing: Focus on how sales orders are communicated to production planning\nConstruction: Think about how estimating/sales information transfers to the project management team"
         },
         {
             id: "s2d_q2_owner",
@@ -138,6 +140,7 @@ export const getSaleToDeliveryProcessQuestions = (sectionName) => {
                 { text: "We don't have a defined process for collecting client information, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
+            industryContext:"Retail: Consider how you gather customer preferences, sizing, or customization requirements\nManufacturing: Focus on how you collect product specifications, purchase order details, and shipping requirements\nConstruction: Think about how you gather project requirements, site information, permits, and client preferences"
         },
         {
             id: "s2d_q4_owner",
@@ -169,6 +172,7 @@ export const getSaleToDeliveryProcessQuestions = (sectionName) => {
                 { text: "We don't typically define success metrics or create delivery timelines with milestones, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
+            industryContext:"Retail: Consider how you confirm customer expectations regarding product performance, delivery timing, and satisfaction criteria. This includes communicating delivery schedules, installation timelines (if applicable), and specific success measures like product quality standards or performance guarantees.\nManufacturing: Focus on how you establish and document product specifications, quality standards, production milestones, and delivery schedules. This includes defining inspection points, production phase completion criteria, and shipping/delivery timeline commitments.\nConstruction: Think about how you define project success criteria, quality standards, project phasing, milestone completion definitions, and timeline commitments. This includes establishing phase completion criteria, inspection schedules, and the sequence of work with corresponding delivery dates."
         },
         {
             id: "s2d_q5_owner",
@@ -200,6 +204,7 @@ export const getSaleToDeliveryProcessQuestions = (sectionName) => {
                 { text: "We don't have a defined process for scheduling and resource allocation, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
+            industryContext:"Retail: Consider how you schedule staff for order fulfillment, restocking, or customer appointments\nManufacturing: Focus on how you schedule production runs, assign machine time, and allocate labor\nConstruction: Think about how you schedule crews, subcontractors, equipment, and material deliveries"
         },
         {
             id: "s2d_q6_owner",
@@ -262,6 +267,7 @@ export const getSaleToDeliveryProcessQuestions = (sectionName) => {
                 { text: "We don't have dedicated tools supporting the sale-to-delivery transition, or I'm not sure how our current technologies support this process.", value: "e", score: 0 }
             ],
             required: true,
+            industryContext:"Retail: Consider how your POS, inventory, and order management systems connect\nManufacturing: Focus on how your CRM, ERP, production planning, and inventory systems integrate\nConstruction: Think about how your estimating, project management, and accounting software work together"
         },
         {
             id: "s2d_q8_owner",

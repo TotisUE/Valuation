@@ -1,13 +1,12 @@
-// src/components/MultiStepForm.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ScoringAreas, initialScores } from '../scoringAreas';
 import {
-    sections as allAppSections, // Renombrado para claridad
+    sections as allAppSections,
     getQuestionsForStep,
     calculateMaxPossibleScore,
     getValuationParameters,
     calculateMaxScoreForArea,
-    getQuestionsDataArray, // Para inicializar formData
+    getQuestionsDataArray,
 } from '../questions';
 import { getSaleToDeliveryProcessQuestions } from '../sections-data/saleToDeliveryQuestions';
 import Step from './Step';
@@ -16,102 +15,99 @@ import Navigation from './Navigation';
 import ResultsDisplay from './results/ResultsDisplay';
 import { getFunctionsBaseUrl } from '../utils/urlHelpers';
 
-const LOCAL_STORAGE_KEY = 'valuationFormData';
-const LOCAL_STORAGE_STEP_KEY = 'valuationFormStep';
+const LOCAL_STORAGE_FORM_DATA_KEY = 'valuationFormData';
+const LOCAL_STORAGE_CURRENT_STEP_KEY = 'valuationFormCurrentStep';
+// ---- USAR ESTAS CONSTANTES consistentemente ----
+const LOCAL_STORAGE_CALC_RESULT_KEY = 'valuationCalculationResult';
+const LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY = 'valuationSubmissionSuccess';
 
-// Helper para inicializar el formData con todas las valueKeys
-const initializeFullFormData = () => {
-    const allQuestions = getQuestionsDataArray(); // Obtiene TODAS las preguntas definidas
+const buildInitialFormData = () => { /* ... Tu función buildInitialFormData sin cambios ... */ 
+    const allQuestions = getQuestionsDataArray();
     const initialFormState = {};
     allQuestions.forEach(q => {
-        // Inicializar según el tipo de pregunta para evitar problemas con controlled inputs
-        if (q.type === 'number') {
-            initialFormState[q.valueKey] = null;
-        } else if (q.type === 'mcq' || q.type === 'select' || q.type === 'select_dependent') {
-            initialFormState[q.valueKey] = ''; // Para selects y radios, un string vacío es un buen default
-        } else { // text, textarea, email
-            initialFormState[q.valueKey] = '';
-        }
+        initialFormState[q.valueKey] = (q.type === 'number') ? null : '';
     });
-
-    // Añadir campos que no son directamente de preguntas pero se usan en el estado
-    initialFormState.ebitdaAdjustments = 0; // Valor por defecto específico
+    initialFormState.ebitdaAdjustments = 0;
     initialFormState.assessmentId = null;
-    
-    // Puedes añadir otros campos por defecto si los tienes y no vienen de `allQuestions`
-    // Ejemplo: currentRevenue, grossProfit, ebitda si no estuvieran como preguntas
-    // pero en tu caso, ya están definidos como preguntas, así que `allQuestions` debería cubrirlos.
-
-    // Asegurar que campos cruciales de perfil tengan un default si no están en `allQuestions` (aunque deberían)
-    const profileDefaults = {
+    const profileAndBaseDefaults = {
         userEmail: '', ownerRole: '', naicsSector: '', naicsSubSector: '',
         employeeCount: null, locationState: '', locationZip: '',
         revenueSourceBalance: '', customerTypeBalance: '', currentRevenue: null,
-        grossProfit: null, ebitda: null
+        grossProfit: null, ebitda: null,
+        s2d_productName: '', s2d_productDescription: '', s2d_productRevenue: null,
+        s2d_q1_process: '', s2d_q1_owner: '', s2d_q2_process: '', s2d_q2_owner: '',
+        s2d_q3_process: '', s2d_q3_owner: '', s2d_q4_process: '', s2d_q4_owner: '',
+        s2d_q5_process: '', s2d_q5_owner: '', s2d_q6_process: '', s2d_q6_owner: '',
+        s2d_q7_process: '', s2d_q7_owner: '', s2d_q8_process: '', s2d_q8_owner: '',
     };
-
-    return { ...profileDefaults, ...initialFormState }; // Fusionar, dando prioridad a los de `allQuestions`
+    return { ...profileAndBaseDefaults, ...initialFormState };
 };
 
-
-function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Renombrar prop para claridad
+function MultiStepForm({ initialFormData: initialFormDataProp = null }) {
 
     const [formData, setFormData] = useState(() => {
-        console.log("MultiStepForm: Initializing formData state...");
-        const baseStructure = initializeFullFormData(); // Usa la nueva función helper
-
+        const baseStructure = buildInitialFormData();
         if (initialFormDataProp) {
-            console.log("MultiStepForm: Initializing with initialFormDataProp:", initialFormDataProp);
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_FORM_DATA_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_CURRENT_STEP_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_CALC_RESULT_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY);
             return { ...baseStructure, ...initialFormDataProp };
         }
-
-        const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        let dataFromStorage = {};
-        if (savedData) {
-            try {
-                dataFromStorage = JSON.parse(savedData);
-                if (typeof dataFromStorage !== 'object' || dataFromStorage === null) dataFromStorage = {};
-                console.log("MultiStepForm: Data loaded from localStorage:", dataFromStorage);
-            } catch (error) {
-                console.error("MultiStepForm: Error parsing localStorage data", error);
-                dataFromStorage = {};
-            }
-        }
-
-        let finalInitialState = { ...baseStructure, ...dataFromStorage };
-
+        const savedData = localStorage.getItem(LOCAL_STORAGE_FORM_DATA_KEY);
+        let dataToUse = savedData ? JSON.parse(savedData) : baseStructure; // Cuidado con JSON.parse(null)
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const emailFromUrl = params.get('email');
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (emailFromUrl && emailRegex.test(emailFromUrl)) {
-                console.log(`MultiStepForm: Overwriting userEmail with validated URL email: ${emailFromUrl}`);
-                finalInitialState.userEmail = emailFromUrl;
+                dataToUse = { ...dataToUse, userEmail: emailFromUrl };
             }
         }
-        console.log("MultiStepForm: Final initial formData state:", finalInitialState);
-        return finalInitialState;
+        return dataToUse;
     });
 
-    const visibleSections = useMemo(() => {
-        return allAppSections;
-}, [allAppSections]);
 
+    const [calculationResult, setCalculationResult] = useState(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_CALC_RESULT_KEY); // Usa la constante correcta
+        try {
+            return saved ? JSON.parse(saved) : null;
+        } catch (e) {
+            console.error("Error parsing calculationResult from localStorage:", e);
+            localStorage.removeItem(LOCAL_STORAGE_CALC_RESULT_KEY); // Limpiar si está corrupto
+            return null;
+        }
+    });
+
+    const [submissionSuccess, setSubmissionSuccess] = useState(() => { // Nuevo estado booleano
+        const saved = localStorage.getItem(LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY); // Usa la constante correcta
+        return saved === 'true'; 
+    });
+
+    // Este estado es para el mensaje específico del backend, no necesita persistir entre montajes
+    const [submissionBackendResultMsg, setSubmissionBackendResultMsg] = useState(null);
+
+
+    const visibleSections = useMemo(() => allAppSections, [allAppSections]);
     const TOTAL_STEPS = visibleSections.length;
 
-    const [currentStep, setCurrentStep] = useState(() => {
+   const [currentStep, setCurrentStep] = useState(() => {
         if (initialFormDataProp) return 0;
-        const savedStep = localStorage.getItem(LOCAL_STORAGE_STEP_KEY);
-        const initialStep = savedStep ? parseInt(savedStep, 10) : 0;
-        const maxValidStep = TOTAL_STEPS > 0 ? TOTAL_STEPS -1 : 0;
-        return !isNaN(initialStep) && initialStep >= 0 && initialStep <= maxValidStep ? initialStep : 0;
-    });
 
+        // Si ya hay un resultado exitoso guardado (leído en submissionSuccess y calculationResult),
+        // la lógica de renderizado principal se encargará de mostrar ResultsDisplay.
+        // El currentStep puede ser el último paso guardado o 0.
+        const savedStep = localStorage.getItem(LOCAL_STORAGE_CURRENT_STEP_KEY); // Usa la constante correcta
+        const initialStep = savedStep ? parseInt(savedStep, 10) : 0;
+        const maxValidStep = TOTAL_STEPS > 0 ? TOTAL_STEPS - 1 : 0;
+        
+        if (isNaN(initialStep) || initialStep < 0 || initialStep > maxValidStep) {
+            return 0; // Default a 0 si el valor guardado es inválido
+        }
+        return initialStep;
+    });
+    
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submissionResult, setSubmissionResult] = useState(null);
-    const [calculationResult, setCalculationResult] = useState(null);
     const [errors, setErrors] = useState({});
     const [sectors, setSectors] = useState([]);
     const [subSectors, setSubSectors] = useState([]);
@@ -119,23 +115,26 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Ren
     const [isSendingLink, setIsSendingLink] = useState(false);
     const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: '' });
 
-    // useEffect para ajustar currentStep si TOTAL_STEPS cambia (ej. por isOwner)
     useEffect(() => {
-        if (TOTAL_STEPS > 0 && currentStep >= TOTAL_STEPS) {
+        if (TOTAL_STEPS > 0 && currentStep >= TOTAL_STEPS && !submissionSuccess) {
             setCurrentStep(TOTAL_STEPS - 1);
         } else if (TOTAL_STEPS === 0 && currentStep !== 0) {
             setCurrentStep(0);
         }
-    }, [TOTAL_STEPS, currentStep]);
+    }, [TOTAL_STEPS, currentStep, submissionSuccess]);
 
-    useEffect(() => {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
-    }, [formData]);
+useEffect(() => {
+        if (!submissionSuccess) { // Solo guardar si no se ha enviado exitosamente
+            localStorage.setItem(LOCAL_STORAGE_FORM_DATA_KEY, JSON.stringify(formData));
+        }
+    }, [formData, submissionSuccess]);
 
-    useEffect(() => {
-        localStorage.setItem(LOCAL_STORAGE_STEP_KEY, currentStep.toString());
-        window.scrollTo(0, 0);
-    }, [currentStep]);
+   useEffect(() => {
+        if (!submissionSuccess) { // Solo guardar si no se ha enviado exitosamente
+            localStorage.setItem(LOCAL_STORAGE_CURRENT_STEP_KEY, currentStep.toString());
+        }
+        window.scrollTo(0, 0); // El scroll puede quedar fuera de la condición
+    }, [currentStep, submissionSuccess]);
 
     // useEffects para NAICS (sin cambios)
     useEffect(() => { /* ... tu fetchNaicsData ... */ 
@@ -254,12 +253,6 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Ren
             if (isNaN(processedValue)) processedValue = null;
         }
         
-        // Para MCQ, el 'value' ya es la letra ("a", "b") o el texto, según Step.jsx
-        // Tu Step.jsx para MCQ del form principal usa option.text
-        // Si las preguntas S2D (que también usan Step.jsx ahora) tienen option.value diferente a option.text,
-        // necesitas asegurarte de que handleChange pueda manejar ambos o que Step.jsx sea consistente.
-        // Por ahora, asumimos que Step.jsx pasa lo que handleChange espera.
-
         setFormData(prevData => {
             const newFormData = { ...prevData, [name]: processedValue };
             return newFormData;
@@ -272,59 +265,89 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Ren
                 return newErrors;
             });
         }
-    }, [errors]); // Removido setIsOwner de dependencias, ya que se llama dentro y depende de 'value'
+    }, [errors]);
 
     const handleSubmit = useCallback(async () => {
+        console.log("[MultiStepForm] handleSubmit triggered. isSubmitting:", isSubmitting);
+        if (isSubmitting) {
+            console.log("[MultiStepForm] Submission already in progress, returning.");
+            return;
+        }
+
         setIsSubmitting(true);
-        setSubmissionResult(null);
-        setCalculationResult(null);
+        setSubmissionBackendResultMsg(null); // Limpiar mensaje previo del backend
+        // No reseteamos calculationResult o submissionSuccess aquí; se manejan al final o en error.
         setErrors({});
-        let localCalcResult = {};
+        let calculatedResultsForThisSubmission = {}; // Para los resultados de ESTA sumisión
 
         try {
-            // VALIDACIONES (currentRevenue, ebitda si isOwner, naicsSector, naicsSubSector)
-            if (!formData.userEmail) throw new Error("User email is required for submission.");
-            if (formData.currentRevenue === null || formData.currentRevenue === undefined) {throw new Error("Current Revenue is required.");}
-            if (!formData.naicsSector || !formData.naicsSubSector) throw new Error("Industry Sector and Sub-Sector are required.");
+            console.log("[MultiStepForm] Validating form data...");
+            if (!formData.userEmail || formData.currentRevenue == null || !formData.naicsSector || !formData.naicsSubSector) {
+                 throw new Error("Please complete all required profile, financial and industry fields.");
+            }
+            // Aquí puedes añadir más validaciones si el ebitda es requerido para todos, por ejemplo.
+            // if (formData.ebitda == null) throw new Error("EBITDA is required.");
+            console.log("[MultiStepForm] Basic validations passed.");
 
-            // --- CÁLCULOS ORIGINALES (para valoración general) ---
+            // --- CÁLCULOS (Asume que tus funciones de cálculo son correctas y usan 'formData') ---
             const adjEbitda = (formData.ebitda || 0) + (formData.ebitdaAdjustments || 0);
             const valuationParams = getValuationParameters(adjEbitda, formData.naicsSector, formData.naicsSubSector);
-            const { stage, baseMultiple, maxMultiple } = valuationParams;
-            const originalScores = calculateScores(formData);
+            const originalScores = calculateScores(formData); // Tu función existente
             const maxPossibleOriginal = calculateMaxPossibleScore();
-            const originalScorePercentage = maxPossibleOriginal > 0 ? (Object.values(originalScores).reduce((sum, s) => sum + (s || 0), 0) / maxPossibleOriginal) : 0;
+            const originalScorePercentage = maxPossibleOriginal > 0 ? (Object.values(originalScores).reduce((a, b) => a + b, 0) / maxPossibleOriginal) : 0;
             const clampedOriginalScorePercentage = Math.max(0, Math.min(1, originalScorePercentage));
-            const finalMultiple = baseMultiple + (maxMultiple - baseMultiple) * clampedOriginalScorePercentage;
+            const finalMultiple = valuationParams.baseMultiple + (valuationParams.maxMultiple - valuationParams.baseMultiple) * clampedOriginalScorePercentage;
             const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
-            const roadmapData = generateImprovementRoadmap(originalScores, stage, formData);
+            const roadmapData = generateImprovementRoadmap(originalScores, valuationParams.stage, formData);
 
-            // --- INICIO: CÁLCULO DE SCORES S2D ---
             let s2d_processMaturityScore = 0;
             let s2d_ownerIndependenceScore = 0;
             let s2d_clientExperienceOptimizationScore = 0;
             let s2d_resourceAllocationEffectivenessScore = 0;
             
-            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(allAppSections[1]);
+            // Obtener las definiciones de las preguntas S2D
+            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(allAppSections[1]); 
+            
             const clientExperienceValueKeys = ["s2d_q3_process", "s2d_q2_process", "s2d_q5_process"];
             const resourceAllocationValueKeys = ["s2d_q6_process", "s2d_q4_process", "s2d_q7_process"];
-            const s2d_detailedAnswers = { clientExperience: {}, resourceAllocation: {} };
+            
+            // Declarar s2d_detailedAnswers AQUÍ para que esté en el ámbito correcto
+            const s2d_detailedAnswers = { 
+                clientExperience: {}, 
+                resourceAllocation: {} 
+            };
 
             s2dQuestionDefinitions.forEach(q => {
                 const answerValue = formData[q.valueKey]; // Las respuestas S2D están en el formData principal
                 if (answerValue && q.options && q.type === 'mcq') {
-                    const selectedOption = q.options.find(opt => opt.value === answerValue); // ASUME que S2D MCQs guardan 'option.value'
+                    const selectedOption = q.options.find(opt => opt.value === answerValue);
                     if (selectedOption && typeof selectedOption.score === 'number') {
-                        let qKey = q.id.split('_')[1];
+                        let qKeyForDetailed = ""; // Para usar como clave en s2d_detailedAnswers (ej. "q1", "q2")
+                        const idParts = q.id.split('_');
+                        if (idParts.length >= 2) {
+                            qKeyForDetailed = idParts[1];
+                        }
+
                         if (q.id.includes('_process')) {
                             s2d_processMaturityScore += selectedOption.score;
-                            if (clientExperienceValueKeys.includes(q.valueKey) && qKey) {
+
+                            if (clientExperienceValueKeys.includes(q.valueKey) && qKeyForDetailed) {
                                 s2d_clientExperienceOptimizationScore += selectedOption.score;
-                                s2d_detailedAnswers.clientExperience[qKey] = { questionText: q.text, answerText: selectedOption.text, score: selectedOption.score };
+                                // --- LLENAR s2d_detailedAnswers ---
+                                s2d_detailedAnswers.clientExperience[qKeyForDetailed] = { 
+                                    questionText: q.text, 
+                                    answerText: selectedOption.text, 
+                                    score: selectedOption.score 
+                                };
                             }
-                            if (resourceAllocationValueKeys.includes(q.valueKey) && qKey) {
+                            if (resourceAllocationValueKeys.includes(q.valueKey) && qKeyForDetailed) {
                                 s2d_resourceAllocationEffectivenessScore += selectedOption.score;
-                                s2d_detailedAnswers.resourceAllocation[qKey] = { questionText: q.text, answerText: selectedOption.text, score: selectedOption.score };
+                                // --- LLENAR s2d_detailedAnswers ---
+                                s2d_detailedAnswers.resourceAllocation[qKeyForDetailed] = { 
+                                    questionText: q.text, 
+                                    answerText: selectedOption.text, 
+                                    score: selectedOption.score 
+                                };
                             }
                         } else if (q.id.includes('_owner')) {
                             s2d_ownerIndependenceScore += selectedOption.score;
@@ -332,12 +355,10 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Ren
                     }
                 }
             });
-            // --- FIN: CÁLCULO DE SCORES S2D ---
-
-            localCalcResult = {
-                stage, adjEbitda, baseMultiple, maxMultiple, finalMultiple, estimatedValuation,
-                scores: originalScores, scorePercentage: clampedOriginalScorePercentage,
-                roadmap: roadmapData,
+              calculatedResultsForThisSubmission = {
+                stage: valuationParams.stage, adjEbitda, baseMultiple: valuationParams.baseMultiple, 
+                maxMultiple: valuationParams.maxMultiple, finalMultiple, estimatedValuation,
+                scores: originalScores, scorePercentage: clampedOriginalScorePercentage, roadmap: roadmapData,
                 s2d_productName: formData.s2d_productName,
                 s2d_productDescription: formData.s2d_productDescription,
                 s2d_productRevenue: formData.s2d_productRevenue,
@@ -345,39 +366,64 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Ren
                 s2d_ownerIndependenceScore,
                 s2d_clientExperienceOptimizationScore,
                 s2d_resourceAllocationEffectivenessScore,
-                s2d_detailedAnswers,
-                // s2d_all_answers: s2dQuestionDefinitions.reduce((obj, q) => ({...obj, [q.valueKey]: formData[q.valueKey]}), {})
+                s2d_detailedAnswers // Ahora este objeto está correctamente poblado
             };
+            // --- FIN CÁLCULOS ---
             
-            console.log("[MultiStepForm] handleSubmit - localCalcResult (incluye S2D):", localCalcResult);
+            console.log("[MultiStepForm] Calculations complete. localCalcResult:", calculatedResultsForThisSubmission);
 
-            const payloadToSend = { formData, results: localCalcResult };
-            const functionsBase = getFunctionsBaseUrl();
-            const functionUrl = `${functionsBase}/.netlify/functions/submit-valuation`;
+            const payloadToSend = { formData, results: calculatedResultsForThisSubmission };
+            const functionUrl = `${getFunctionsBaseUrl()}/.netlify/functions/submit-valuation`;
+            
+            console.log("[MultiStepForm] Sending data to Netlify function:", functionUrl);
             const response = await fetch(functionUrl, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadToSend)
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payloadToSend)
             });
-            const resultText = await response.text();
-            const result = JSON.parse(resultText);
-            if (!response.ok || !result.success) throw new Error(result.error || 'Backend processing failed.');
 
-            setCalculationResult(localCalcResult);
-            setSubmissionResult({ success: true, message: result.message || "Submission processed!" });
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
+            console.log("[MultiStepForm] Netlify function response status:", response.status);
+            const resultText = await response.text();
+            console.log("[MultiStepForm] Netlify function response text (first 100 chars):", resultText.substring(0, 100));
+
+            let resultJson;
+            try {
+                resultJson = JSON.parse(resultText);
+            } catch (parseError) {
+                console.error("[MultiStepForm] Error parsing JSON response from Netlify function:", parseError, "Full text:", resultText);
+                throw new Error(`Server returned non-JSON response: ${response.status}`);
+            }
+
+            if (!response.ok || !resultJson.success) {
+                console.error("[MultiStepForm] Netlify function returned an error in JSON:", resultJson.error);
+                throw new Error(resultJson.error || 'Backend processing failed and did not return a specific error message.');
+            }
+
+            console.log("[MultiStepForm] Submission successful. Backend message:", resultJson.message);
+            // --- GUARDAR RESULTADOS Y MARCAR SUMISIÓN EXITOSA EN LOCALSTORAGE ---
+            setCalculationResult(calculatedResultsForThisSubmission);
+            localStorage.setItem(LOCAL_STORAGE_CALC_RESULT_KEY, JSON.stringify(calculatedResultsForThisSubmission));
+            
+            setSubmissionSuccess(true);
+            localStorage.setItem(LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY, 'true');
+            // -----------------------------------------------------------------
+            setSubmissionBackendResultMsg({ success: true, message: resultJson.message || "Submission processed!" });
+            
+            localStorage.removeItem(LOCAL_STORAGE_FORM_DATA_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_CURRENT_STEP_KEY);
 
         } catch (error) { 
-           console.error("[MultiStepForm] handleSubmit Error:", error.message, error.stack); 
-           setSubmissionResult({ success: false, message: `Submission Failed: ${error.message}` });
-           setCalculationResult(null);
+           console.error("[MultiStepForm] handleSubmit CATCH Error:", error.message, error.stack); 
+           setSubmissionBackendResultMsg({ success: false, message: `Submission Failed: ${error.message}` });
+           setCalculationResult(null); 
+           setSubmissionSuccess(false);
+           localStorage.removeItem(LOCAL_STORAGE_CALC_RESULT_KEY); 
+           localStorage.removeItem(LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY);
         } finally {
+            console.log("[MultiStepForm] handleSubmit finally block. Setting isSubmitting to false.");
             setIsSubmitting(false);
         }
-    }, [
-        formData,calculateScores, generateImprovementRoadmap, 
-        allAppSections, errors, // Asegurar que allAppSections esté si se usa para obtener el nombre de la sección S2D
-        // No necesitas getSaleToDeliveryProcessQuestions en dependencias
-    ]);
+    }, [formData, calculateScores, generateImprovementRoadmap, allAppSections, initialScores, ScoringAreas, isSubmitting]); // Añadido isSubmitting
 
     const handleNext = useCallback(() => { /* ... tu función sin cambios ... */
         const questionsToValidate = currentQuestions;
@@ -417,20 +463,30 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Ren
         }
     }, [currentStep]);
 
-    const handleStartOver = useCallback(() => { /* ... tu función sin cambios ... */
-        setSubmissionResult(null);
+   const handleStartOver = useCallback(() => {
         setCalculationResult(null);
+        setSubmissionSuccess(false); // <-- NUEVO
+        setSubmissionBackendResultMsg(null); // <-- NUEVO
         setCurrentStep(0);
-        // REINICIALIZAR formData CON LA ESTRUCTURA COMPLETA
-        setFormData(initializeFullFormData()); 
+        setFormData(buildInitialFormData()); 
         setErrors({});
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
-        localStorage.removeItem(LOCAL_STORAGE_STEP_KEY);
-    }, []); // No necesita dependencias si initializeFullFormData es pura y no depende de props/estado
+        localStorage.removeItem(LOCAL_STORAGE_FORM_DATA_KEY); // Usa la constante
+        localStorage.removeItem(LOCAL_STORAGE_CURRENT_STEP_KEY); // Usa la constante
+        localStorage.removeItem(LOCAL_STORAGE_CALC_RESULT_KEY); // <-- NUEVO
+        localStorage.removeItem(LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY); // <-- NUEVO
+    }, [allAppSections]); // buildInitialFormData puede depender de allAppSections si está fuera
 
-    const handleBackToEdit = useCallback(() => { /* ... tu función sin cambios ... */
-        setSubmissionResult(null);
-        setCalculationResult(null);
+   const handleBackToEdit = useCallback(() => {
+        setSubmissionSuccess(false); // <-- Clave para mostrar el formulario de nuevo
+        localStorage.removeItem(LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY); // Limpiar la bandera
+        // No limpiamos calculationResult aquí, para que ResultsDisplay pueda potencialmente
+        // mostrar datos si el usuario solo quería "ver" el formulario y volver.
+        // Tampoco limpiamos formData ni currentStep de localStorage, para que el usuario
+        // vuelva al último paso que estaba viendo del formulario en progreso.
+        // Si se quiere un "reset" completo al editar, se debería llamar a handleStartOver
+        // o implementar una lógica más compleja de carga de datos para edición.
+        setSubmissionBackendResultMsg(null); // Limpiar mensaje del backend
+        console.log("Back to edit: submissionSuccess flag cleared.");
     }, []);
 
     const handleSaveAndSendLink = useCallback(async () => { /* ... tu función sin cambios ... */
@@ -469,17 +525,24 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) { // Ren
     }, [formData]); // formData es la dependencia principal aquí
 
     // --- Conditional Rendering Logic & Main Form Render ---
-    if (submissionResult && submissionResult.success && calculationResult) {
-        // ... tu JSX para ResultsDisplay sin cambios ...
-        return ( <ResultsDisplay calculationResult={calculationResult} onStartOver={handleStartOver} onBackToEdit={handleBackToEdit} consultantCalendlyLink={"https://help.calendly.com/hc/en-us/articles/223147027-Embed-options-overview"} userEmail={formData?.userEmail} formData={formData} /> );
-    } else if (submissionResult && !submissionResult.success) {
-        // ... tu JSX para error de sumisión sin cambios ...
-         return ( <div className="submission-result error"><h2>Submission Error</h2><p>{submissionResult.message}</p><div style={{textAlign: 'center', marginTop: '20px'}}><button type="button" onClick={() => setSubmissionResult(null)}>Back to Form</button></div></div> );
+    if (submissionSuccess && calculationResult) { // Usa el estado booleano y el resultado calculado
+        return ( <ResultsDisplay 
+                    calculationResult={calculationResult} 
+                    onStartOver={handleStartOver} 
+                    onBackToEdit={handleBackToEdit}
+                    consultantCalendlyLink={"https://help.calendly.com/hc/en-us/articles/223147027-Embed-options-overview"} 
+                    userEmail={formData?.userEmail || calculationResult?.formData?.userEmail /* Ajustar según dónde esté el email más fiable */}
+                    formData={formData} // Pasar el formData actual que contiene las respuestas S2D
+                /> );
+    }
+    
+    // Si hubo un error del backend al intentar el submit final
+    if (submissionBackendResultMsg && !submissionBackendResultMsg.success) {
+         return ( <div className="submission-result error"><h2>Submission Error</h2><p>{submissionBackendResultMsg.message}</p><div style={{textAlign: 'center', marginTop: '20px'}}><button type="button" onClick={() => setSubmissionBackendResultMsg(null)}>Back to Form</button></div></div> );
     }
 
     return (
         <div className="multi-step-form">
-            {/* ... tu JSX para ProgressIndicator, Step, Navigation sin cambios ... */}
             <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={visibleSections} />
             <form onSubmit={(e) => e.preventDefault()}>
             <Step
