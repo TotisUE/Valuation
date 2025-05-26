@@ -278,24 +278,59 @@ useEffect(() => {
         }
     }, [errors]);
 
-    const generateS2DPromptTextInternal = useCallback((s2dAnswers, s2dMainScores, s2dQuestionDefinitions) => {
-        if (!s2dAnswers || !s2dMainScores || !s2dQuestionDefinitions || s2dQuestionDefinitions.length === 0) {
+const generateS2DPromptTextInternal = useCallback((
+       allFormData, // El primer argumento es el objeto formData completo
+        currentS2DScores,
+        s2dQuestionDefinitions
+    ) => {
+        if (!allFormData || !currentS2DScores || !s2dQuestionDefinitions || s2dQuestionDefinitions.length === 0) {
             console.error("generateS2DPromptTextInternal: Missing critical data for S2D prompt.");
             return "Error: Could not generate S2D prompt due to missing data or question definitions.";
         }
 
         let output = "##Sale to Delivery Current Company Scoring##\n\n";
+
+        // ======================= INICIO: BLOQUE AÑADIDO PARA SCORES S2D =======================
+        // Asumimos 8 preguntas principales para S2D para los máximos
+        const maxProcessMaturityScore = 8 * 7; // 56
+        const maxOwnerIndependenceScore = 8 * 5; // 40
+
+        output += `**Process Maturity Score:** ${currentS2DScores.processMaturityScore !== undefined ? currentS2DScores.processMaturityScore : 'N/A'} / ${maxProcessMaturityScore} points\n`;
+        if (currentS2DScores.processMaturityScore !== undefined && maxProcessMaturityScore > 0) {
+            const percentage = (currentS2DScores.processMaturityScore / maxProcessMaturityScore) * 100;
+            if (percentage >= 85) output += "Interpretation: Excellent - Your Sale to Delivery process is a competitive advantage.\n";
+            else if (percentage >= 70) output += "Interpretation: Good - Your process works well but has some improvement opportunities.\n";
+            else if (percentage >= 50) output += "Interpretation: Developing - Basic processes exist but significant improvements would drive better results.\n";
+            else if (percentage >= 21) output += "Interpretation: Basic - Major improvements needed to create consistent, scalable delivery.\n";
+            else output += "Interpretation: Critical - Immediate attention required to establish fundamental processes.\n";
+        }
+        output += "\n";
+
+        output += `**Owner Independence Score:** ${currentS2DScores.ownerIndependenceScore !== undefined ? currentS2DScores.ownerIndependenceScore : 'N/A'} / ${maxOwnerIndependenceScore} points\n`;
+        if (currentS2DScores.ownerIndependenceScore !== undefined && maxOwnerIndependenceScore > 0) {
+            const percentage = (currentS2DScores.ownerIndependenceScore / maxOwnerIndependenceScore) * 100;
+            if (percentage >= 80) output += "Interpretation: Excellent - Processes run independently with minimal owner involvement.\n";
+            else if (percentage >= 60) output += "Interpretation: Good - Owner is appropriately positioned in oversight rather than execution.\n";
+            else if (percentage >= 40) output += "Interpretation: Developing - Some delegation exists, but owner remains too involved in execution.\n";
+            else if (percentage >= 20) output += "Interpretation: Concerning - Owner is a critical bottleneck in multiple processes.\n";
+            else output += "Interpretation: Critical - Business is entirely dependent on owner involvement.\n";
+        }
+        output += "\n";
+        // ======================= FIN: BLOQUE AÑADIDO PARA SCORES S2D =======================
+
+
         output += "**Owner Strategic Positioning**\n";
         const areasForDelegation = [];
         const areasForActiveManagement = [];
 
-        // Iterar sobre las 8 preguntas principales S2D (q1 a q8)
         for (let i = 1; i <= 8; i++) {
             const processValueKey = `s2d_q${i}_process`;
             const ownerValueKey = `s2d_q${i}_owner`;
 
-            const processAnswer = s2dAnswers[processValueKey]; // Respuesta del usuario (ej. "a", "b")
-            const ownerAnswer = s2dAnswers[ownerValueKey];   // Respuesta del usuario (ej. "a", "b")
+            // --- CAMBIO AQUÍ: Usar allFormData ---
+            const processAnswer = allFormData[processValueKey]; 
+            const ownerAnswer = allFormData[ownerValueKey];   
+            // --- FIN CAMBIO ---
 
             const processQDef = s2dQuestionDefinitions.find(q => q.valueKey === processValueKey);
             const ownerQDef = s2dQuestionDefinitions.find(q => q.valueKey === ownerValueKey);
@@ -324,7 +359,6 @@ useEffect(() => {
         output += "Areas for strategic oversight (delegation opportunities): " + (areasForDelegation.length > 0 ? areasForDelegation.join(', ') : "None identified") + ".\nUser wants to begin delegating these areas to other members of the team.\n\n";
         output += "Areas for active management: " + (areasForActiveManagement.length > 0 ? areasForActiveManagement.join(', ') : "None identified") + ".\nUser wants to become actively involved in these areas to bring up competency. AI should share information whenever possible on best practices, templates, etc.\n\n";
 
-        // Plantillas para las secciones del prompt S2D
         // **ACCIÓN PARA TI: ASEGÚRATE QUE ESTOS TEXTOS SEAN EXACTAMENTE LOS DEL DOCUMENTO DE HAYDEN**
         const promptSectionTemplates = {
             s2d_q1_process: { title: "Contract and Payment Processing", text: "Contract and Payment Processing: Current contract and payment processes need standardization and automation. The business currently uses [%RESPONSE%]. AI should actively suggest improvements to contract workflows, including standardized templates, digital signature implementation, and automated follow-up sequences. When discussing new client engagements, proactively recommend contract tracking systems, payment reminder templates, documentation of payment terms, and refund language. Prioritize solutions that reduce manual handling while ensuring consistency and compliance." },
@@ -341,7 +375,7 @@ useEffect(() => {
         s2dQuestionDefinitions.forEach(qDef => {
             // Solo nos interesan las preguntas de proceso para esta parte detallada
             if (qDef.id.includes('_process') && promptSectionTemplates[qDef.valueKey]) {
-                const answer = s2dAnswers[qDef.valueKey]; // Respuesta del usuario (ej. "a", "b")
+                const answer = allFormData[qDef.valueKey];
                 if (answer && qDef.options) {
                     const selectedOpt = qDef.options.find(o => o.value === answer);
                     if (selectedOpt && typeof selectedOpt.score === 'number' && selectedOpt.score < 5) {
@@ -355,10 +389,10 @@ useEffect(() => {
         return output;
     }, []);
 
-             const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
+    const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
         console.log(`[MultiStepForm] Generating prompt for section: ${sectionNameForPrompt}`);
         
-        const questionsForThisSection = getQuestionsForStep(currentStep);
+        const questionsForThisSection = getQuestionsForStep(currentStep); 
         const sectionAnswers = {};
         questionsForThisSection.forEach(q => {
             if (formData.hasOwnProperty(q.valueKey)) {
@@ -366,78 +400,106 @@ useEffect(() => {
             }
         });
 
-        let promptText = `## Prompt & Results for Section: ${sectionNameForPrompt} ##\n\n`; // Título modificado
-        promptText += `Your current answers for this section:\n`;
-        questionsForThisSection.forEach(q => {
-            const answer = sectionAnswers[q.valueKey];
-            let displayAnswer = (answer !== undefined && answer !== '' && answer !== null) ? answer : '(Not answered)';
-            if (q.type === 'mcq' && answer && q.options) {
-                const valuePropertyToFind = q.options[0] && q.options[0].hasOwnProperty('value') ? 'value' : 'text';
-                const selectedOpt = q.options.find(opt => opt[valuePropertyToFind] === answer);
-                if (selectedOpt) {
-                    displayAnswer = `"${selectedOpt.text}"`;
-                }
-            }
-            promptText += `- ${q.text}: ${displayAnswer}\n`;
-        });
-        promptText += "\n";
+        let promptText = ""; 
 
-        // --- INICIO: LÓGICA PARA SCORES DE SECCIÓN (SI APLICA) ---
-        let sectionSpecificScoreInfo = "";
-        // Encontrar si esta sección corresponde a una de las ScoringAreas originales
-        const currentScoringArea = Object.keys(ScoringAreas).find(
-            key => ScoringAreas[key] === sectionNameForPrompt
-        );
-
-        if (currentScoringArea) {
-            const areaKey = ScoringAreas[currentScoringArea]; // Obtiene el string del nombre del área, ej: "Expansion Capability"
-            let currentAreaScore = 0;
-            let maxAreaScore = 0;
-
-            // Calcular score actual para esta área específica
-            questionsForThisSection.forEach(q => {
-                if (q.scoringArea === areaKey && q.type === 'mcq' && q.options) {
-                    const answer = sectionAnswers[q.valueKey];
-                    if (answer) {
-                        // Asumimos que las preguntas de ScoringAreas originales guardan option.text
-                        const selectedOpt = q.options.find(opt => opt.text === answer);
-                        if (selectedOpt && typeof selectedOpt.score === 'number') {
-                            currentAreaScore += selectedOpt.score;
-                        }
-                    }
-                    // Sumar al máximo posible para esta área
-                    const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
-                    maxAreaScore += maxOptionScore;
-                }
-            });
-            sectionSpecificScoreInfo += `**Section Score (${areaKey}):** ${currentAreaScore} / ${maxAreaScore} points\n`;
-            // Podrías añadir una interpretación simple del score aquí si lo deseas
-            if (maxAreaScore > 0) {
-                const percentage = (currentAreaScore / maxAreaScore) * 100;
-                if (percentage >= 80) sectionSpecificScoreInfo += "Interpretation: Strong performance in this area.\n";
-                else if (percentage >= 50) sectionSpecificScoreInfo += "Interpretation: Good performance, with some room for improvement.\n";
-                else sectionSpecificScoreInfo += "Interpretation: This area may need more focus for development.\n";
-            }
-            sectionSpecificScoreInfo += "\n";
-        }
-        promptText += sectionSpecificScoreInfo; // Añadir la info del score al prompt
-        // --- FIN: LÓGICA PARA SCORES DE SECCIÓN ---
-
-        promptText += "--- AI Suggestions & Considerations ---\n";
+        // --- LÓGICA ESPECÍFICA DEL PROMPT POR SECCIÓN ---
 
         if (sectionNameForPrompt === allAppSections[1]) { // "Sale to Delivery Process Assessment"
+            // ... (tu lógica existente para S2D, que calcula scores y llama a generateS2DPromptTextInternal)
+            // Esta parte estaba bien y la mantienes.
             let s2d_processMaturityScore = 0;
             let s2d_ownerIndependenceScore = 0;
             const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(sectionNameForPrompt); 
             s2dQuestionDefinitions.forEach(q => {
                 if (q.id.startsWith('s2d_q') && formData[q.valueKey] && q.options && q.type === 'mcq') {
-                    const opt = q.options.find(o => o.value === formData[q.valueKey]);
+                    const answerValue = formData[q.valueKey];
+                    const opt = q.options.find(o => o.value === answerValue);
                     if (opt && typeof opt.score === 'number') {
                         if (q.id.includes('_process')) s2d_processMaturityScore += opt.score;
                         else if (q.id.includes('_owner')) s2d_ownerIndependenceScore += opt.score;
                     }
                 }
             });
+            console.log("[S2D Prompt] Calculated Process Maturity Score:", s2d_processMaturityScore);
+console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndependenceScore);
+            const s2dScoresForThisPrompt = {
+                processMaturityScore: s2d_processMaturityScore,
+                ownerIndependenceScore: s2d_ownerIndependenceScore
+            };
+            promptText = generateS2DPromptTextInternal(formData, s2dScoresForThisPrompt, s2dQuestionDefinitions);
+
+        } else { // --- INICIO DEL BLOQUE 'else' PARA TODAS LAS OTRAS SECCIONES ---
+            promptText = `## Prompt & Results for Section: ${sectionNameForPrompt} ##\n\n`;
+            promptText += `Your current answers for this section:\n`;
+            questionsForThisSection.forEach(q => { /* ... tu lógica para mostrar respuestas ... */ 
+                const answer = sectionAnswers[q.valueKey];
+                let displayAnswer = (answer !== undefined && answer !== '' && answer !== null) ? answer : '(Not answered)';
+                if (q.type === 'mcq' && answer && q.options) {
+                    const valuePropertyToFind = q.options[0] && q.options[0].hasOwnProperty('value') ? 'value' : 'text';
+                    const selectedOpt = q.options.find(opt => opt[valuePropertyToFind] === answer);
+                    if (selectedOpt) {
+                        displayAnswer = `"${selectedOpt.text}"`;
+                    }
+                }
+                promptText += `- ${q.text}: ${displayAnswer}\n`;
+            });
+            promptText += "\n";
+
+            const currentScoringAreaKey = Object.keys(ScoringAreas).find(
+                key => ScoringAreas[key] === sectionNameForPrompt
+            );
+
+            let currentAreaScore = 0; 
+            let maxAreaScore = 0;     
+
+            if (currentScoringAreaKey) {
+                const areaName = ScoringAreas[currentScoringAreaKey];
+                questionsForThisSection.forEach(q => { /* ... tu lógica para calcular currentAreaScore y maxAreaScore ... */ 
+                     if (q.scoringArea === areaName && q.type === 'mcq' && q.options) {
+                        const answer = sectionAnswers[q.valueKey];
+                        if (answer) {
+                            const valueProp = q.options[0] && q.options[0].hasOwnProperty('value') ? 'value' : 'text';
+                            const selectedOpt = q.options.find(opt => opt[valueProp] === answer);
+                            if (selectedOpt && typeof selectedOpt.score === 'number') {
+                                currentAreaScore += selectedOpt.score;
+                            }
+                        }
+                        const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
+                        maxAreaScore += maxOptionScore;
+                    }
+                });
+                promptText += `**Section Score (${areaName}):** ${currentAreaScore} / ${maxAreaScore} points\n`;
+                if (maxAreaScore > 0) { /* ... tu lógica de interpretación de score ... */ 
+                    const percentage = (currentAreaScore / maxAreaScore) * 100;
+                    if (percentage >= 80) promptText += "Interpretation: Strong performance in this area.\n";
+                    else if (percentage >= 50) promptText += "Interpretation: Good performance, with some room for improvement.\n";
+                    else promptText += "Interpretation: This area may need more focus for development.\n";
+                }
+                promptText += "\n";
+            }
+            
+            promptText += "--- AI Suggestions & Considerations ---\n";
+
+              if (sectionNameForPrompt === allAppSections[1]) { 
+            let s2d_processMaturityScore = 0;
+            let s2d_ownerIndependenceScore = 0;
+
+            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(sectionNameForPrompt); 
+            s2dQuestionDefinitions.forEach(q => {
+
+          if (q.id.startsWith('s2d_q') && formData[q.valueKey] && q.options && q.type === 'mcq') {
+                    const answerValue = formData[q.valueKey]; // Respuesta del usuario (ej. "a")
+                    const opt = q.options.find(o => o.value === answerValue); // S2D usa option.value
+                    if (opt && typeof opt.score === 'number') {
+                        if (q.id.includes('_process')) {
+                            s2d_processMaturityScore += opt.score;
+                        } else if (q.id.includes('_owner')) {
+                            s2d_ownerIndependenceScore += opt.score;
+                        }
+                    }
+                }
+            });
+            
             const s2dScoresForThisPrompt = {
                 processMaturityScore: s2d_processMaturityScore,
                 ownerIndependenceScore: s2d_ownerIndependenceScore
@@ -549,6 +611,7 @@ useEffect(() => {
     else { 
             promptText += "Review your answers above. What are the key strengths and weaknesses highlighted? Identify one action item to build on a strength or address a weakness.\n";
         }
+    }
 
         downloadAsTxtFile(promptText, `${sectionNameForPrompt.replace(/[\s\/]+/g, '_')}_Prompt.txt`);
 
