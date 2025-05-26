@@ -294,8 +294,8 @@ useEffect(() => {
             const processValueKey = `s2d_q${i}_process`;
             const ownerValueKey = `s2d_q${i}_owner`;
 
-            const processAnswer = s2dAnswers[processValueKey]; // Respuesta del usuario para la pregunta de proceso
-            const ownerAnswer = s2dAnswers[ownerValueKey];   // Respuesta del usuario para la pregunta de owner
+            const processAnswer = s2dAnswers[processValueKey]; // Respuesta del usuario (ej. "a", "b")
+            const ownerAnswer = s2dAnswers[ownerValueKey];   // Respuesta del usuario (ej. "a", "b")
 
             const processQDef = s2dQuestionDefinitions.find(q => q.valueKey === processValueKey);
             const ownerQDef = s2dQuestionDefinitions.find(q => q.valueKey === ownerValueKey);
@@ -308,21 +308,24 @@ useEffect(() => {
                     const pScore = processOpt.score;
                     const oScore = ownerOpt.score;
                     // Extraer el título base de la pregunta (ej: "1. Contract and Payment Processing")
-                    const qTitle = processQDef.text.substring(0, processQDef.text.indexOf(':')) || `Area ${i}`;
+                    const qTitle = processQDef.text.substring(0, processQDef.text.indexOf(':')).replace(/^\d+\.\s*/, '').trim() || `Area ${i}`;
+
 
                     if ((pScore === 7 || pScore === 5) && (oScore === 0 || oScore === 1)) {
-                        areasForDelegation.push(qTitle.trim());
+                        areasForDelegation.push(qTitle);
                     }
-                    if ((pScore <= 3) && (oScore === 5)) { // Owner score 5 es "Not at all / Informed only"
-                        areasForActiveManagement.push(qTitle.trim());
+                    // Condición: Proceso bajo (0-3) y Owner NO involucrado (score 5 = "Not at all / Informed")
+                    if (pScore <= 3 && oScore === 5) {
+                        areasForActiveManagement.push(qTitle);
                     }
                 }
             }
         }
         output += "Areas for strategic oversight (delegation opportunities): " + (areasForDelegation.length > 0 ? areasForDelegation.join(', ') : "None identified") + ".\nUser wants to begin delegating these areas to other members of the team.\n\n";
-        output += "Areas for active management: " + (areasForActiveManagement.length > 0 ? areasForActiveManagement.join(', ') : "None identified") + ".\nUser wants to become actively involved in these areas to bring up competency.  AI should share information whenever possible on best practices, templates, etc.\n\n";
+        output += "Areas for active management: " + (areasForActiveManagement.length > 0 ? areasForActiveManagement.join(', ') : "None identified") + ".\nUser wants to become actively involved in these areas to bring up competency. AI should share information whenever possible on best practices, templates, etc.\n\n";
 
         // Plantillas para las secciones del prompt S2D
+        // **ACCIÓN PARA TI: ASEGÚRATE QUE ESTOS TEXTOS SEAN EXACTAMENTE LOS DEL DOCUMENTO DE HAYDEN**
         const promptSectionTemplates = {
             s2d_q1_process: { title: "Contract and Payment Processing", text: "Contract and Payment Processing: Current contract and payment processes need standardization and automation. The business currently uses [%RESPONSE%]. AI should actively suggest improvements to contract workflows, including standardized templates, digital signature implementation, and automated follow-up sequences. When discussing new client engagements, proactively recommend contract tracking systems, payment reminder templates, documentation of payment terms, and refund language. Prioritize solutions that reduce manual handling while ensuring consistency and compliance." },
             s2d_q2_process: { title: "Internal Handoff from Sales to Delivery Team", text: "Internal Handoff Process: The current sales-to-delivery handoff process requires improvement. The business currently experiences [%RESPONSE%]. AI should suggest structured handoff protocols including standardized information checklists, handoff meeting templates, and responsibility assignment matrices. When discussing client onboarding or project initiation, proactively recommend implementing a formal handoff document that captures all essential client details, project parameters, and commitments made during sales. Prioritize creating clear accountability for information completeness and accuracy during transitions between teams." },
@@ -334,25 +337,28 @@ useEffect(() => {
             s2d_q8_process: { title: "Technology and Tools Integration", text: "Technology and Tools Integration: The current technology ecosystem supporting the sale-to-delivery transition requires enhancement. Currently, [%RESPONSE%]. AI should recommend technology integration approaches including system connection strategies, workflow automation tools, and data synchronization methods that reduce duplicate entry and information loss between stages. When discussing operational improvements or efficiency, suggest implementing integrated platforms or middleware solutions that create seamless information flow between sales and delivery systems. Prioritize solutions that eliminate manual workarounds, reduce error risk during handoffs, and provide complete visibility of client information throughout the customer journey." },
         };
 
-        Object.keys(promptSectionTemplates).forEach(valueKey => {
-            const qDef = s2dQuestionDefinitions.find(q => q.valueKey === valueKey);
-            const answer = s2dAnswers[valueKey]; // 's2dAnswers' es el subconjunto de formData para S2D
-            if (qDef && answer && qDef.options) {
-                const selectedOpt = qDef.options.find(o => o.value === answer);
-                if (selectedOpt && typeof selectedOpt.score === 'number' && selectedOpt.score < 5) {
-                    const sectionInfo = promptSectionTemplates[valueKey];
-                    output += `**${sectionInfo.title}**\n`;
-                    output += sectionInfo.text.replace("[%RESPONSE%]", selectedOpt.text) + "\n\n";
+        // Iterar para las secciones detalladas del prompt
+        s2dQuestionDefinitions.forEach(qDef => {
+            // Solo nos interesan las preguntas de proceso para esta parte detallada
+            if (qDef.id.includes('_process') && promptSectionTemplates[qDef.valueKey]) {
+                const answer = s2dAnswers[qDef.valueKey]; // Respuesta del usuario (ej. "a", "b")
+                if (answer && qDef.options) {
+                    const selectedOpt = qDef.options.find(o => o.value === answer);
+                    if (selectedOpt && typeof selectedOpt.score === 'number' && selectedOpt.score < 5) {
+                        const sectionInfo = promptSectionTemplates[qDef.valueKey];
+                        output += `**${sectionInfo.title}**\n`;
+                        output += sectionInfo.text.replace("[%RESPONSE%]", `"${selectedOpt.text}"`) + "\n\n"; // Añadir comillas a la respuesta
+                    }
                 }
             }
         });
         return output;
     }, []);
 
-        const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
+             const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
         console.log(`[MultiStepForm] Generating prompt for section: ${sectionNameForPrompt}`);
         
-        const questionsForThisSection = getQuestionsForStep(currentStep); // currentStep es el índice de la sección actual
+        const questionsForThisSection = getQuestionsForStep(currentStep);
         const sectionAnswers = {};
         questionsForThisSection.forEach(q => {
             if (formData.hasOwnProperty(q.valueKey)) {
@@ -360,12 +366,11 @@ useEffect(() => {
             }
         });
 
-        let promptText = `## Prompt for Section: ${sectionNameForPrompt} ##\n\n`;
-        promptText += `Based on your current answers for this section:\n`;
+        let promptText = `## Prompt & Results for Section: ${sectionNameForPrompt} ##\n\n`; // Título modificado
+        promptText += `Your current answers for this section:\n`;
         questionsForThisSection.forEach(q => {
             const answer = sectionAnswers[q.valueKey];
             let displayAnswer = (answer !== undefined && answer !== '' && answer !== null) ? answer : '(Not answered)';
-            
             if (q.type === 'mcq' && answer && q.options) {
                 const valuePropertyToFind = q.options[0] && q.options[0].hasOwnProperty('value') ? 'value' : 'text';
                 const selectedOpt = q.options.find(opt => opt[valuePropertyToFind] === answer);
@@ -375,128 +380,179 @@ useEffect(() => {
             }
             promptText += `- ${q.text}: ${displayAnswer}\n`;
         });
-        promptText += "\n--- AI Suggestions & Considerations ---\n";
+        promptText += "\n";
 
-        // --- LÓGICA ESPECÍFICA DEL PROMPT POR SECCIÓN ---
+        // --- INICIO: LÓGICA PARA SCORES DE SECCIÓN (SI APLICA) ---
+        let sectionSpecificScoreInfo = "";
+        // Encontrar si esta sección corresponde a una de las ScoringAreas originales
+        const currentScoringArea = Object.keys(ScoringAreas).find(
+            key => ScoringAreas[key] === sectionNameForPrompt
+        );
+
+        if (currentScoringArea) {
+            const areaKey = ScoringAreas[currentScoringArea]; // Obtiene el string del nombre del área, ej: "Expansion Capability"
+            let currentAreaScore = 0;
+            let maxAreaScore = 0;
+
+            // Calcular score actual para esta área específica
+            questionsForThisSection.forEach(q => {
+                if (q.scoringArea === areaKey && q.type === 'mcq' && q.options) {
+                    const answer = sectionAnswers[q.valueKey];
+                    if (answer) {
+                        // Asumimos que las preguntas de ScoringAreas originales guardan option.text
+                        const selectedOpt = q.options.find(opt => opt.text === answer);
+                        if (selectedOpt && typeof selectedOpt.score === 'number') {
+                            currentAreaScore += selectedOpt.score;
+                        }
+                    }
+                    // Sumar al máximo posible para esta área
+                    const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
+                    maxAreaScore += maxOptionScore;
+                }
+            });
+            sectionSpecificScoreInfo += `**Section Score (${areaKey}):** ${currentAreaScore} / ${maxAreaScore} points\n`;
+            // Podrías añadir una interpretación simple del score aquí si lo deseas
+            if (maxAreaScore > 0) {
+                const percentage = (currentAreaScore / maxAreaScore) * 100;
+                if (percentage >= 80) sectionSpecificScoreInfo += "Interpretation: Strong performance in this area.\n";
+                else if (percentage >= 50) sectionSpecificScoreInfo += "Interpretation: Good performance, with some room for improvement.\n";
+                else sectionSpecificScoreInfo += "Interpretation: This area may need more focus for development.\n";
+            }
+            sectionSpecificScoreInfo += "\n";
+        }
+        promptText += sectionSpecificScoreInfo; // Añadir la info del score al prompt
+        // --- FIN: LÓGICA PARA SCORES DE SECCIÓN ---
+
+        promptText += "--- AI Suggestions & Considerations ---\n";
 
         if (sectionNameForPrompt === allAppSections[1]) { // "Sale to Delivery Process Assessment"
-            // Calcular scores S2D en el momento para este prompt
             let s2d_processMaturityScore = 0;
             let s2d_ownerIndependenceScore = 0;
-            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(sectionNameForPrompt);
-            
+            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(sectionNameForPrompt); 
             s2dQuestionDefinitions.forEach(q => {
-                if (q.id.startsWith('s2d_q') && q.id.includes('_process')) {
-                    const answerValue = formData[q.valueKey];
-                    if (answerValue && q.options) {
-                        const opt = q.options.find(o => o.value === answerValue);
-                        if (opt && typeof opt.score === 'number') s2d_processMaturityScore += opt.score;
-                    }
-                } else if (q.id.startsWith('s2d_q') && q.id.includes('_owner')) {
-                    const answerValue = formData[q.valueKey];
-                    if (answerValue && q.options) {
-                        const opt = q.options.find(o => o.value === answerValue);
-                        if (opt && typeof opt.score === 'number') s2d_ownerIndependenceScore += opt.score;
+                if (q.id.startsWith('s2d_q') && formData[q.valueKey] && q.options && q.type === 'mcq') {
+                    const opt = q.options.find(o => o.value === formData[q.valueKey]);
+                    if (opt && typeof opt.score === 'number') {
+                        if (q.id.includes('_process')) s2d_processMaturityScore += opt.score;
+                        else if (q.id.includes('_owner')) s2d_ownerIndependenceScore += opt.score;
                     }
                 }
             });
-            
             const s2dScoresForThisPrompt = {
                 processMaturityScore: s2d_processMaturityScore,
                 ownerIndependenceScore: s2d_ownerIndependenceScore
             };
-            // Asumimos que formData contiene todas las respuestas s2d_... necesarias para generateS2DPromptTextInternal
             promptText = generateS2DPromptTextInternal(formData, s2dScoresForThisPrompt, s2dQuestionDefinitions);
 
-        } else if (sectionNameForPrompt === allAppSections[2]) { // "Expansion Capability" (Ahora Step 3)
-            promptText += "To improve your Expansion Capability:\n";
+        } else if (sectionNameForPrompt === allAppSections[2]) { // "Expansion Capability"
+            promptText += "Considering your Expansion Capability:\n";
             if (formData.expansionVolumePrep && String(formData.expansionVolumePrep).toLowerCase().includes("not prepared")) {
-                promptText += "- Your systems may not be ready for 3x volume. Focus on documenting key processes and identifying bottlenecks to prepare for scaling.\n";
+                promptText += "- Your systems may not be ready for 3x volume. Prioritize documenting key processes and identifying bottlenecks.\n";
+            } else if (formData.expansionVolumePrep && String(formData.expansionVolumePrep).toLowerCase().includes("major overhaul needed")) {
+                promptText += "- Significant adjustments or a major overhaul is needed for scaling. What's one system that needs immediate attention?\n";
             }
             if (formData.expansionPlaybook && String(formData.expansionPlaybook).toLowerCase().includes("no specific plans")) {
-                promptText += "- Consider developing at least a basic, informal playbook for new market entry. This can be iterated upon later.\n";
+                promptText += "- Lacking an expansion playbook is a missed opportunity. Start by outlining basic steps for one potential new market or service.\n";
             }
             if (formData.expansionNewServices && String(formData.expansionNewServices).toLowerCase().includes("ad-hoc")) {
-                promptText += "- Transitioning from ad-hoc to a semi-formal process for new service development, including market validation, can reduce risk and improve success rates.\n";
+                promptText += "- An ad-hoc approach to new services can be risky. Consider implementing a basic market validation checklist before future launches.\n";
             }
-            promptText += "- What is one small, repeatable process you could document this week to improve scalability?\n";
+            if (formData.expansionProblemRate && (String(formData.expansionProblemRate).toLowerCase().includes("frequently") || String(formData.expansionProblemRate).toLowerCase().includes("common or significant"))) {
+                promptText += "- Frequent complaints/refunds are a major concern. Deep dive into the root causes for the top 1-2 complaint types.\n";
+            }
+            promptText += "\nKey Reflection: What is the single biggest barrier to your business handling 2-3x its current volume smoothly?\n";
         
-        } else if (sectionNameForPrompt === allAppSections[3]) { // "Marketing & Brand Equity" (Ahora Step 4)
-            promptText += "To enhance Marketing & Brand Equity:\n";
+        } else if (sectionNameForPrompt === allAppSections[3]) { // "Marketing & Brand Equity"
+            promptText += "Reflecting on your Marketing & Brand Equity:\n";
             if (formData.marketingBrandRec && String(formData.marketingBrandRec).toLowerCase().includes("unknown")) {
-                promptText += "- Your brand is largely unknown. Consider strategies like content marketing, local SEO, or targeted outreach to increase brand awareness.\n";
+                promptText += "- Low brand recognition is a hurdle. What are 2-3 low-cost activities you can start to increase visibility in your target market (e.g., local networking, targeted social media, an introductory offer)?\n";
             }
             if (formData.marketingDigitalPresence && String(formData.marketingDigitalPresence).toLowerCase().includes("minimal")) {
-                promptText += "- A basic online presence generates minimal leads. Invest in optimizing your website for conversions and explore one or two key digital marketing channels.\n";
+                promptText += "- A minimal digital presence limits lead generation. What's one improvement you can make to your website this month to better capture leads or showcase your value?\n";
             }
             if (formData.marketingLeadGen && (String(formData.marketingLeadGen).toLowerCase().includes("ad-hoc") || String(formData.marketingLeadGen).toLowerCase().includes("little measurement"))) {
-                promptText += "- Your lead generation is ad-hoc. Start by identifying 1-2 consistent lead channels and implement basic tracking (e.g., 'How did you hear about us?') to measure effectiveness.\n";
+                promptText += "- Inconsistent lead generation needs a systematic approach. Choose ONE primary channel to focus on and set a simple goal for leads/ CPL for the next 30 days.\n";
             }
-            promptText += "- What is one an ICP (Ideal Customer Profile) you are targetting? Who is it, and what channels will you use to reach them?\n";
+            if (formData.marketingICPFocus && String(formData.marketingICPFocus).toLowerCase().includes("anyone who expresses interest")) {
+                promptText += "- Trying to serve everyone often means serving no one well. Spend 30 minutes defining your Ideal Customer Profile (ICP) – who gets the most value from you, and who do you enjoy working with most?\n";
+            }
+            promptText += "\nKey Reflection: If you had to double your qualified leads next month with a small budget, what ONE marketing activity would you focus all your energy on?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[4]) { // "Profitability Metrics" (Ahora Step 5)
-            promptText += "To improve Profitability Metrics:\n";
-            if (formData.profitTrend && String(formData.profitTrend).toLowerCase().includes("declining")) {
-                promptText += "- Declining profitability is a critical issue. Conduct a thorough review of your costs, pricing, and revenue streams to identify causes and implement corrective actions immediately.\n";
+        } else if (sectionNameForPrompt === allAppSections[4]) { // "Profitability Metrics"
+            promptText += "Analyzing your Profitability Metrics:\n";
+            if (formData.profitTrend && (String(formData.profitTrend).toLowerCase().includes("declining") || String(formData.profitTrend).toLowerCase().includes("flat or inconsistent"))) {
+                promptText += "- Declining or flat profitability requires urgent attention. Schedule time this week to review your P&L for the last 3-6 months. Where are anomolies or concerning trends in revenue or key expense categories?\n";
             }
             if (formData.profitMargins && (String(formData.profitMargins).toLowerCase().includes("below average") || String(formData.profitMargins).toLowerCase().includes("unsure"))) {
-                promptText += "- If your margins are below average or unknown, research industry benchmarks and analyze your Cost of Goods Sold (COGS) and pricing strategy. Are there inefficiencies to cut or opportunities to increase prices?\n";
+                promptText += "- Uncertainty or low Gross Profit Margins suggest a need for analysis. Calculate your GPM for your top product/service. How does it compare to your best guess symptômes? What are the key drivers of COGS?\n";
             }
             if (formData.profitRecurringRev && (String(formData.profitRecurringRev).toLowerCase().includes("low (< 10%)") || String(formData.profitRecurringRev).toLowerCase().includes("none"))) {
-                promptText += "- Low recurring revenue indicates a transactional business model. Explore opportunities to introduce subscription services, retainers, or long-term contracts to increase predictability.\n";
+                promptText += "- Low recurring revenue increases business risk. Brainstorm one potential recurring revenue stream (e.g., maintenance plan, subscription, retainer for ongoing advice) you could offer.\n";
             }
-            promptText += "- What is one specific action you can take to analyze or improve your Gross Profit Margins this month?\n";
+            promptText += "\nKey Reflection: What is the ONE financial metric (e.g., Gross Profit Margin, Net Profit Margin, Recurring Revenue %) that, if improved, would have the biggest positive impact on your business's health and value?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[5]) { // "Offering & Sales Effectiveness" (Ahora Step 6)
-            promptText += "To enhance Offering & Sales Effectiveness:\n";
-            if (formData.offeringSatisfaction && String(formData.offeringSatisfaction).toLowerCase().includes("no systematic measurement")) {
-                promptText += "- Systematically measure customer satisfaction (e.g., NPS, CSAT). This feedback is vital for improving your offering and identifying at-risk customers.\n";
+        } else if (sectionNameForPrompt === allAppSections[5]) { // "Offering & Sales Effectiveness"
+            promptText += "Evaluating Offering & Sales Effectiveness:\n";
+            if (formData.offeringSatisfaction && (String(formData.offeringSatisfaction).toLowerCase().includes("no systematic measurement") || String(formData.offeringSatisfaction).toLowerCase().includes("informally or rarely"))) {
+                promptText += "- Without systematic customer satisfaction measurement, you're flying blind. Implement a simple 1-2 question survey (e.g., NPS + 'What's one thing we could do better?') after each service delivery/sale.\n";
             }
-            if (formData.salesProcessEffectiveness && (String(formData.salesProcessEffectiveness).toLowerCase().includes("ineffective") || String(formData.salesProcessEffectiveness).toLowerCase().includes("ad-hoc"))) {
-                promptText += "- An ineffective sales process hinders growth. Start by documenting your current lead-to-close stages and identify the biggest bottleneck or area of inconsistency.\n";
+            if (formData.salesProcessEffectiveness && (String(formData.salesProcessEffectiveness).toLowerCase().includes("ineffective") || String(formData.salesProcessEffectiveness).toLowerCase().includes("ad-hoc") || String(formData.salesProcessEffectiveness).toLowerCase().includes("informal or varies"))) {
+                promptText += "- An inconsistent sales process leads to lost deals. Map out your current sales stages (even if informal) and identify ONE stage where leads most often drop off. What's one change to improve that stage?\n";
             }
-            promptText += "- What's the #1 reason you lose deals? What steps can you take to address this?\n";
+            if (formData.offeringFollowOnRevenue && (String(formData.offeringFollowOnRevenue).toLowerCase().includes("minimal additional") || String(formData.offeringFollowOnRevenue).toLowerCase().includes("little to no additional"))) {
+                promptText += "- Low follow-on revenue means missed opportunities. For your existing customer base, what's one complementary product/service or an enhanced version of their current purchase you could offer them?\n";
+            }
+            promptText += "\nKey Reflection: What is the single biggest friction point for your customers in your current sales OR offering delivery process?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[6]) { // "Workforce & Leadership" (Ahora Step 7)
-            promptText += "To develop Workforce & Leadership:\n";
+        } else if (sectionNameForPrompt === allAppSections[6]) { // "Workforce & Leadership"
+            promptText += "Assessing your Workforce & Leadership:\n";
             if (formData.workforceOwnerReliance && (String(formData.workforceOwnerReliance).toLowerCase().includes("heavily reliant") || String(formData.workforceOwnerReliance).toLowerCase().includes("completely reliant"))) {
-                promptText += "- High owner reliance is a major risk. Identify one key operational task you currently handle and create a plan to delegate it to a team member with clear instructions and authority.\n";
+                promptText += "- High owner reliance is a significant bottleneck and risk. Identify ONE recurring task you do that someone else could potentially do (even 70% as well as you). Plan to delegate it in the next 30 days with clear instructions.\n";
             }
-            if (formData.workforceAccountability && String(formData.workforceAccountability).toLowerCase().includes("low accountability")) {
-                promptText += "- Low accountability hinders performance. For one key role, define 1-2 measurable Key Performance Indicators (KPIs) and schedule a brief, regular check-in to discuss them.\n";
+            if (formData.workforceAccountability && (String(formData.workforceAccountability).toLowerCase().includes("low accountability") || String(formData.workforceAccountability).toLowerCase().includes("some accountability"))) {
+                promptText += "- Weak accountability structures limit team performance. For ONE key role, define 1-2 clear, measurable outcomes (KPIs) they are responsible for. How will you track and discuss these?\n";
             }
-            promptText += "- What is one system or process you could implement to empower your team more effectively?\n";
-
-        } else if (sectionNameForPrompt === allAppSections[7]) { // "Execution Systems" (Ahora Step 8)
-            promptText += "To strengthen Execution Systems:\n";
+            if (formData.workforceRetention && String(formData.workforceRetention).toLowerCase().includes("challenging")) {
+                promptText += "- Difficulty retaining talent is costly. What are the top 1-2 reasons employees might leave, and what's one proactive step to improve retention for key roles?\n";
+            }
+            promptText += "\nKey Reflection: If you were forced to take a 4-week vacation starting tomorrow, what would be the biggest operational fire in your business, and who would (or wouldn't) be able to handle it?\n";
+        
+        } else if (sectionNameForPrompt === allAppSections[7]) { // "Execution Systems"
+            promptText += "Reviewing your Execution Systems:\n";
             if (formData.systemsSOPs && (String(formData.systemsSOPs).toLowerCase().includes("minimally documented") || String(formData.systemsSOPs).toLowerCase().includes("few documented"))) {
-                promptText += "- Lack of documented processes leads to inconsistency. Choose one core business process (e.g., client onboarding) and create a simple Standard Operating Procedure (SOP) for it.\n";
+                promptText += "- Lack of SOPs leads to errors and inefficiency. Choose ONE critical process and create a simple checklist or a short (1-page) SOP for it this week.\n";
             }
-            if (formData.systemsTech && (String(formData.systemsTech).toLowerCase().includes("ineffective") || String(formData.systemsTech).toLowerCase().includes("lacking key systems"))) {
-                promptText += "- Heavy reliance on manual processes or lacking key systems is inefficient. Identify one area where a simple tech tool (e.g., a basic CRM, project management app) could provide significant improvement and research options.\n";
+            if (formData.systemsTech && (String(formData.systemsTech).toLowerCase().includes("ineffective") || String(formData.systemsTech).toLowerCase().includes("lacking key systems") || String(formData.systemsTech).toLowerCase().includes("heavily reliant on spreadsheets"))) {
+                promptText += "- Over-reliance on manual processes or inadequate tech is a drag on growth. Identify one key area (e.g., CRM, project management, scheduling) where a dedicated tool could save significant time or reduce errors. Research one affordable option.\n";
             }
-            promptText += "- Which core process, if documented and systematized, would free up the most owner time or reduce the most errors?\n";
+            if (formData.systemsKPIs && (String(formData.systemsKPIs).toLowerCase().includes("little or no formal kpi tracking") || String(formData.systemsKPIs).toLowerCase().includes("basic or infrequent reporting"))) {
+                promptText += "- Without tracking KPIs, you can't manage what you don't measure. Identify 1-3 critical KPIs for your business (e.g., leads, conversion rate, customer satisfaction) and a simple way to track them weekly/monthly.\n";
+            }
+            promptText += "\nKey Reflection: What is the ONE system or process that, if improved or implemented, would give you the most leverage or peace of mind in your business operations?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[8]) { // "Robust Market Position" (Ahora Step 9)
-            promptText += "To solidify your Robust Market Position:\n";
+        } else if (sectionNameForPrompt === allAppSections[8]) { // "Robust Market Position"
+            promptText += "Evaluating your Robust Market Position:\n";
             if (formData.marketGrowthPotential && String(formData.marketGrowthPotential).toLowerCase().includes("declining market")) {
-                promptText += "- Operating in a declining market is challenging. Explore diversification, niching down further into a growing sub-segment, or developing new offerings for adjacent markets.\n";
+                promptText += "- A declining market requires strategic shifts. What adjacent markets, new customer segments, or innovative offerings could you explore to find new growth avenues?\n";
             }
             if (formData.marketCustConcentration && String(formData.marketCustConcentration).toLowerCase().includes("highly concentrated")) {
-                promptText += "- High customer concentration is risky. Develop a plan to acquire 2-3 new ideal customers in the next quarter to diversify your revenue base.\n";
+                promptText += "- Over-dependence on a few clients is a major risk. Outline a plan to acquire 2-3 new ideal clients in the next 90 days to improve diversification.\n";
             }
-            promptText += "- Who are your top 3 ideal customers and what steps can you take this month to attract more like them?\n";
+            if (formData.marketTamSize && String(formData.marketTamSize).toLowerCase().includes("small / niche")) {
+                promptText += "- While a niche can be profitable, a very small TAM limits growth. Are there ways to expand your definition of the niche or serve it more deeply to increase your addressable market?\n";
+            }
+            promptText += "\nKey Reflection: What is the most significant external threat to your market position, and what is one action you can take to mitigate it or strengthen your differentiation?\n";
         
         }
-        // La sección "Your Financials & Industry" (allAppSections[9]) está excluida por la lógica de Navigation.jsx
-        // La sección "Your Profile" (allAppSections[0]) también.
-        else {
-            promptText += "Consider the key challenges and opportunities revealed by your answers in this section. What is one concrete action you can take in the next 7 days to make an improvement?\n";
+        // Las secciones "Your Profile" (allAppSections[0]) y "Your Financials & Industry" (allAppSections[9])
+        // están excluidas por la lógica en Navigation.jsx, así que no necesitamos un 'else if' para ellas aquí.
+    else { 
+            promptText += "Review your answers above. What are the key strengths and weaknesses highlighted? Identify one action item to build on a strength or address a weakness.\n";
         }
 
         downloadAsTxtFile(promptText, `${sectionNameForPrompt.replace(/[\s\/]+/g, '_')}_Prompt.txt`);
 
-    }, [formData, currentStep, allAppSections, generateS2DPromptTextInternal, getSaleToDeliveryProcessQuestions]); // Añadido getSaleToDeliveryProcessQuestions
+    }, [formData, currentStep, allAppSections, generateS2DPromptTextInternal, getSaleToDeliveryProcessQuestions, getQuestionsForStep, ScoringAreas]); // Añadido ScoringAreas
 
     const handleSubmit = useCallback(async () => {
         console.log("[MultiStepForm] handleSubmit triggered. isSubmitting:", isSubmitting);
