@@ -1,4 +1,3 @@
-// src/components/Navigation.jsx (Ejemplo)
 import React from 'react';
 
 function Navigation({
@@ -7,13 +6,29 @@ function Navigation({
     onPrevious,
     onNext,
     isSubmitting,
-    // --- Nuevas Props ---
     onSaveAndSendLink,
     isSendingLink,
-    sendLinkResult // Para mostrar feedback
+    sendLinkResult,
+    // --- NUEVAS PROPS AÑADIDAS ---
+    currentSectionName,
+    onGeneratePrompt,
+    sectionsConfig // Array con todos los nombres de las secciones
 }) {
     const isFirstStep = currentStep === 0;
     const isLastStep = currentStep === totalSteps - 1;
+
+    // --- LÓGICA PARA MOSTRAR/OCULTAR EL BOTÓN "GENERATE PROMPT" ---
+    let showGeneratePromptButton = false;
+    if (onGeneratePrompt && sectionsConfig && sectionsConfig.length > 0) {
+        const firstSectionName = sectionsConfig[0]; // Ej: "Your Profile"
+        const lastSectionName = sectionsConfig[sectionsConfig.length - 1]; // Ej: "Your Financials & Industry"
+        
+        // No mostrar en la primera ni en la última sección
+        if (currentSectionName !== firstSectionName && currentSectionName !== lastSectionName) {
+            showGeneratePromptButton = true;
+        }
+    }
+    // -------------------------------------------------------------
 
     return (
         <div className="navigation-controls">
@@ -25,42 +40,60 @@ function Navigation({
              )}
 
              <div className="button-group">
-                {/* Botón Nuevo: Guardar y Enviar Link */}
-                {/* Mostrar siempre excepto quizás en el último paso? O siempre? */}
-                {/* { !isLastStep && ( // Condición opcional para no mostrar en el último paso */}
-                <button
-                    type="button"
-                    onClick={onSaveAndSendLink}
-                    disabled={isSendingLink || isSubmitting} // Deshabilitar si ya está enviando o submitiendo
-                    className="button secondary save-send-button" // Estilo diferente
-                    style={{ marginRight: 'auto' }} // Ejemplo para empujar a la izquierda
-                >
-                    {isSendingLink ? 'Sending Link...' : 'Save & Send Link'}
-                </button>
-                {/* )} */}
+                {/* Botón "Previous" movido a la izquierda del todo */}
+                {currentStep > 0 && (
+                    <button
+                        type="button"
+                        onClick={onPrevious}
+                        disabled={isSubmitting || isSendingLink}
+                        className="button secondary"
+                        style={{ marginRight: 'auto' }} // Empuja este botón a la izquierda
+                    >
+                        Previous
+                    </button>
+                )}
+                
+                {/* Contenedor para botones centrales (si los hay) */}
+                <div className="center-buttons" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexGrow: isFirstStep ? 1 : 0 }}>
+                    {/* Botón Guardar y Enviar Link */}
+                    {onSaveAndSendLink && ( // Mostrar siempre si la función existe
+                        <button
+                            type="button"
+                            onClick={onSaveAndSendLink}
+                            disabled={isSendingLink || isSubmitting}
+                            className="button secondary save-send-button"
+                        >
+                            {isSendingLink ? 'Sending Link...' : 'Save & Get Link'}
+                        </button>
+                    )}
 
+                    {/* --- NUEVO BOTÓN "GENERAR PROMPT" --- */}
+                    {showGeneratePromptButton && (
+                        <button
+                            type="button"
+                            onClick={() => onGeneratePrompt(currentSectionName)} // Pasa el nombre de la sección actual
+                            disabled={isSubmitting || isSendingLink}
+                            className="button info generate-prompt-button" // Nueva clase para estilo
+                        >
+                            Generate Prompt
+                        </button>
+                    )}
+                    {/* --- FIN NUEVO BOTÓN --- */}
+                </div>
 
-                {/* Botones Existentes */}
-                <button
-                    type="button"
-                    onClick={onPrevious}
-                    disabled={isFirstStep || isSubmitting || isSendingLink}
-                    className="button secondary"
-                >
-                    Previous
-                </button>
-
+                {/* Botón "Next" / "Submit" a la derecha del todo */}
                 <button
                     type="button"
                     onClick={onNext}
                     disabled={isSubmitting || isSendingLink}
                     className="button primary"
+                    style={{ marginLeft: 'auto' }} // Empuja este botón a la derecha
                 >
-                    {isSubmitting ? 'Submitting...' : (isLastStep ? 'Submit Valuation' : 'Next')}
+                    {isSubmitting ? 'Submitting...' : (isLastStep ? 'View Results & Submit' : 'Next')}
                 </button>
              </div>
 
-             {/* Estilos de ejemplo (puedes ponerlos en tu CSS) */}
+             {/* Estilos (añadir .info y .generate-prompt-button si es necesario) */}
              <style jsx>{`
                 .navigation-controls {
                     margin-top: 2rem;
@@ -122,6 +155,14 @@ function Navigation({
                 .save-send-button:hover:not(:disabled) {
                     background-color: #e0a800;
                 }
+             .button.info { /* Nuevo estilo para el botón de prompt */
+                    background-color: #17a2b8; /* Color cian ejemplo */
+                    color: white;
+                }
+                .button.info:hover:not(:disabled) {
+                    background-color: #138496;
+                }
+
              `}</style>
         </div>
     );
