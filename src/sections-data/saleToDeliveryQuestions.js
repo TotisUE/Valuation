@@ -33,253 +33,319 @@ export const getSaleToDeliveryProcessQuestions = (sectionName) => {
         // --- 1. Contract and Payment Processing ---
         {
             id: "s2d_q1_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "1. Contract and Payment Processing: How would you describe your contract finalization and payment processing after a sale is made?",
+            section: sectionName,
+            text: "1. Service/Product Delivery Process: How would you describe your execution and quality control processes during service/product delivery?",
             type: "mcq",
             valueKey: "s2d_q1_process",
+            groupTitle: "RESULTS: Service/Product Delivery Excellence",
             options: [
-                { text: "We have a fully automated system that generates contracts based on sale details, collects electronic signatures, processes payments, and integrates with our CRM and accounting software. The system includes automated reminders and escalation procedures for any delays.", value: "a", score: 7 },
-                { text: "We have standardized contract templates and a documented process for signatures and payment collection. Most of this is digital, but it requires manual oversight and occasional intervention.", value: "b", score: 5 },
-                { text: "We have basic contract templates and a somewhat consistent approach to payment collection, but the process varies depending on the client or staff member handling it.", value: "c", score: 3 },
-                { text: "We handle contracts and payments on a case-by-case basis with minimal standardization. The process often depends on the individual handling it.", value: "d", score: 1 },
-                { text: "We don't have a defined process for contracts and payments, or I'm not sure how this is currently handled.", value: "e", score: 0 }
+                { text: "We have a comprehensive, documented delivery system with clear quality standards, regular checkpoints, and continuous improvement mechanisms. Every team member follows consistent processes that ensure exceptional delivery quality. We track error rates, completion times, and quality metrics systematically.", value: "a", score: 7 },
+                { text: "We have standardized delivery procedures with defined quality expectations. Most team members follow these processes consistently, and we have basic mechanisms to identify and address quality issues.", value: "b", score: 5 },
+                { text: "We have some documented delivery procedures, but they may not be consistently followed. Quality control happens but isn't systematic. Delivery quality can vary depending on who's doing the work.", value: "c", score: 3 },
+                { text: "Our delivery process is largely ad-hoc, with significant variation in how work is performed. Quality control is reactive rather than proactive.", value: "d", score: 1 },
+                { text: "We don't have defined delivery processes or quality standards, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
-            industryContext: "Retail: Consider how you process purchase orders, payment terms for larger orders, or special orders requiring deposits\nManufacturing: Focus on how you handle purchase orders, payment terms, and order confirmations\nConstruction: Think about how you process proposals, bids, contracts, and payment schedules"
         },
         {
             id: "s2d_q1_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in the contract and payment processing?",
+            section: sectionName,
+            text: "How involved is the owner in day-to-day service/product delivery?",
             type: "mcq",
             valueKey: "s2d_q1_owner",
             options: [
-                { text: "Not at all / Informed only (receives updates but isn't involved in the process)", value: "a", score: 5 },
-                { text: "Consulted (reviews contracts or weighs in on payment terms but doesn't handle the process)", value: "b", score: 3 },
-                { text: "Accountable (must give final approval on contracts or payment terms)", value: "c", score: 1 },
-                { text: "Responsible (actively creates contracts, negotiates terms, or processes payments)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },
 
-        // --- 2. Internal Handoff from Sales to Delivery Team ---
+        // --- Pregunta 2: Customer Success Measurement & Results Tracking ---
         {
             id: "s2d_q2_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "2. Internal Handoff from Sales to Delivery Team: How effectively does information transfer from your sales team to your delivery team?",
+            section: sectionName,
+            text: "2. Customer Success Measurement & Results Tracking: How do you measure and track whether customers are achieving their desired results?",
             type: "mcq",
             valueKey: "s2d_q2_process",
+            groupTitle: "RESULTS: Service/Product Delivery Excellence",
             options: [
-                { text: "We have a comprehensive, documented handoff process with a detailed checklist. Information is automatically transferred through integrated systems, with required fields ensuring all necessary details are captured. Regular feedback loops between sales and delivery teams continuously improve the process.", value: "a", score: 7 },
-                { text: "We have a structured handoff meeting with a standard form/template. Most required information is consistently transferred, though occasional clarification is needed. There's good communication between teams.", value: "b", score: 5 },
-                { text: "We have basic handoff procedures, but they're not always followed consistently. Some information is often missing, requiring follow-up. Communication between teams is adequate but could be improved.", value: "c", score: 3 },
-                { text: "Handoffs happen informally through conversations or emails. Information transfer is inconsistent, and delivery teams often need to circle back for missing details. There's occasional tension between teams.", value: "d", score: 1 },
-                { text: "There's no formal handoff process, or I'm not sure how information transfers between sales and delivery.", value: "e", score: 0 }
+                { text: "We have multiple systematic methods (e.g., NPS, CSAT, success metrics) implemented at strategic touchpoints. We analyze this data regularly, track trends, and have clear processes for addressing feedback. Success metrics are defined collaboratively with clients and monitored throughout their journey with milestone celebrations.", value: "a", score: 7 },
+                { text: "We consistently gather customer feedback using a standard methodology (e.g., NPS or CSAT). We review this data periodically and generally act on significant feedback. We track some form of success metrics for clients with basic milestone recognition.", value: "b", score: 5 },
+                { text: "We collect feedback inconsistently or informally. We may respond to issues raised, but don't systematically analyze trends. Success metrics are general rather than client-specific.", value: "c", score: 3 },
+                { text: "We rely primarily on passive feedback (e.g., customers who volunteer complaints). We have minimal formal success measurement.", value: "d", score: 1 },
+                { text: "We don't have formal customer success measurement processes, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
-            industryContext: "Retail: Consider how customer orders or special requests move from sales staff to fulfillment\nManufacturing: Focus on how sales orders are communicated to production planning\nConstruction: Think about how estimating/sales information transfers to the project management team"
         },
         {
             id: "s2d_q2_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in the sales-to-delivery handoff process?",
+            section: sectionName,
+            text: "How involved is the owner in measuring and tracking customer results?",
             type: "mcq",
             valueKey: "s2d_q2_owner",
             options: [
-                { text: "Not at all / Informed only (receives updates but isn't involved in handoffs)", value: "a", score: 5 },
-                { text: "Consulted (provides input on complex handoffs but doesn't participate in routine transfers)", value: "b", score: 3 },
-                { text: "Accountable (oversees the handoff process and ensures it happens correctly)", value: "c", score: 1 },
-                { text: "Responsible (actively participates in or facilitates handoff meetings/processes)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },
 
-        // --- 3. Client Onboarding Process ---
+        // --- Pregunta 3: Issue Resolution and Customer Support ---
         {
             id: "s2d_q3_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "3. Client Onboarding Process: How would you rate your client onboarding process after a sale?",
+            section: sectionName,
+            text: "3. Issue Resolution and Customer Support: How effectively do you address customer issues or support requests?",
             type: "mcq",
             valueKey: "s2d_q3_process",
+            groupTitle: "RETENTION: Issue Resolution & Proactive Support",
             options: [
-                { text: "We have a systematic, documented onboarding process with automated workflows, personalized welcome sequences, and clear milestones. Clients receive the right information at the right time, and our system tracks their progress. We regularly measure onboarding satisfaction and time-to-value metrics.", value: "a", score: 7 },
-                { text: "We have a standard onboarding process with welcome emails, introduction calls, and resource sharing. The process is largely consistent and clients generally know what to expect, though some manual tracking is required.", value: "b", score: 5 },
-                { text: "We have basic onboarding steps that we follow, but they aren't fully documented or consistent across all clients. Some clients receive better onboarding experiences than others.", value: "c", score: 3 },
-                { text: "Our onboarding is mostly reactive and varies significantly depending on the client or staff member handling it. We address questions as they come up rather than proactively guiding clients.", value: "d", score: 1 },
-                { text: "We don't have a defined onboarding process, or I'm not sure how new clients are currently onboarded.", value: "e", score: 0 }
+                { text: "We have a robust, multichannel support system with clear SLAs, escalation procedures, and tracking mechanisms. All issues are documented, categorized, and analyzed for patterns. We proactively identify and resolve potential issues before customers even notice them. Support quality and resolution times are consistently measured.", value: "a", score: 7 },
+                { text: "We have established support channels and documented procedures for handling issues. Most problems are addressed in a timely manner, and we track basic metrics like resolution time. We occasionally review past issues for improvement opportunities.", value: "b", score: 5 },
+                { text: "We have basic support processes but they may not be fully documented or consistently followed. Response times can vary, and we don't systematically track support performance or analyze issue patterns.", value: "c", score: 3 },
+                { text: "Our support is largely reactive and ad-hoc. We address issues as they arise, but without standard procedures or performance tracking.", value: "d", score: 1 },
+                { text: "We don't have defined support processes, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
         },
         {
             id: "s2d_q3_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in the client onboarding process?",
+            section: sectionName,
+            text: "How involved is the owner in resolving customer issues?",
             type: "mcq",
             valueKey: "s2d_q3_owner",
             options: [
-                { text: "Not at all / Informed only (receives updates on new clients but isn't involved in onboarding)", value: "a", score: 5 },
-                { text: "Consulted (provides input on specific client needs but doesn't handle onboarding tasks)", value: "b", score: 3 },
-                { text: "Accountable (oversees the onboarding process and ensures it meets standards)", value: "c", score: 1 },
-                { text: "Responsible (actively conducts welcome calls, orients clients, or manages onboarding tasks)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },
 
-        // --- 4. Asset and Information Collection ---
+        // --- Pregunta 4: Customer Success Management and Proactive Support ---
         {
             id: "s2d_q4_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "4. Asset and Information Collection: How efficiently do you collect necessary information and assets from clients to begin delivery?",
+            section: sectionName,
+            text: "4. Customer Success Management and Proactive Support: How proactively do you manage ongoing customer relationships to ensure retention?",
             type: "mcq",
             valueKey: "s2d_q4_process",
+            groupTitle: "RETENTION: Issue Resolution & Proactive Support",
             options: [
-                { text: "We have automated, client-friendly intake forms and secure portals that adjust based on service type. Our system sends automated reminders and flags potential issues or missing information. We track completion rates and continuously optimize the collection process.", value: "a", score: 7 },
-                { text: "We use standardized intake forms and have a consistent process for requesting and receiving client information. We follow up systematically on missing items, and most clients provide what's needed with minimal friction.", value: "b", score: 5 },
-                { text: "We have basic intake forms or questionnaires, but the information collection process isn't always smooth. We often need to make multiple requests, and there's no systematic tracking of what's been received.", value: "c", score: 3 },
-                { text: "We request information from clients as needed, often through email exchanges. The process is largely manual and reactive, with no standardization across clients.", value: "d", score: 1 },
-                { text: "We don't have a defined process for collecting client information, or I'm not sure how this is currently handled.", value: "e", score: 0 }
+                { text: "We have a formal customer success program with dedicated personnel, scheduled check-ins, and individualized success plans. We proactively identify opportunities to add value, address potential issues before they arise, and systematically work to improve outcomes. Usage data and success metrics are actively monitored with early warning systems for at-risk customers.", value: "a", score: 7 },
+                { text: "We conduct regular check-ins with customers and have some proactive measures to ensure customer success. Key accounts have basic success plans, and we generally anticipate common needs or issues.", value: "b", score: 5 },
+                { text: "We maintain communication with customers but our approach is somewhat reactive. Check-ins may happen inconsistently, and our ability to anticipate needs varies.", value: "c", score: 3 },
+                { text: "Our ongoing customer management is minimal or happens only when problems arise. We primarily rely on customers to reach out when they need something.", value: "d", score: 1 },
+                { text: "We don't have proactive customer success management, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
-            industryContext:"Retail: Consider how you gather customer preferences, sizing, or customization requirements\nManufacturing: Focus on how you collect product specifications, purchase order details, and shipping requirements\nConstruction: Think about how you gather project requirements, site information, permits, and client preferences"
         },
         {
             id: "s2d_q4_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in collecting client information and assets?",
+            section: sectionName,
+            text: "How involved is the owner in ongoing customer success management?",
             type: "mcq",
             valueKey: "s2d_q4_owner",
             options: [
-                { text: "Not at all / Informed only (receives updates but isn't involved in information collection)", value: "a", score: 5 },
-                { text: "Consulted (provides guidance on what information is needed but doesn't handle collection)", value: "b", score: 3 },
-                { text: "Accountable (reviews collected information and ensures completeness)", value: "c", score: 1 },
-                { text: "Responsible (actively communicates with clients to request and collect information)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },
 
-        // --- 5. Expectation Setting, Timeline and Success Metrics ---
+        // --- Pregunta 5: Retention and Renewal Processes ---
         {
             id: "s2d_q5_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "5. Expectation Setting, Timeline and Success Metrics: How effectively do you establish and communicate expectations, timelines, milestones, and success metrics with clients after a sale?",
+            section: sectionName,
+            text: "5. Retention and Renewal Processes: How systematic are your processes for retaining customers and securing renewals or repeat business?",
             type: "mcq",
             valueKey: "s2d_q5_process",
+            groupTitle: "RETENTION: Issue Resolution & Proactive Support",
             options: [
-                { text: "We use a systematic approach to collaboratively define comprehensive success metrics and create detailed timelines with clear milestones. These are visually presented to clients, documented in our systems, automatically tracked, and regularly reviewed. Stakeholders receive proactive updates on both progress against timeline and movement toward success metrics.", value: "a", score: 7 },
-                { text: "We typically define clear success metrics and create project timelines with key milestones. These are shared with clients, tracked fairly consistently, and progress is communicated regularly, though some manual effort is required.", value: "b", score: 5 },
-                { text: "We establish basic success metrics and timelines, but they may not be detailed or consistently documented. Milestone tracking is inconsistent, and we don't always proactively communicate progress on both metrics and timeline to clients.", value: "c", score: 3 },
-                { text: "Our success metrics and timelines are often informal or highly generalized. We rarely define specific, measurable outcomes or detailed milestones, and clients usually need to ask for status updates.", value: "d", score: 1 },
-                { text: "We don't typically define success metrics or create delivery timelines with milestones, or I'm not sure how this is currently handled.", value: "e", score: 0 }
+                { text: "We have a comprehensive retention strategy with early warning systems for at-risk customers, proactive renewal processes, and multi-layered retention tactics. We track retention metrics by segment, analyze churn causes in detail, and have documented recovery procedures. Our renewal process begins well in advance and includes systematic value reinforcement.", value: "a", score: 7 },
+                { text: "We have defined retention and renewal processes that we follow fairly consistently. We monitor for at-risk customers, begin renewal conversations at appropriate times, and make systematic efforts to demonstrate ongoing value.", value: "b", score: 5 },
+                { text: "We have basic renewal procedures but they may not be fully documented or consistently followed. Our approach to retention is somewhat reactive, and we may not identify at-risk customers until late in the process.", value: "c", score: 3 },
+                { text: "Our retention efforts are largely reactive, and renewal processes are informal or inconsistent. We typically respond to cancellation notices rather than proactively working to prevent them.", value: "d", score: 1 },
+                { text: "We don't have defined retention or renewal processes, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
-            industryContext:"Retail: Consider how you confirm customer expectations regarding product performance, delivery timing, and satisfaction criteria. This includes communicating delivery schedules, installation timelines (if applicable), and specific success measures like product quality standards or performance guarantees.\nManufacturing: Focus on how you establish and document product specifications, quality standards, production milestones, and delivery schedules. This includes defining inspection points, production phase completion criteria, and shipping/delivery timeline commitments.\nConstruction: Think about how you define project success criteria, quality standards, project phasing, milestone completion definitions, and timeline commitments. This includes establishing phase completion criteria, inspection schedules, and the sequence of work with corresponding delivery dates."
         },
         {
             id: "s2d_q5_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in defining client expectations, timelines, and success metrics?",
+            section: sectionName,
+            text: "How involved is the owner in customer retention and renewal efforts?",
             type: "mcq",
             valueKey: "s2d_q5_owner",
             options: [
-                { text: "Not at all / Informed only (receives information about established expectations but isn't involved in defining them)", value: "a", score: 5 },
-                { text: "Consulted (provides input on appropriate timelines and metrics but doesn't lead the definition process)", value: "b", score: 3 },
-                { text: "Accountable (reviews and approves the expectations before they're finalized with clients)", value: "c", score: 1 },
-                { text: "Responsible (directly works with clients to establish and document timelines and success metrics)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },
 
-        // --- 6. Scheduling and Resource Allocation ---
+        // --- Pregunta 6: Feedback to Product/Service Improvement ---
         {
             id: "s2d_q6_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "6. Scheduling and Resource Allocation: How effectively do you schedule work and allocate resources after a sale?",
+            section: sectionName,
+            text: "6. Feedback to Product/Service Improvement: How effectively do you incorporate customer feedback to improve your product/service offerings?",
             type: "mcq",
             valueKey: "s2d_q6_process",
+            groupTitle: "REVIEWS: Feedback Integration & Improvement",
             options: [
-                { text: "We have an integrated capacity planning system that optimizes resource allocation based on skills, availability, and project requirements. The system forecasts potential bottlenecks and suggests solutions. Scheduling is transparent to all stakeholders with automated notifications for any changes.", value: "a", score: 7 },
-                { text: "We use a structured approach to resource planning with visibility into team capacity and upcoming work. Resources are assigned based on a clear methodology, and scheduling conflicts are usually identified and resolved proactively.", value: "b", score: 5 },
-                { text: "We have basic scheduling procedures and attempt to match resources to projects appropriately, but we sometimes encounter capacity issues or misalignment of skills. Planning tends to be short-term rather than strategic.", value: "c", score: 3 },
-                { text: "Resource allocation happens informally and often reactively. We frequently need to adjust schedules or reassign resources due to unforeseen conflicts or capacity issues.", value: "d", score: 1 },
-                { text: "We don't have a defined process for scheduling and resource allocation, or I'm not sure how this is currently handled.", value: "e", score: 0 }
+                { text: "We have a structured system to collect, categorize, and prioritize customer feedback. This input is regularly reviewed by cross-functional teams and directly influences our product/service roadmap. We close the loop with customers when their feedback leads to changes, and measure the impact of these improvements. We systematically differentiate between promoter feedback (made public) and detractor feedback (used for internal improvement).", value: "a", score: 7 },
+                { text: "We consistently gather customer feedback and have a process for reviewing and incorporating key insights. Major suggestions are evaluated for implementation, and we generally inform customers when their feedback leads to changes.", value: "b", score: 5 },
+                { text: "We collect feedback but our process for review and implementation may be informal or inconsistent. Some insights lead to improvements, but we may not systematically track feedback-driven changes.", value: "c", score: 3 },
+                { text: "We consider customer feedback when offered but don't actively solicit it for improvement purposes. Implementation of feedback-driven changes is ad-hoc.", value: "d", score: 1 },
+                { text: "We don't have processes for incorporating customer feedback into our offerings, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
-            industryContext:"Retail: Consider how you schedule staff for order fulfillment, restocking, or customer appointments\nManufacturing: Focus on how you schedule production runs, assign machine time, and allocate labor\nConstruction: Think about how you schedule crews, subcontractors, equipment, and material deliveries"
         },
         {
             id: "s2d_q6_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in scheduling and resource allocation?",
+            section: sectionName,
+            text: "How involved is the owner in the feedback review and implementation process?",
             type: "mcq",
             valueKey: "s2d_q6_owner",
             options: [
-                { text: "Not at all / Informed only (receives scheduling updates but isn't involved in resource decisions)", value: "a", score: 5 },
-                { text: "Consulted (provides input on complex resource questions but doesn't make routine allocations)", value: "b", score: 3 },
-                { text: "Accountable (approves resource plans and ensures adequate capacity)", value: "c", score: 1 },
-                { text: "Responsible (actively schedules work and assigns resources to projects)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },
 
-        // --- 7. Client Communication Plan ---
+        // --- Pregunta 7: Customer Advocacy and Referral Generation (Success → Lead) ---
         {
             id: "s2d_q7_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "7. Client Communication Plan: How would you describe your communication planning with clients during the transition from sale to delivery?",
+            section: sectionName,
+            text: "7. Customer Advocacy and Referral Generation (Success → Lead): How effectively do you convert successful customers into advocates and referral sources?",
             type: "mcq",
             valueKey: "s2d_q7_process",
+            groupTitle: "REFERRALS: Success to Lead Process",
             options: [
-                { text: "We establish a detailed communication plan with each client, including preferred channels, frequency, key contacts, escalation procedures, and expected response times. This plan is documented and systematically followed, with automation supporting consistent touch points.", value: "a", score: 7 },
-                { text: "We typically discuss and document communication preferences with clients and have a general framework for keeping them informed during delivery. Most team members follow these guidelines consistently.", value: "b", score: 5 },
-                { text: "We have some basic communication practices, but they aren't always documented or consistently followed. Communication approaches vary depending on the team member or client.", value: "c", score: 3 },
-                { text: "Client communication during delivery is largely reactive and varies significantly across clients. We don't typically establish communication expectations upfront.", value: "d", score: 1 },
-                { text: "We don't have defined communication practices for the delivery phase, or I'm not sure how this is currently handled.", value: "e", score: 0 }
+                { text: "We have a systematic advocacy program that identifies and nurtures potential advocates, makes it easy for them to refer others, and rewards referrals appropriately. We actively collect testimonials, case studies, and reviews at optimal moments tied to customer success milestones. Referral sources are tracked with attribution, and we measure the ROI of our advocacy efforts. We have built communities where advocates can engage with prospects.", value: "a", score: 7 },
+                { text: "We have established processes for requesting referrals, testimonials, and reviews at key journey moments. We recognize and appreciate customers who refer others, and generally know which customers are our advocates. We track referral sources and outcomes.", value: "b", score: 5 },
+                { text: "We occasionally ask for referrals or testimonials, but our approach isn't consistent or systematic. We appreciate advocates but may not have formal programs to cultivate or reward them. Referral tracking is basic.", value: "c", score: 3 },
+                { text: "We rarely actively seek referrals or testimonials. Most advocacy happens organically without our direct involvement, and we don't track referral sources.", value: "d", score: 1 },
+                { text: "We don't have processes for generating referrals or developing advocates, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
         },
         {
             id: "s2d_q7_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in client communications during delivery?",
+            section: sectionName,
+            text: "How involved is the owner in developing customer advocates and generating referrals?",
             type: "mcq",
             valueKey: "s2d_q7_owner",
             options: [
-                { text: "Not at all / Informed only (receives updates on client communications but doesn't communicate directly)", value: "a", score: 5 },
-                { text: "Consulted (provides input on sensitive communications but isn't the primary contact)", value: "b", score: 3 },
-                { text: "Accountable (reviews important client communications and ensures standards are met)", value: "c", score: 1 },
-                { text: "Responsible (serves as the primary client contact or handles most client communications)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },
 
-        // --- 8. Technology and Tools Integration ---
+        // --- Pregunta 8: Success to Marketing Integration (Success → Market) ---
         {
             id: "s2d_q8_process",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "8. Technology and Tools Integration: How well do your technologies and tools support the transition from sale to delivery?",
+            section: sectionName,
+            text: "8. Success to Marketing Integration (Success → Market): How well do you leverage customer success stories to fuel your marketing and sales efforts?",
             type: "mcq",
             valueKey: "s2d_q8_process",
+            groupTitle: "RESALE: Success to Market Process",
             options: [
-                { text: "We have fully integrated systems where information flows seamlessly between sales and delivery platforms. Automation eliminates duplicate data entry and ensures all team members have access to the information they need. The system supports efficient workflows and provides real-time visibility.", value: "a", score: 7 },
-                { text: "Our key systems are integrated, allowing most information to transfer effectively between sales and delivery tools. Some manual steps may be required, but the technology generally supports smooth transitions.", value: "b", score: 5 },
-                { text: "We have basic tools for both sales and delivery, but they aren't well integrated. Information often needs to be manually transferred between systems, creating potential for errors or omissions.", value: "c", score: 3 },
-                { text: "Our technologies are largely siloed, with limited connectivity between sales and delivery tools. Information transfer requires significant manual effort and workarounds.", value: "d", score: 1 },
-                { text: "We don't have dedicated tools supporting the sale-to-delivery transition, or I'm not sure how our current technologies support this process.", value: "e", score: 0 }
+                { text: "We have a systematic process for transforming customer successes into compelling marketing and sales assets. Case studies, testimonials, and success metrics are regularly collected at optimal customer journey moments, professionally produced, and strategically deployed across marketing channels and sales processes. We track which success stories drive the most leads and sales. Marketing and success teams have integrated workflows with clear handoff procedures.", value: "a", score: 7 },
+                { text: "We regularly develop case studies and testimonials from successful customers. These assets are used in our marketing and sales processes, and our teams collaborate to leverage customer success stories effectively. We have some tracking of marketing attribution from success stories.", value: "b", score: 5 },
+                { text: "We occasionally create success-based marketing materials, but our process isn't consistent or systematic. Marketing, sales, and success teams collaborate but may not have formal integration processes. Limited tracking of success story impact.", value: "c", score: 3 },
+                { text: "We rarely transform customer successes into marketing or sales assets. Any integration between success, marketing, and sales happens informally with no systematic approach.", value: "d", score: 1 },
+                { text: "We don't have processes for leveraging success stories in marketing and sales, or I'm not sure how this is currently handled.", value: "e", score: 0 }
             ],
             required: true,
-            industryContext:"Retail: Consider how your POS, inventory, and order management systems connect\nManufacturing: Focus on how your CRM, ERP, production planning, and inventory systems integrate\nConstruction: Think about how your estimating, project management, and accounting software work together"
         },
         {
             id: "s2d_q8_owner",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "How involved is the owner in managing the technologies used for sale-to-delivery processes?",
+            section: sectionName,
+            text: "How involved is the owner in the success-to-marketing integration process?",
             type: "mcq",
             valueKey: "s2d_q8_owner",
             options: [
-                { text: "Not at all / Informed only (receives updates on systems but isn't involved in their management)", value: "a", score: 5 },
-                { text: "Consulted (provides input on technology needs but doesn't maintain or administer systems)", value: "b", score: 3 },
-                { text: "Accountable (approves technology investments and ensures systems meet needs)", value: "c", score: 1 },
-                { text: "Responsible (selects, implements, or directly manages the sale-to-delivery technologies)", value: "d", score: 0 }
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
+            ],
+            required: true,
+        },
+
+        // --- Pregunta 9: Customer Journey Mapping and Milestone Management ---
+        {
+            id: "s2d_q9_process",
+            section: sectionName,
+            text: "9. Customer Journey Mapping and Milestone Management: How well do you understand and manage your customer's journey from onboarding to advocacy?",
+            type: "mcq",
+            valueKey: "s2d_q9_process",
+            groupTitle: "CUSTOMER JOURNEY & ASCENSION POINTS",
+            options: [
+                { text: "We have a comprehensive customer journey map with clearly defined stages, success milestones, and ascension points where customers are most likely to provide testimonials, make referrals, or upgrade services. We have automated communications and milestone celebrations tied to journey stages. Each stage has defined success criteria and triggers for next steps.", value: "a", score: 7 },
+                { text: "We have documented our customer journey with key stages and some identified milestone moments. We have basic processes for recognizing customer achievements and some automated communications based on journey stages.", value: "b", score: 5 },
+                { text: "We understand our customer journey conceptually but may not have it fully documented. We recognize some key moments but don't systematically celebrate milestones or have structured communications tied to journey stages.", value: "c", score: 3 },
+                { text: "Our understanding of the customer journey is informal and varies by team member. We don't have systematic approaches to milestone management or journey-based communications.", value: "d", score: 1 },
+                { text: "We don't have a defined customer journey or milestone management process, or I'm not sure how this is currently handled.", value: "e", score: 0 }
+            ],
+            required: true,
+        },
+        {
+            id: "s2d_q9_owner",
+            section: sectionName,
+            text: "How involved is the owner in customer journey management and milestone recognition?",
+            type: "mcq",
+            valueKey: "s2d_q9_owner",
+            options: [
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
+            ],
+            required: true,
+        },
+
+        // --- Pregunta 10: Upsell and Cross-sell Processes (Resale) ---
+        {
+            id: "s2d_q10_process",
+            section: sectionName,
+            text: "10. Upsell and Cross-sell Processes (Resale): How systematically do you identify and pursue expansion opportunities with existing customers?",
+            type: "mcq",
+            valueKey: "s2d_q10_process",
+            groupTitle: "RESALE: Success to Market Process", // Reutiliza el groupTitle de la Q8 si es apropiado
+            options: [
+                { text: "We have a data-driven approach to identifying upsell and cross-sell opportunities based on customer usage patterns, success metrics, and journey stage. We have documented playbooks for different expansion scenarios, clear triggers for outreach, and track expansion revenue by customer segment. Our success team works closely with sales to identify and nurture expansion opportunities.", value: "a", score: 7 },
+                { text: "We regularly identify expansion opportunities with existing customers and have some systematic approaches to upselling. We track expansion revenue and have basic processes for identifying the right timing for upsell conversations.", value: "b", score: 5 },
+                { text: "We occasionally identify upsell opportunities but our approach isn't fully systematic. We may track expansion revenue but don't have sophisticated triggers or playbooks for different scenarios.", value: "c", score: 3 },
+                { text: "Our expansion efforts are largely opportunistic and reactive. We don't systematically track or pursue upsell opportunities.", value: "d", score: 1 },
+                { text: "We don't have defined processes for customer expansion, or I'm not sure how this is currently handled.", value: "e", score: 0 }
+            ],
+            required: true,
+        },
+        {
+            id: "s2d_q10_owner",
+            section: sectionName,
+            text: "How involved is the owner in identifying and pursuing expansion opportunities?",
+            type: "mcq",
+            valueKey: "s2d_q10_owner",
+            options: [
+                { text: "Not at all / Informed only", value: "a", score: 5 },
+                { text: "Consulted", value: "b", score: 3 },
+                { text: "Accountable", value: "c", score: 1 },
+                { text: "Responsible", value: "d", score: 0 }
             ],
             required: true,
         },

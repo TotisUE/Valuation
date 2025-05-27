@@ -2,29 +2,28 @@
 import { ScoringAreas } from './scoringAreas';
 // Descomenta la siguiente línea si getValuationParameters realmente la necesita y no está importada allí.
 // import { getIndustryAdjustmentFactor } from './naicsData';
-
-// ---- IMPORTACIONES DE MÓDULOS DE PREGUNTAS ----
 import { getProfileQuestions } from './sections-data/profileQuestions';
 import { getSaleToDeliveryProcessQuestions } from './sections-data/saleToDeliveryQuestions';
+import { getDeliveryToSuccessQuestions } from './sections-data/deliveryToSuccessQuestions';
 
-// --- NUEVO ORDEN DE SECCIONES ---
 export const sections = [
     "Your Profile",                         // 0 (Step 1)
-    "Sale to Delivery Process Assessment",  // 1 (NUEVO Step 2 - S2D)
-    "Expansion Capability",                   // 2 (Ahora Step 3)
-    "Marketing & Brand Equity",               // 3 (Ahora Step 4)
-    "Profitability Metrics",                  // 4 (Ahora Step 5)
-    "Offering & Sales Effectiveness",       // 5 (Ahora Step 6)
-    "Workforce & Leadership",                 // 6 (Ahora Step 7)
-    "Execution Systems",                      // 7 (Ahora Step 8)
-    "Robust Market Position",                 // 8 (Ahora Step 9)
-    "Your Financials & Industry"            // 9 (Ahora Step 10)
+    "Sale to Delivery Process Assessment",  // 1 (Step 2 - S2D, AHORA CON 10 PREGUNTAS)
+    // "Delivery to Success Assessment",    // <--- ELIMINA ESTA LÍNEA COMPLETAMENTE
+    "Expansion Capability",                 // 2 (Ahora es Step 3 nuevamente)
+    "Marketing & Brand Equity",             // 3 (Ahora es Step 4)
+    "Profitability Metrics",                // 4 (Ahora es Step 5)
+    "Offering & Sales Effectiveness",       // 5 (Ahora es Step 6)
+    "Workforce & Leadership",               // 6 (Ahora es Step 7)
+    "Execution Systems",                    // 7 (Ahora es Step 8)
+    "Robust Market Position",               // 8 (Ahora es Step 9)
+    "Your Financials & Industry"            // 9 (Ahora es Step 10 - EL ÚLTIMO STEP)
 ];
 
 export const getQuestionsDataArray = () => {
     // --- OBTENER PREGUNTAS DE LOS MÓDULOS ---
     const profileQuestions = getProfileQuestions(sections[0]); // Para "Your Profile"
-    const saleToDeliveryQuestions = getSaleToDeliveryProcessQuestions(sections[1]); // Para "Sale to Delivery Process Assessment"
+    const saleToDeliveryQuestions = getSaleToDeliveryProcessQuestions(sections[1]);
 
     // --- PREGUNTAS DE LAS SECCIONES ORIGINALES RESTANTES ---
     // Se actualiza la propiedad 'section' para cada pregunta.
@@ -106,9 +105,11 @@ export const getQuestionsDataArray = () => {
         },
     ];
 
+
     const finalQuestionsArray = [
         ...profileQuestions,
-        ...saleToDeliveryQuestions, 
+        ...saleToDeliveryQuestions, // Contiene las 10 preguntas S2D actualizadas
+        // ...deliveryToSuccessQuestions, // ELIMINA ESTA LÍNEA
         ...expansionCapabilityQuestions, 
         ...marketingBrandEquityQuestions,
         ...profitabilityMetricsQuestions,
@@ -118,29 +119,8 @@ export const getQuestionsDataArray = () => {
         ...robustMarketPositionQuestions,
         ...financialsIndustryQuestions
     ];
-    
-    // console.log("--- Debugging getQuestionsDataArray ---");
-    // console.log("profileQuestions count:", profileQuestions ? profileQuestions.length : 0);
-    // console.log("saleToDeliveryQuestions count:", saleToDeliveryQuestions ? saleToDeliveryQuestions.length : 0);
-    // console.log("expansionCapabilityQuestions count:", expansionCapabilityQuestions ? expansionCapabilityQuestions.length :0);
-    // console.log("marketingBrandEquityQuestions count:", marketingBrandEquityQuestions ? marketingBrandEquityQuestions.length :0);
-    // console.log("profitabilityMetricsQuestions count:", profitabilityMetricsQuestions ? profitabilityMetricsQuestions.length :0);
-    // console.log("offeringSalesEffectivenessQuestions count:", offeringSalesEffectivenessQuestions ? offeringSalesEffectivenessQuestions.length :0);
-    // console.log("workforceLeadershipQuestions count:", workforceLeadershipQuestions ? workforceLeadershipQuestions.length :0);
-    // console.log("executionSystemsQuestions count:", executionSystemsQuestions ? executionSystemsQuestions.length :0);
-    // console.log("robustMarketPositionQuestions count:", robustMarketPositionQuestions ? robustMarketPositionQuestions.length :0);
-    // console.log("financialsIndustryQuestions count:", financialsIndustryQuestions ? financialsIndustryQuestions.length :0);
-    // console.log("Final questions array (count):", finalQuestionsArray.length);
-    // if (finalQuestionsArray.length > 0 && profileQuestions && saleToDeliveryQuestions && expansionCapabilityQuestions) {
-    //     console.log("First question in final array (Profile):", finalQuestionsArray[0]?.id, finalQuestionsArray[0]?.section);
-    //     console.log("First S2D Question:", finalQuestionsArray.find(q => q.id === 's2d_productName')?.id, finalQuestionsArray.find(q => q.id === 's2d_productName')?.section);
-    //     console.log("First Expansion Question:", finalQuestionsArray.find(q => q.id === 'exp1')?.id, finalQuestionsArray.find(q => q.id === 'exp1')?.section);
-    // }
-
-
     return finalQuestionsArray;
 };
-
 // --- El resto de tus funciones (isQualitativeQuestion, getQuestionsForStep, etc.) ---
 // isQualitativeQuestion (sin cambios si ScoringAreas no cambió para S2D por ahora)
 const isQualitativeQuestion = (q) => {
