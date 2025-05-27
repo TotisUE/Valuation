@@ -13,6 +13,7 @@ import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
 import ResultsDisplay from './results/ResultsDisplay';
+import SectionResultsPage from './SectionResultsPage'; 
 import { getFunctionsBaseUrl } from '../utils/urlHelpers';
 
 const downloadAsTxtFile = (text, filename) => {
@@ -99,18 +100,17 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) {
     const [submissionBackendResultMsg, setSubmissionBackendResultMsg] = useState(null);
 
 
-    const visibleSections = useMemo(() => allAppSections, [allAppSections]);
-    const TOTAL_STEPS = visibleSections.length;
+    const visibleSections = useMemo(() => allAppSections, []);
+    const TOTAL_STEPS_QUESTIONS = visibleSections.length;
+
+    const [showingSectionResultsFor, setShowingSectionResultsFor] = useState(null); 
+const [sectionResultsData, setSectionResultsData] = useState(null);
 
    const [currentStep, setCurrentStep] = useState(() => {
         if (initialFormDataProp) return 0;
-
-        // Si ya hay un resultado exitoso guardado (leído en submissionSuccess y calculationResult),
-        // la lógica de renderizado principal se encargará de mostrar ResultsDisplay.
-        // El currentStep puede ser el último paso guardado o 0.
         const savedStep = localStorage.getItem(LOCAL_STORAGE_CURRENT_STEP_KEY); // Usa la constante correcta
         const initialStep = savedStep ? parseInt(savedStep, 10) : 0;
-        const maxValidStep = TOTAL_STEPS > 0 ? TOTAL_STEPS - 1 : 0;
+         const maxValidStep = TOTAL_STEPS_QUESTIONS > 0 ? TOTAL_STEPS_QUESTIONS - 1 : 0;
         
         if (isNaN(initialStep) || initialStep < 0 || initialStep > maxValidStep) {
             return 0; // Default a 0 si el valor guardado es inválido
@@ -126,26 +126,27 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) {
     const [isSendingLink, setIsSendingLink] = useState(false);
     const [sendLinkResult, setSendLinkResult] = useState({ status: 'idle', message: '' });
 
-    useEffect(() => {
-        if (TOTAL_STEPS > 0 && currentStep >= TOTAL_STEPS && !submissionSuccess) {
-            setCurrentStep(TOTAL_STEPS - 1);
-        } else if (TOTAL_STEPS === 0 && currentStep !== 0) {
-            setCurrentStep(0);
-        }
-    }, [TOTAL_STEPS, currentStep, submissionSuccess]);
+useEffect(() => {
+
+    if (TOTAL_STEPS_QUESTIONS > 0 && currentStep >= TOTAL_STEPS_QUESTIONS && !submissionSuccess && !showingSectionResultsFor) {
+        setCurrentStep(TOTAL_STEPS_QUESTIONS - 1);
+    } else if (TOTAL_STEPS_QUESTIONS === 0 && currentStep !== 0 && !showingSectionResultsFor) {
+        setCurrentStep(0);
+    }
+}, [TOTAL_STEPS_QUESTIONS, currentStep, submissionSuccess, showingSectionResultsFor]);
 
 useEffect(() => {
-        if (!submissionSuccess) { // Solo guardar si no se ha enviado exitosamente
-            localStorage.setItem(LOCAL_STORAGE_FORM_DATA_KEY, JSON.stringify(formData));
-        }
-    }, [formData, submissionSuccess]);
+ if (!submissionSuccess && !showingSectionResultsFor) {
+        localStorage.setItem(LOCAL_STORAGE_FORM_DATA_KEY, JSON.stringify(formData));
+    }
+}, [formData, submissionSuccess, showingSectionResultsFor]);
 
    useEffect(() => {
-        if (!submissionSuccess) { // Solo guardar si no se ha enviado exitosamente
-            localStorage.setItem(LOCAL_STORAGE_CURRENT_STEP_KEY, currentStep.toString());
-        }
-        window.scrollTo(0, 0); // El scroll puede quedar fuera de la condición
-    }, [currentStep, submissionSuccess]);
+    if (!submissionSuccess && !showingSectionResultsFor) {
+        localStorage.setItem(LOCAL_STORAGE_CURRENT_STEP_KEY, currentStep.toString());
+    }
+    window.scrollTo(0, 0);
+}, [currentStep, submissionSuccess, showingSectionResultsFor]);
 
     // useEffects para NAICS (sin cambios)
     useEffect(() => { /* ... tu fetchNaicsData ... */ 
@@ -279,234 +280,168 @@ useEffect(() => {
     }, [errors]);
 
 const generateS2DPromptTextInternal = useCallback((
-       allFormData, // El primer argumento es el objeto formData completo
-        currentS2DScores,
-        s2dQuestionDefinitions
-    ) => {
-        if (!allFormData || !currentS2DScores || !s2dQuestionDefinitions || s2dQuestionDefinitions.length === 0) {
-            console.error("generateS2DPromptTextInternal: Missing critical data for S2D prompt.");
-            return "Error: Could not generate S2D prompt due to missing data or question definitions.";
-        }
+       allFormData, // El objeto formData completo
+    // Ya no necesitamos currentS2DScores aquí porque no vamos a mostrar los scores numéricos
+    s2dQuestionDefinitions // Solo las definiciones de las preguntas S2D
+) => {
+    if (!allFormData || !s2dQuestionDefinitions || s2dQuestionDefinitions.length === 0) {
+        console.error("generateS2DPromptTextInternal: Missing critical data for S2D prompt.");
+        return "Error: Could not generate S2D prompt due to missing data or question definitions.";
+    }
 
-        let output = "##Sale to Delivery Current Company Scoring##\n\n";
+    let output = "##Sale to Delivery Current Company Scoring##\n\n"; // El título se mantiene
 
-        // ======================= INICIO: BLOQUE AÑADIDO PARA SCORES S2D =======================
-        // Asumimos 8 preguntas principales para S2D para los máximos
-        const maxProcessMaturityScore = 8 * 7; // 56
-        const maxOwnerIndependenceScore = 8 * 5; // 40
+    // --- Owner Strategic Positioning ---
+    // (Esta lógica ya la teníamos calculada en calculateS2DSectionData y pasada a sectionData)
+    // Para el prompt, necesitamos recalcularla o, idealmente, tenerla disponible.
+    // Por simplicidad aquí, la recalculamos. Si sectionData estuviera disponible aquí, sería mejor.
+    // O, más elegantemente, esta función podría recibir el objeto `s2d_ownerStrategicPositioning` ya calculado.
 
-        output += `**Process Maturity Score:** ${currentS2DScores.processMaturityScore !== undefined ? currentS2DScores.processMaturityScore : 'N/A'} / ${maxProcessMaturityScore} points\n`;
-        if (currentS2DScores.processMaturityScore !== undefined && maxProcessMaturityScore > 0) {
-            const percentage = (currentS2DScores.processMaturityScore / maxProcessMaturityScore) * 100;
-            if (percentage >= 85) output += "Interpretation: Excellent - Your Sale to Delivery process is a competitive advantage.\n";
-            else if (percentage >= 70) output += "Interpretation: Good - Your process works well but has some improvement opportunities.\n";
-            else if (percentage >= 50) output += "Interpretation: Developing - Basic processes exist but significant improvements would drive better results.\n";
-            else if (percentage >= 21) output += "Interpretation: Basic - Major improvements needed to create consistent, scalable delivery.\n";
-            else output += "Interpretation: Critical - Immediate attention required to establish fundamental processes.\n";
-        }
-        output += "\n";
+    output += "**Owner Strategic Positioning**\n";
+    const areasForDelegation = [];
+    const areasForActiveManagement = [];
 
-        output += `**Owner Independence Score:** ${currentS2DScores.ownerIndependenceScore !== undefined ? currentS2DScores.ownerIndependenceScore : 'N/A'} / ${maxOwnerIndependenceScore} points\n`;
-        if (currentS2DScores.ownerIndependenceScore !== undefined && maxOwnerIndependenceScore > 0) {
-            const percentage = (currentS2DScores.ownerIndependenceScore / maxOwnerIndependenceScore) * 100;
-            if (percentage >= 80) output += "Interpretation: Excellent - Processes run independently with minimal owner involvement.\n";
-            else if (percentage >= 60) output += "Interpretation: Good - Owner is appropriately positioned in oversight rather than execution.\n";
-            else if (percentage >= 40) output += "Interpretation: Developing - Some delegation exists, but owner remains too involved in execution.\n";
-            else if (percentage >= 20) output += "Interpretation: Concerning - Owner is a critical bottleneck in multiple processes.\n";
-            else output += "Interpretation: Critical - Business is entirely dependent on owner involvement.\n";
-        }
-        output += "\n";
-        // ======================= FIN: BLOQUE AÑADIDO PARA SCORES S2D =======================
+    for (let i = 1; i <= 8; i++) {
+        const processValueKey = `s2d_q${i}_process`;
+        const ownerValueKey = `s2d_q${i}_owner`;
+        const processAnswer = allFormData[processValueKey]; 
+        const ownerAnswer = allFormData[ownerValueKey];   
+        const processQDef = s2dQuestionDefinitions.find(q => q.valueKey === processValueKey);
+        const ownerQDef = s2dQuestionDefinitions.find(q => q.valueKey === ownerValueKey);
 
+        if (processQDef && ownerQDef && processAnswer && ownerAnswer && processQDef.options && ownerQDef.options) {
+            const processOpt = processQDef.options.find(o => o.value === processAnswer);
+            const ownerOpt = ownerQDef.options.find(o => o.value === ownerAnswer);
 
-        output += "**Owner Strategic Positioning**\n";
-        const areasForDelegation = [];
-        const areasForActiveManagement = [];
+            if (processOpt && ownerOpt && typeof processOpt.score === 'number' && typeof ownerOpt.score === 'number') {
+                const pScore = processOpt.score;
+                const oScore = ownerOpt.score;
+                const qTitle = processQDef.text.substring(0, processQDef.text.indexOf(':')).replace(/^\d+\.\s*/, '').trim() || `Area ${i}`;
 
-        for (let i = 1; i <= 8; i++) {
-            const processValueKey = `s2d_q${i}_process`;
-            const ownerValueKey = `s2d_q${i}_owner`;
-
-            // --- CAMBIO AQUÍ: Usar allFormData ---
-            const processAnswer = allFormData[processValueKey]; 
-            const ownerAnswer = allFormData[ownerValueKey];   
-            // --- FIN CAMBIO ---
-
-            const processQDef = s2dQuestionDefinitions.find(q => q.valueKey === processValueKey);
-            const ownerQDef = s2dQuestionDefinitions.find(q => q.valueKey === ownerValueKey);
-
-            if (processQDef && ownerQDef && processAnswer && ownerAnswer && processQDef.options && ownerQDef.options) {
-                const processOpt = processQDef.options.find(o => o.value === processAnswer);
-                const ownerOpt = ownerQDef.options.find(o => o.value === ownerAnswer);
-
-                if (processOpt && ownerOpt && typeof processOpt.score === 'number' && typeof ownerOpt.score === 'number') {
-                    const pScore = processOpt.score;
-                    const oScore = ownerOpt.score;
-                    // Extraer el título base de la pregunta (ej: "1. Contract and Payment Processing")
-                    const qTitle = processQDef.text.substring(0, processQDef.text.indexOf(':')).replace(/^\d+\.\s*/, '').trim() || `Area ${i}`;
-
-
-                    if ((pScore === 7 || pScore === 5) && (oScore === 0 || oScore === 1)) {
-                        areasForDelegation.push(qTitle);
-                    }
-                    // Condición: Proceso bajo (0-3) y Owner NO involucrado (score 5 = "Not at all / Informed")
-                    if (pScore <= 3 && oScore === 5) {
-                        areasForActiveManagement.push(qTitle);
-                    }
+                // Condición para delegación: Proceso ALTO (score 5 o 7) Y Owner MUY INVOLUCRADO (score 0 o 1)
+                if (pScore >= 5 && (oScore === 0 || oScore === 1)) {
+                    areasForDelegation.push(qTitle);
+                }
+                // Condición para gestión activa: Proceso BAJO (score 0-3) Y Owner POCO INVOLUCRADO (score 5)
+                // La instrucción dice "owner scored 5-7", pero las opciones de owner solo van hasta score 5.
+                // Asumiré que se refiere a owner score 5 ("Not at all / Informed only") como "poco involucrado".
+                if (pScore <= 3 && oScore === 5) { 
+                    areasForActiveManagement.push(qTitle);
                 }
             }
         }
-        output += "Areas for strategic oversight (delegation opportunities): " + (areasForDelegation.length > 0 ? areasForDelegation.join(', ') : "None identified") + ".\nUser wants to begin delegating these areas to other members of the team.\n\n";
-        output += "Areas for active management: " + (areasForActiveManagement.length > 0 ? areasForActiveManagement.join(', ') : "None identified") + ".\nUser wants to become actively involved in these areas to bring up competency. AI should share information whenever possible on best practices, templates, etc.\n\n";
+    }
+    output += "Areas for strategic oversight (delegation opportunities): " 
+            + (areasForDelegation.length > 0 ? areasForDelegation.join(', ') : "None identified") 
+            + ". User wants to begin delegating these areas to other members of the team.\n"; // Mantener el punto y salto de línea
+    output += "Areas for active management: " 
+            + (areasForActiveManagement.length > 0 ? areasForActiveManagement.join(', ') : "None identified") 
+            + ". User wants to become actively involved in these areas to bring up competency. AI should share information whenever possible on best practices, templates, etc.\n\n";
 
-        // **ACCIÓN PARA TI: ASEGÚRATE QUE ESTOS TEXTOS SEAN EXACTAMENTE LOS DEL DOCUMENTO DE HAYDEN**
-        const promptSectionTemplates = {
-            s2d_q1_process: { title: "Contract and Payment Processing", text: "Contract and Payment Processing: Current contract and payment processes need standardization and automation. The business currently uses [%RESPONSE%]. AI should actively suggest improvements to contract workflows, including standardized templates, digital signature implementation, and automated follow-up sequences. When discussing new client engagements, proactively recommend contract tracking systems, payment reminder templates, documentation of payment terms, and refund language. Prioritize solutions that reduce manual handling while ensuring consistency and compliance." },
-            s2d_q2_process: { title: "Internal Handoff from Sales to Delivery Team", text: "Internal Handoff Process: The current sales-to-delivery handoff process requires improvement. The business currently experiences [%RESPONSE%]. AI should suggest structured handoff protocols including standardized information checklists, handoff meeting templates, and responsibility assignment matrices. When discussing client onboarding or project initiation, proactively recommend implementing a formal handoff document that captures all essential client details, project parameters, and commitments made during sales. Prioritize creating clear accountability for information completeness and accuracy during transitions between teams." },
-            s2d_q3_process: { title: "Client Onboarding Process", text: "Client Onboarding Process: The client onboarding experience needs strengthening and systematization. The business currently uses [%RESPONSE%]. AI should recommend comprehensive onboarding frameworks including welcome sequence templates, client information collection forms, and expectation-setting documents. When discussing new clients or delivery processes, suggest implementing structured milestone-based onboarding with clear touchpoints, resource provision schedules, and feedback collection. Prioritize creating a consistent, replicable onboarding experience that builds client confidence while efficiently gathering all information needed for successful delivery." },
-            s2d_q4_process: { title: "Asset and Information Collection", text: "Asset and Information Collection: The process for gathering client information and assets needs improvement. The business currently relies on [%RESPONSE%]. AI should suggest structured information collection systems including standardized intake forms, asset checklists, automated reminder sequences, and completion tracking. When discussing project initiation or client management, recommend implementing a central repository for client assets with clear categorization, version control, and accessibility protocols. Prioritize solutions that reduce the friction in collecting necessary information, minimize back-and-forth communications, and establish clear visibility into what's been received versus what's still pending." },
-            s2d_q5_process: { title: "Expectations and Success Metrics Definition", text: "Expectations and Success Metrics Definition: The business needs a more structured approach to defining and documenting success metrics with clients. Currently, [%RESPONSE%]. AI should suggest frameworks for establishing clear, measurable success metrics including templates for different service/product types, collaborative goal-setting processes, and documentation formats that capture both qualitative and quantitative measures. When discussing client projects or deliverables, proactively recommend defining SMART objectives (Specific, Measurable, Achievable, Relevant, Time-bound) for each engagement. Prioritize creating alignment between client expectations and internal delivery parameters, ensuring all teams understand what constitutes success for each client." },
-            s2d_q6_process: { title: "Scheduling and Resource Allocation", text: "Scheduling and Resource Allocation: The business lacks a sufficiently structured approach to scheduling work and allocating resources after sales. Currently, [%RESPONSE%]. AI should recommend resource planning frameworks including capacity management tools, visual scheduling systems, and forecasting templates that account for team bandwidth and project requirements. When discussing project planning or team management, suggest implementing formalized resource allocation processes with clear visibility into team availability, skill requirements, and project timelines. Prioritize solutions that prevent resource conflicts, provide early warning of potential capacity issues, and ensure appropriate expertise is assigned to each project phase." },
-            s2d_q7_process: { title: "Client Communication Plan", text: "Client Communication Plan: The communication strategy during the transition from sale to delivery requires strengthening. Currently, [%RESPONSE%]. AI should suggest comprehensive communication planning frameworks including client communication calendars, touchpoint schedules, channel preference documentation, and escalation protocols. When discussing client relationships or project management, recommend establishing predefined communication cadences with clear frequency, channel guidelines, and responsibility assignments for each client type. Prioritize creating consistent, proactive communication processes that set appropriate expectations, reduce client anxiety, and maintain engagement throughout the delivery phase." },
-            s2d_q8_process: { title: "Technology and Tools Integration", text: "Technology and Tools Integration: The current technology ecosystem supporting the sale-to-delivery transition requires enhancement. Currently, [%RESPONSE%]. AI should recommend technology integration approaches including system connection strategies, workflow automation tools, and data synchronization methods that reduce duplicate entry and information loss between stages. When discussing operational improvements or efficiency, suggest implementing integrated platforms or middleware solutions that create seamless information flow between sales and delivery systems. Prioritize solutions that eliminate manual workarounds, reduce error risk during handoffs, and provide complete visibility of client information throughout the customer journey." },
-        };
 
-        // Iterar para las secciones detalladas del prompt
-        s2dQuestionDefinitions.forEach(qDef => {
-            // Solo nos interesan las preguntas de proceso para esta parte detallada
-            if (qDef.id.includes('_process') && promptSectionTemplates[qDef.valueKey]) {
-                const answer = allFormData[qDef.valueKey];
-                if (answer && qDef.options) {
-                    const selectedOpt = qDef.options.find(o => o.value === answer);
-                    if (selectedOpt && typeof selectedOpt.score === 'number' && selectedOpt.score < 5) {
-                        const sectionInfo = promptSectionTemplates[qDef.valueKey];
-                        output += `**${sectionInfo.title}**\n`;
-                        output += sectionInfo.text.replace("[%RESPONSE%]", `"${selectedOpt.text}"`) + "\n\n"; // Añadir comillas a la respuesta
-                    }
+    // --- Bloques de Texto Condicionales para las 8 Áreas de Proceso S2D ---
+    const s2dPromptTemplates = { // Renombrado de promptSectionTemplates para evitar colisión si se usa fuera
+        s2d_q1_process: { 
+            title: "Contract and Payment Processing", 
+            text: "Contract and Payment Processing: Current contract and payment processes need standardization and automation. The business currently uses [%RESPONSE%]. AI should actively suggest improvements to contract workflows, including standardized templates, digital signature implementation, and automated follow-up sequences. When discussing new client engagements, proactively recommend contract tracking systems, payment reminder templates, documentation of payment terms, and refund language. Prioritize solutions that reduce manual handling while ensuring consistency and compliance." 
+        },
+        s2d_q2_process: { 
+            title: "Internal Handoff from Sales to Delivery Team", 
+            text: "Internal Handoff Process: The current sales-to-delivery handoff process requires improvement. The business currently experiences [%RESPONSE%]. AI should suggest structured handoff protocols including standardized information checklists, handoff meeting templates, and responsibility assignment matrices. When discussing client onboarding or project initiation, proactively recommend implementing a formal handoff document that captures all essential client details, project parameters, and commitments made during sales. Prioritize creating clear accountability for information completeness and accuracy during transitions between teams." 
+        },
+        s2d_q3_process: { 
+            title: "Client Onboarding Process", 
+            text: "Client Onboarding Process: The client onboarding experience needs strengthening and systematization. The business currently uses [%RESPONSE%]. AI should recommend comprehensive onboarding frameworks including welcome sequence templates, client information collection forms, and expectation-setting documents. When discussing new clients or delivery processes, suggest implementing structured milestone-based onboarding with clear touchpoints, resource provision schedules, and feedback collection. Prioritize creating a consistent, replicable onboarding experience that builds client confidence while efficiently gathering all information needed for successful delivery." 
+        },
+        s2d_q4_process: { 
+            title: "Asset and Information Collection", 
+            text: "Asset and Information Collection: The process for gathering client information and assets needs improvement. The business currently relies on [%RESPONSE%]. AI should suggest structured information collection systems including standardized intake forms, asset checklists, automated reminder sequences, and completion tracking. When discussing project initiation or client management, recommend implementing a central repository for client assets with clear categorization, version control, and accessibility protocols. Prioritize solutions that reduce the friction in collecting necessary information, minimize back-and-forth communications, and establish clear visibility into what's been received versus what's still pending." 
+        },
+        s2d_q5_process: { 
+            title: "Expectations and Success Metrics Definition", 
+            text: "Expectations and Success Metrics Definition: The business needs a more structured approach to defining and documenting success metrics with clients. Currently, [%RESPONSE%]. AI should suggest frameworks for establishing clear, measurable success metrics including templates for different service/product types, collaborative goal-setting processes, and documentation formats that capture both qualitative and quantitative measures. When discussing client projects or deliverables, proactively recommend defining SMART objectives (Specific, Measurable, Achievable, Relevant, Time-bound) for each engagement. Prioritize creating alignment between client expectations and internal delivery parameters, ensuring all teams understand what constitutes success for each client."
+        },
+        s2d_q6_process: { 
+            title: "Scheduling and Resource Allocation", 
+            text: "Scheduling and Resource Allocation: The business lacks a sufficiently structured approach to scheduling work and allocating resources after sales. Currently, [%RESPONSE%]. AI should recommend resource planning frameworks including capacity management tools, visual scheduling systems, and forecasting templates that account for team bandwidth and project requirements. When discussing project planning or team management, suggest implementing formalized resource allocation processes with clear visibility into team availability, skill requirements, and project timelines. Prioritize solutions that prevent resource conflicts, provide early warning of potential capacity issues, and ensure appropriate expertise is assigned to each project phase."
+        },
+        s2d_q7_process: { 
+            title: "Client Communication Plan", 
+            text: "Client Communication Plan: The communication strategy during the transition from sale to delivery requires strengthening. Currently, [%RESPONSE%]. AI should suggest comprehensive communication planning frameworks including client communication calendars, touchpoint schedules, channel preference documentation, and escalation protocols. When discussing client relationships or project management, recommend establishing predefined communication cadences with clear frequency, channel guidelines, and responsibility assignments for each client type. Prioritize creating consistent, proactive communication processes that set appropriate expectations, reduce client anxiety, and maintain engagement throughout the delivery phase."
+        },
+        s2d_q8_process: { 
+            title: "Technology and Tools Integration", 
+            text: "Technology and Tools Integration: The current technology ecosystem supporting the sale-to-delivery transition requires enhancement. Currently, [%RESPONSE%]. AI should recommend technology integration approaches including system connection strategies, workflow automation tools, and data synchronization methods that reduce duplicate entry and information loss between stages. When discussing operational improvements or efficiency, suggest implementing integrated platforms or middleware solutions that create seamless information flow between sales and delivery systems. Prioritize solutions that eliminate manual workarounds, reduce error risk during handoffs, and provide complete visibility of client information throughout the customer journey."
+        },
+    };
+
+    // Iterar para las secciones detalladas del prompt S2D
+    s2dQuestionDefinitions.forEach(qDef => {
+        // Solo nos interesan las preguntas de PROCESO (s2d_qX_process) para estos bloques de texto
+        if (qDef.id.includes('_process') && s2dPromptTemplates[qDef.valueKey]) {
+            const answerValue = allFormData[qDef.valueKey]; // Valor de la respuesta (ej. "a", "b")
+            if (answerValue && qDef.options) {
+                const selectedOpt = qDef.options.find(o => o.value === answerValue);
+                // La condición es "If QX score was below 5 points"
+                if (selectedOpt && typeof selectedOpt.score === 'number' && selectedOpt.score < 5) {
+                    const sectionInfo = s2dPromptTemplates[qDef.valueKey];
+                    output += `**${sectionInfo.title}**\n`;
+                    // Reemplazar [%RESPONSE%] con el TEXTO de la opción seleccionada por el usuario
+                    output += sectionInfo.text.replace("[%RESPONSE%]", `"${selectedOpt.text}"`) + "\n\n";
                 }
             }
-        });
-        return output;
-    }, []);
+        }
+    });
+    return output;
+}, []);
 
     const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
-        console.log(`[MultiStepForm] Generating prompt for section: ${sectionNameForPrompt}`);
+    console.log(`[MultiStepForm] Generating prompt for section: ${sectionNameForPrompt}`);
+    
+    let promptText = ""; 
+
+    // --- LÓGICA ESPECÍFICA DEL PROMPT POR SECCIÓN ---
+    if (sectionNameForPrompt === allAppSections[1]) { // "Sale to Delivery Process Assessment" (Step 2)
+        const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(sectionNameForPrompt); 
+        // Llamamos a la función interna de S2D, pasándole formData y las definiciones de preguntas
+        promptText = generateS2DPromptTextInternal(formData, s2dQuestionDefinitions);
+
+    } else { // Para OTRAS secciones (Expansion Capability, Marketing, etc.)
+        promptText = `## Prompt for Section: ${sectionNameForPrompt} ##\n\n`;
         
+        // Obtener las preguntas de la sección actual. Asumimos que currentStep es correcto.
         const questionsForThisSection = getQuestionsForStep(currentStep); 
-        const sectionAnswers = {};
+        
+        promptText += `Your current answers for this section:\n`;
         questionsForThisSection.forEach(q => {
-            if (formData.hasOwnProperty(q.valueKey)) {
-                sectionAnswers[q.valueKey] = formData[q.valueKey];
-            }
-        });
-
-        let promptText = ""; 
-
-        // --- LÓGICA ESPECÍFICA DEL PROMPT POR SECCIÓN ---
-
-        if (sectionNameForPrompt === allAppSections[1]) { // "Sale to Delivery Process Assessment"
-            // ... (tu lógica existente para S2D, que calcula scores y llama a generateS2DPromptTextInternal)
-            // Esta parte estaba bien y la mantienes.
-            let s2d_processMaturityScore = 0;
-            let s2d_ownerIndependenceScore = 0;
-            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(sectionNameForPrompt); 
-            s2dQuestionDefinitions.forEach(q => {
-                if (q.id.startsWith('s2d_q') && formData[q.valueKey] && q.options && q.type === 'mcq') {
-                    const answerValue = formData[q.valueKey];
-                    const opt = q.options.find(o => o.value === answerValue);
-                    if (opt && typeof opt.score === 'number') {
-                        if (q.id.includes('_process')) s2d_processMaturityScore += opt.score;
-                        else if (q.id.includes('_owner')) s2d_ownerIndependenceScore += opt.score;
-                    }
-                }
-            });
-            console.log("[S2D Prompt] Calculated Process Maturity Score:", s2d_processMaturityScore);
-console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndependenceScore);
-            const s2dScoresForThisPrompt = {
-                processMaturityScore: s2d_processMaturityScore,
-                ownerIndependenceScore: s2d_ownerIndependenceScore
-            };
-            promptText = generateS2DPromptTextInternal(formData, s2dScoresForThisPrompt, s2dQuestionDefinitions);
-
-        } else { // --- INICIO DEL BLOQUE 'else' PARA TODAS LAS OTRAS SECCIONES ---
-            promptText = `## Prompt & Results for Section: ${sectionNameForPrompt} ##\n\n`;
-            promptText += `Your current answers for this section:\n`;
-            questionsForThisSection.forEach(q => { /* ... tu lógica para mostrar respuestas ... */ 
-                const answer = sectionAnswers[q.valueKey];
-                let displayAnswer = (answer !== undefined && answer !== '' && answer !== null) ? answer : '(Not answered)';
-                if (q.type === 'mcq' && answer && q.options) {
-                    const valuePropertyToFind = q.options[0] && q.options[0].hasOwnProperty('value') ? 'value' : 'text';
-                    const selectedOpt = q.options.find(opt => opt[valuePropertyToFind] === answer);
+            const answer = formData[q.valueKey];
+            let displayAnswer = '(Not answered)';
+            if (answer !== undefined && answer !== '' && answer !== null) {
+                if (q.type === 'mcq' && q.options) {
+                    // Para MCQ, intentamos encontrar el texto de la opción.
+                    // El valor guardado en formData puede ser 'value' o 'text' de la opción.
+                    const selectedOpt = q.options.find(opt => opt.value === answer || opt.text === answer);
                     if (selectedOpt) {
                         displayAnswer = `"${selectedOpt.text}"`;
+                    } else {
+                        displayAnswer = `"${String(answer)}"`; // Fallback si no se encuentra la opción
                     }
+                } else {
+                    displayAnswer = String(answer);
                 }
-                promptText += `- ${q.text}: ${displayAnswer}\n`;
-            });
-            promptText += "\n";
-
-            const currentScoringAreaKey = Object.keys(ScoringAreas).find(
-                key => ScoringAreas[key] === sectionNameForPrompt
-            );
-
-            let currentAreaScore = 0; 
-            let maxAreaScore = 0;     
-
-            if (currentScoringAreaKey) {
-                const areaName = ScoringAreas[currentScoringAreaKey];
-                questionsForThisSection.forEach(q => { /* ... tu lógica para calcular currentAreaScore y maxAreaScore ... */ 
-                     if (q.scoringArea === areaName && q.type === 'mcq' && q.options) {
-                        const answer = sectionAnswers[q.valueKey];
-                        if (answer) {
-                            const valueProp = q.options[0] && q.options[0].hasOwnProperty('value') ? 'value' : 'text';
-                            const selectedOpt = q.options.find(opt => opt[valueProp] === answer);
-                            if (selectedOpt && typeof selectedOpt.score === 'number') {
-                                currentAreaScore += selectedOpt.score;
-                            }
-                        }
-                        const maxOptionScore = Math.max(0, ...q.options.map(opt => opt.score || 0));
-                        maxAreaScore += maxOptionScore;
-                    }
-                });
-                promptText += `**Section Score (${areaName}):** ${currentAreaScore} / ${maxAreaScore} points\n`;
-                if (maxAreaScore > 0) { /* ... tu lógica de interpretación de score ... */ 
-                    const percentage = (currentAreaScore / maxAreaScore) * 100;
-                    if (percentage >= 80) promptText += "Interpretation: Strong performance in this area.\n";
-                    else if (percentage >= 50) promptText += "Interpretation: Good performance, with some room for improvement.\n";
-                    else promptText += "Interpretation: This area may need more focus for development.\n";
-                }
-                promptText += "\n";
             }
-            
-            promptText += "--- AI Suggestions & Considerations ---\n";
+            promptText += `- ${q.text}: ${displayAnswer}\n`;
+        });
+        promptText += "\n";
 
-              if (sectionNameForPrompt === allAppSections[1]) { 
-            let s2d_processMaturityScore = 0;
-            let s2d_ownerIndependenceScore = 0;
+        // NO incluimos el "Section Score" numérico aquí.
 
-            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(sectionNameForPrompt); 
-            s2dQuestionDefinitions.forEach(q => {
+        promptText += "--- AI Suggestions & Considerations ---\n";
 
-          if (q.id.startsWith('s2d_q') && formData[q.valueKey] && q.options && q.type === 'mcq') {
-                    const answerValue = formData[q.valueKey]; // Respuesta del usuario (ej. "a")
-                    const opt = q.options.find(o => o.value === answerValue); // S2D usa option.value
-                    if (opt && typeof opt.score === 'number') {
-                        if (q.id.includes('_process')) {
-                            s2d_processMaturityScore += opt.score;
-                        } else if (q.id.includes('_owner')) {
-                            s2d_ownerIndependenceScore += opt.score;
-                        }
-                    }
-                }
-            });
-            
-            const s2dScoresForThisPrompt = {
-                processMaturityScore: s2d_processMaturityScore,
-                ownerIndependenceScore: s2d_ownerIndependenceScore
-            };
-            promptText = generateS2DPromptTextInternal(formData, s2dScoresForThisPrompt, s2dQuestionDefinitions);
-
-        } else if (sectionNameForPrompt === allAppSections[2]) { // "Expansion Capability"
+        // Aquí va toda tu lógica condicional existente para las secciones 2 a 8
+        // (índices de allAppSections)
+        
+        if (sectionNameForPrompt === allAppSections[2]) { // "Expansion Capability"
             promptText += "Considering your Expansion Capability:\n";
             if (formData.expansionVolumePrep && String(formData.expansionVolumePrep).toLowerCase().includes("not prepared")) {
                 promptText += "- Your systems may not be ready for 3x volume. Prioritize documenting key processes and identifying bottlenecks.\n";
@@ -546,7 +481,7 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
                 promptText += "- Declining or flat profitability requires urgent attention. Schedule time this week to review your P&L for the last 3-6 months. Where are anomolies or concerning trends in revenue or key expense categories?\n";
             }
             if (formData.profitMargins && (String(formData.profitMargins).toLowerCase().includes("below average") || String(formData.profitMargins).toLowerCase().includes("unsure"))) {
-                promptText += "- Uncertainty or low Gross Profit Margins suggest a need for analysis. Calculate your GPM for your top product/service. How does it compare to your best guess symptômes? What are the key drivers of COGS?\n";
+                promptText += "- Uncertainty or low Gross Profit Margins suggest a need for analysis. Calculate your GPM for your top product/service. How does it compare to your best guess? What are the key drivers of COGS?\n"; // Corregí "symptômes" a "guess" o lo que corresponda
             }
             if (formData.profitRecurringRev && (String(formData.profitRecurringRev).toLowerCase().includes("low (< 10%)") || String(formData.profitRecurringRev).toLowerCase().includes("none"))) {
                 promptText += "- Low recurring revenue increases business risk. Brainstorm one potential recurring revenue stream (e.g., maintenance plan, subscription, retainer for ongoing advice) you could offer.\n";
@@ -605,17 +540,131 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
             }
             promptText += "\nKey Reflection: What is the most significant external threat to your market position, and what is one action you can take to mitigate it or strengthen your differentiation?\n";
         
-        }
-        // Las secciones "Your Profile" (allAppSections[0]) y "Your Financials & Industry" (allAppSections[9])
-        // están excluidas por la lógica en Navigation.jsx, así que no necesitamos un 'else if' para ellas aquí.
-    else { 
-            promptText += "Review your answers above. What are the key strengths and weaknesses highlighted? Identify one action item to build on a strength or address a weakness.\n";
+        } else { 
+            // Fallback para cualquier otra sección que no tenga lógica específica (aunque debería cubrir de la 2 a la 8)
+            // Las secciones 0 (Profile) y 9 (Financials) no deberían llegar aquí debido a la lógica de Navigation.jsx
+            promptText += "Review your answers above. What are the key strengths and weaknesses highlighted for this section? Identify one action item to build on a strength or address a weakness.\n";
         }
     }
 
-        downloadAsTxtFile(promptText, `${sectionNameForPrompt.replace(/[\s\/]+/g, '_')}_Prompt.txt`);
+    downloadAsTxtFile(promptText, `${sectionNameForPrompt.replace(/[\s\/&]+/g, '_')}_Prompt.txt`);
 
-    }, [formData, currentStep, allAppSections, generateS2DPromptTextInternal, getSaleToDeliveryProcessQuestions, getQuestionsForStep, ScoringAreas]); // Añadido ScoringAreas
+}, [formData, currentStep, allAppSections, generateS2DPromptTextInternal, getSaleToDeliveryProcessQuestions, getQuestionsForStep]);
+
+
+    const calculateS2DSectionData = useCallback(() => {
+     let s2d_processMaturityScore = 0;
+    let s2d_ownerIndependenceScore = 0;
+    let s2d_customerExperienceScore = 0; 
+    let s2d_growthConnectionScore = 0;
+    let s2d_measurementRetentionScore = 0; // Asegúrate que esta esté declarada
+
+    const s2d_detailedAnswers = { 
+        customerExperience: {}, 
+        growthConnection: {}, 
+        measurementRetention: {} 
+    };
+
+    let ownerStrategicPositioning = {
+        areasForDelegation: [],
+        areasForActiveManagement: []
+    };
+
+    // Obtener las definiciones de las preguntas S2D UNA VEZ
+    // Usaremos esta misma variable para todos los cálculos de S2D
+    const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(allAppSections[1]); 
+
+    // ValueKeys para cada sub-score (según la guía de scoring)
+    const customerExperienceValueKeys = ["s2d_q1_process", "s2d_q3_process", "s2d_q4_process"];
+    const growthConnectionValueKeys = ["s2d_q7_process", "s2d_q6_process", "s2d_q8_process"];
+    const measurementRetentionValueKeys = ["s2d_q2_process", "s2d_q5_process"];
+
+    // Iterar sobre las preguntas S2D para calcular scores y detailedAnswers
+    s2dQuestionDefinitions.forEach(q => {
+        const answerValue = formData[q.valueKey];
+        if (answerValue && q.options && q.type === 'mcq') {
+            const selectedOption = q.options.find(opt => opt.value === answerValue);
+            if (selectedOption && typeof selectedOption.score === 'number') {
+                const qKeyForDetailed = q.id.split('_')[1]; // ej. "q1", "q2", etc.
+
+                if (q.id.includes('_process')) {
+                    s2d_processMaturityScore += selectedOption.score;
+
+                    // Lógica para sub-scores y detailedAnswers
+                    if (customerExperienceValueKeys.includes(q.valueKey) && qKeyForDetailed) {
+                        s2d_customerExperienceScore += selectedOption.score;
+                        s2d_detailedAnswers.customerExperience[qKeyForDetailed] = { 
+                            questionText: q.text, 
+                            answerText: selectedOption.text, 
+                            score: selectedOption.score 
+                        };
+                    }
+                    if (growthConnectionValueKeys.includes(q.valueKey) && qKeyForDetailed) {
+                        s2d_growthConnectionScore += selectedOption.score;
+                        s2d_detailedAnswers.growthConnection[qKeyForDetailed] = { 
+                            questionText: q.text, 
+                            answerText: selectedOption.text, 
+                            score: selectedOption.score 
+                        };
+                    }
+                    if (measurementRetentionValueKeys.includes(q.valueKey) && qKeyForDetailed) {
+                        s2d_measurementRetentionScore += selectedOption.score;
+                        s2d_detailedAnswers.measurementRetention[qKeyForDetailed] = { 
+                            questionText: q.text, 
+                            answerText: selectedOption.text, 
+                            score: selectedOption.score 
+                        };
+                    }
+                } else if (q.id.includes('_owner')) {
+                    s2d_ownerIndependenceScore += selectedOption.score;
+                }
+            }
+        }
+    });
+
+    // Calcular Owner Strategic Positioning (este bucle puede usar las mismas s2dQuestionDefinitions)
+    for (let i = 1; i <= 8; i++) {
+        const processValueKey = `s2d_q${i}_process`;
+        const ownerValueKey = `s2d_q${i}_owner`;
+
+        const processAnswer = formData[processValueKey]; 
+        const ownerAnswer = formData[ownerValueKey];   
+
+        const processQDef = s2dQuestionDefinitions.find(q => q.valueKey === processValueKey); // Usa s2dQuestionDefinitions
+        const ownerQDef = s2dQuestionDefinitions.find(q => q.valueKey === ownerValueKey);   // Usa s2dQuestionDefinitions
+
+        if (processQDef && ownerQDef && processAnswer && ownerAnswer && processQDef.options && ownerQDef.options) {
+            const processOpt = processQDef.options.find(o => o.value === processAnswer);
+            const ownerOpt = ownerQDef.options.find(o => o.value === ownerAnswer);
+
+            if (processOpt && ownerOpt && typeof processOpt.score === 'number' && typeof ownerOpt.score === 'number') {
+                const pScore = processOpt.score;
+                const oScore = ownerOpt.score;
+                const qTitle = processQDef.text.substring(0, processQDef.text.indexOf(':')).replace(/^\d+\.\s*/, '').trim() || `Area ${i}`;
+                if (pScore >= 5 && (oScore === 0 || oScore === 1)) {
+                    ownerStrategicPositioning.areasForDelegation.push(qTitle);
+                }
+                if (pScore <= 3 && oScore === 5) { 
+                    ownerStrategicPositioning.areasForActiveManagement.push(qTitle);
+                }
+            }
+        }
+    }
+
+    return {
+        isS2D: true,
+        s2d_productName: formData.s2d_productName,
+        s2d_productDescription: formData.s2d_productDescription,
+        s2d_productRevenue: formData.s2d_productRevenue,
+        s2d_processMaturityScore,
+        s2d_ownerIndependenceScore,
+        s2d_customerExperienceScore,
+        s2d_growthConnectionScore,
+        s2d_measurementRetentionScore, // Asegúrate que se retorna
+        s2d_detailedAnswers,           // Asegúrate que se retorna
+        s2d_ownerStrategicPositioning: ownerStrategicPositioning,
+    };
+}, [formData, allAppSections, getSaleToDeliveryProcessQuestions]);
 
     const handleSubmit = useCallback(async () => {
         console.log("[MultiStepForm] handleSubmit triggered. isSubmitting:", isSubmitting);
@@ -650,73 +699,13 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
             const estimatedValuation = adjEbitda >= 0 ? Math.round(adjEbitda * finalMultiple) : 0;
             const roadmapData = generateImprovementRoadmap(originalScores, valuationParams.stage, formData);
 
-            let s2d_processMaturityScore = 0;
-            let s2d_ownerIndependenceScore = 0;
-            let s2d_clientExperienceOptimizationScore = 0;
-            let s2d_resourceAllocationEffectivenessScore = 0;
-            
-            // Obtener las definiciones de las preguntas S2D
-            const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(allAppSections[1]); 
-            
-            const clientExperienceValueKeys = ["s2d_q3_process", "s2d_q2_process", "s2d_q5_process"];
-            const resourceAllocationValueKeys = ["s2d_q6_process", "s2d_q4_process", "s2d_q7_process"];
-            
-            // Declarar s2d_detailedAnswers AQUÍ para que esté en el ámbito correcto
-            const s2d_detailedAnswers = { 
-                clientExperience: {}, 
-                resourceAllocation: {} 
-            };
+         const s2dData = calculateS2DSectionData();
 
-            s2dQuestionDefinitions.forEach(q => {
-                const answerValue = formData[q.valueKey]; // Las respuestas S2D están en el formData principal
-                if (answerValue && q.options && q.type === 'mcq') {
-                    const selectedOption = q.options.find(opt => opt.value === answerValue);
-                    if (selectedOption && typeof selectedOption.score === 'number') {
-                        let qKeyForDetailed = ""; // Para usar como clave en s2d_detailedAnswers (ej. "q1", "q2")
-                        const idParts = q.id.split('_');
-                        if (idParts.length >= 2) {
-                            qKeyForDetailed = idParts[1];
-                        }
-
-                        if (q.id.includes('_process')) {
-                            s2d_processMaturityScore += selectedOption.score;
-
-                            if (clientExperienceValueKeys.includes(q.valueKey) && qKeyForDetailed) {
-                                s2d_clientExperienceOptimizationScore += selectedOption.score;
-                                // --- LLENAR s2d_detailedAnswers ---
-                                s2d_detailedAnswers.clientExperience[qKeyForDetailed] = { 
-                                    questionText: q.text, 
-                                    answerText: selectedOption.text, 
-                                    score: selectedOption.score 
-                                };
-                            }
-                            if (resourceAllocationValueKeys.includes(q.valueKey) && qKeyForDetailed) {
-                                s2d_resourceAllocationEffectivenessScore += selectedOption.score;
-                                // --- LLENAR s2d_detailedAnswers ---
-                                s2d_detailedAnswers.resourceAllocation[qKeyForDetailed] = { 
-                                    questionText: q.text, 
-                                    answerText: selectedOption.text, 
-                                    score: selectedOption.score 
-                                };
-                            }
-                        } else if (q.id.includes('_owner')) {
-                            s2d_ownerIndependenceScore += selectedOption.score;
-                        }
-                    }
-                }
-            });
               calculatedResultsForThisSubmission = {
                 stage: valuationParams.stage, adjEbitda, baseMultiple: valuationParams.baseMultiple, 
                 maxMultiple: valuationParams.maxMultiple, finalMultiple, estimatedValuation,
                 scores: originalScores, scorePercentage: clampedOriginalScorePercentage, roadmap: roadmapData,
-                s2d_productName: formData.s2d_productName,
-                s2d_productDescription: formData.s2d_productDescription,
-                s2d_productRevenue: formData.s2d_productRevenue,
-                s2d_processMaturityScore,
-                s2d_ownerIndependenceScore,
-                s2d_clientExperienceOptimizationScore,
-                s2d_resourceAllocationEffectivenessScore,
-                s2d_detailedAnswers // Ahora este objeto está correctamente poblado
+            ...s2dData
             };
             // --- FIN CÁLCULOS ---
             
@@ -773,7 +762,7 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
             console.log("[MultiStepForm] handleSubmit finally block. Setting isSubmitting to false.");
             setIsSubmitting(false);
         }
-    }, [formData, calculateScores, generateImprovementRoadmap, allAppSections, initialScores, ScoringAreas, isSubmitting]); // Añadido isSubmitting
+    }, [formData, calculateScores, generateImprovementRoadmap, allAppSections, ScoringAreas, isSubmitting, calculateS2DSectionData, getFunctionsBaseUrl]);
 
     const handleNext = useCallback(() => { /* ... tu función sin cambios ... */
         const questionsToValidate = currentQuestions;
@@ -797,14 +786,93 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
             }
         });
         setErrors(stepErrors);
-        if (isValid) {
-            if (currentStep < TOTAL_STEPS - 1) {
-                setCurrentStep(prevStep => prevStep + 1);
+    if (isValid) {
+
+        const S2D_SECTION_INDEX = 1;
+        const isLastQuestionStep = currentStep === TOTAL_STEPS_QUESTIONS - 1; 
+
+
+        const shouldShowSectionResultsPage = 
+            currentStep >= 1 && 
+            currentStep < TOTAL_STEPS_QUESTIONS -1;
+
+        if (shouldShowSectionResultsPage) {
+            let resultsForSectionPage;
+            if (currentStep === S2D_SECTION_INDEX) {
+                console.log(`[MultiStepForm] Completed S2D section. Calculating results...`);
+                resultsForSectionPage = calculateS2DSectionData();
             } else {
-                handleSubmit();
+
+                   const sectionTitle = allAppSections[currentStep];
+    console.log(`[MultiStepForm] Completed section: ${sectionTitle}. Calculating results...`);
+
+    const generalScores = calculateScores(formData); // Todos los scores de áreas cualitativas
+    const questionsForCurrentSection = getQuestionsForStep(currentStep);
+    
+    let sectionScore = 0;
+    let maxSectionScore = 0;
+    let interpretation = "No scoring data available for this section.";
+    let primaryScoringAreaName = null;
+
+    // Encontrar la scoringArea principal para esta sección (si existe)
+    if (questionsForCurrentSection.length > 0) {
+        const firstScoringQuestion = questionsForCurrentSection.find(q => q.scoringArea);
+        if (firstScoringQuestion) {
+            primaryScoringAreaName = firstScoringQuestion.scoringArea;
+        }
+    }
+
+    if (primaryScoringAreaName) {
+        sectionScore = generalScores[primaryScoringAreaName] || 0;
+        maxSectionScore = calculateMaxScoreForArea(primaryScoringAreaName);
+        if (maxSectionScore > 0) {
+            const percentage = (sectionScore / maxSectionScore) * 100;
+            if (percentage >= 80) interpretation = "Strong performance in this area.";
+            else if (percentage >= 50) interpretation = "Good performance, with some room for improvement.";
+            else interpretation = "This area may need more focus for development.";
+        } else {
+            interpretation = "Scoring not applicable or max score is zero for this area."
+        }
+    }
+
+    const questionsAndAnswers = questionsForCurrentSection.map(q => {
+        const answerValue = formData[q.valueKey];
+        let displayAnswer = '(Not answered)';
+        if (answerValue !== undefined && answerValue !== null && answerValue !== '') {
+            if (q.type === 'mcq' && q.options) {
+
+                const opt = q.options.find(o => o.text === answerValue || o.value === answerValue);
+                displayAnswer = opt ? opt.text : String(answerValue);
+            } else {
+                displayAnswer = String(answerValue);
             }
         }
-    }, [currentStep, TOTAL_STEPS, currentQuestions, formData, handleSubmit, errors]); // Añadir errors
+        return {
+            id: q.id,
+            text: q.text,
+            answer: displayAnswer,
+            // No necesitamos pasar 'options' aquí si ya procesamos la respuesta
+        };
+    });
+
+    resultsForSectionPage = {
+        isS2D: false, // Para diferenciar en SectionResultsPage si es necesario
+        sectionTitle: sectionTitle,
+        score: sectionScore,
+        maxScore: maxSectionScore,
+        interpretation: interpretation,
+        questions: questionsAndAnswers
+    };
+}
+            setSectionResultsData(resultsForSectionPage);
+            setShowingSectionResultsFor(allAppSections[currentStep]);
+        } else if (!isLastQuestionStep) {
+            setCurrentStep(prevStep => prevStep + 1);
+        } else { 
+            handleSubmit();
+        }
+    }
+}, [currentStep, TOTAL_STEPS_QUESTIONS, currentQuestions, formData, handleSubmit, errors, allAppSections, calculateS2DSectionData, calculateScores, ScoringAreas, calculateMaxScoreForArea]);
 
     const handlePrevious = useCallback(() => { /* ... tu función sin cambios ... */
         if (currentStep > 0) {
@@ -812,6 +880,16 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
             setErrors({});
         }
     }, [currentStep]);
+
+    const handleContinueToNextStep = useCallback(() => {
+    setShowingSectionResultsFor(null);
+    setSectionResultsData(null);
+    if (currentStep < TOTAL_STEPS_QUESTIONS - 1) {
+        setCurrentStep(prevStep => prevStep + 1);
+    } else {
+         handleSubmit();
+    }
+}, [currentStep, TOTAL_STEPS_QUESTIONS, handleSubmit]);
 
    const handleStartOver = useCallback(() => {
         setCalculationResult(null);
@@ -824,7 +902,7 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
         localStorage.removeItem(LOCAL_STORAGE_CURRENT_STEP_KEY); // Usa la constante
         localStorage.removeItem(LOCAL_STORAGE_CALC_RESULT_KEY); // <-- NUEVO
         localStorage.removeItem(LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY); // <-- NUEVO
-    }, [allAppSections]); // buildInitialFormData puede depender de allAppSections si está fuera
+    }, [allAppSections]);
 
    const handleBackToEdit = useCallback(() => {
         setSubmissionSuccess(false); // <-- Clave para mostrar el formulario de nuevo
@@ -872,7 +950,7 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
         } finally {
             setIsSendingLink(false);
         }
-    }, [formData]); // formData es la dependencia principal aquí
+    }, [formData]);
 
     // --- Conditional Rendering Logic & Main Form Render ---
     if (submissionSuccess && calculationResult) { // Usa el estado booleano y el resultado calculado
@@ -886,14 +964,25 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
                 /> );
     }
     
-    // Si hubo un error del backend al intentar el submit final
     if (submissionBackendResultMsg && !submissionBackendResultMsg.success) {
          return ( <div className="submission-result error"><h2>Submission Error</h2><p>{submissionBackendResultMsg.message}</p><div style={{textAlign: 'center', marginTop: '20px'}}><button type="button" onClick={() => setSubmissionBackendResultMsg(null)}>Back to Form</button></div></div> );
     }
 
+    if (showingSectionResultsFor && sectionResultsData) {
+    return (
+        <SectionResultsPage
+            sectionName={showingSectionResultsFor}
+            sectionData={sectionResultsData}
+            onContinueToNextStep={handleContinueToNextStep}
+            onGeneratePrompt={handleGenerateStepPrompt}
+            isSubmitting={isSubmitting} 
+        />
+    );
+}
+
     return (
         <div className="multi-step-form">
-            <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS} sections={visibleSections} />
+            <ProgressIndicator currentStep={currentStep + 1} totalSteps={TOTAL_STEPS_QUESTIONS} sections={visibleSections} /> 
             <form onSubmit={(e) => e.preventDefault()}>
             <Step
                 key={currentSectionName || currentStep}
@@ -908,7 +997,7 @@ console.log("[S2D Prompt] Calculated Owner Independence Score:", s2d_ownerIndepe
             />
           <Navigation
                 currentStep={currentStep}
-                totalSteps={TOTAL_STEPS}
+                totalSteps={TOTAL_STEPS_QUESTIONS}
                 onPrevious={handlePrevious}
                 onNext={handleNext}
                 isSubmitting={isSubmitting}

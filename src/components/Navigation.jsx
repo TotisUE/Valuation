@@ -2,32 +2,24 @@ import React from 'react';
 
 function Navigation({
     currentStep,
-    totalSteps,
+    totalSteps, // Este es TOTAL_STEPS_QUESTIONS de MultiStepForm
     onPrevious,
     onNext,
     isSubmitting,
     onSaveAndSendLink,
     isSendingLink,
     sendLinkResult,
-    // --- NUEVAS PROPS AÑADIDAS ---
-    currentSectionName,
-    onGeneratePrompt,
-    sectionsConfig // Array con todos los nombres de las secciones
+    currentSectionName, // Sigue siendo útil para otras lógicas si las hubiera
+    onGeneratePrompt,   // La prop puede seguir existiendo, pero no la usaremos para mostrar el botón aquí
+    sectionsConfig 
 }) {
     const isFirstStep = currentStep === 0;
     const isLastStep = currentStep === totalSteps - 1;
 
     // --- LÓGICA PARA MOSTRAR/OCULTAR EL BOTÓN "GENERATE PROMPT" ---
-    let showGeneratePromptButton = false;
-    if (onGeneratePrompt && sectionsConfig && sectionsConfig.length > 0) {
-        const firstSectionName = sectionsConfig[0]; // Ej: "Your Profile"
-        const lastSectionName = sectionsConfig[sectionsConfig.length - 1]; // Ej: "Your Financials & Industry"
-        
-        // No mostrar en la primera ni en la última sección
-        if (currentSectionName !== firstSectionName && currentSectionName !== lastSectionName) {
-            showGeneratePromptButton = true;
-        }
-    }
+    // MODIFICACIÓN: Simplemente lo ponemos a false para que nunca se muestre aquí.
+    // La funcionalidad se ha movido a SectionResultsPage.
+    const showGeneratePromptButton = false; 
     // -------------------------------------------------------------
 
     return (
@@ -40,54 +32,58 @@ function Navigation({
              )}
 
              <div className="button-group">
-                {/* Botón "Previous" movido a la izquierda del todo */}
+                {/* Botón "Previous" */}
                 {currentStep > 0 && (
                     <button
                         type="button"
                         onClick={onPrevious}
                         disabled={isSubmitting || isSendingLink}
                         className="button secondary"
-                        style={{ marginRight: 'auto' }} // Empuja este botón a la izquierda
+                        style={{ marginRight: 'auto' }} 
                     >
                         Previous
                     </button>
                 )}
                 
-                {/* Contenedor para botones centrales (si los hay) */}
-                <div className="center-buttons" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexGrow: isFirstStep ? 1 : 0 }}>
+                <div className="center-buttons" style={{ 
+                    display: 'flex', 
+                    gap: '0.5rem', 
+                    justifyContent: isFirstStep ? 'flex-end' : 'center', // Ajuste para primera página
+                    flexGrow: 1 // Permite que los botones centrales ocupen espacio
+                }}>
                     {/* Botón Guardar y Enviar Link */}
-                    {onSaveAndSendLink && ( // Mostrar siempre si la función existe
+                    {onSaveAndSendLink && (
                         <button
                             type="button"
                             onClick={onSaveAndSendLink}
                             disabled={isSendingLink || isSubmitting}
-                            className="button secondary save-send-button"
+                            className="button secondary save-send-button" // Puedes darle un estilo específico si quieres
                         >
                             {isSendingLink ? 'Sending Link...' : 'Save & Get Link'}
                         </button>
                     )}
 
-                    {/* --- NUEVO BOTÓN "GENERAR PROMPT" --- */}
-                    {showGeneratePromptButton && (
+                    {/* Botón "Generate Prompt" - YA NO SE MUESTRA AQUÍ */}
+                    {/* {showGeneratePromptButton && (
                         <button
                             type="button"
-                            onClick={() => onGeneratePrompt(currentSectionName)} // Pasa el nombre de la sección actual
+                            onClick={() => onGeneratePrompt(currentSectionName)}
                             disabled={isSubmitting || isSendingLink}
-                            className="button info generate-prompt-button" // Nueva clase para estilo
+                            className="button info generate-prompt-button"
                         >
                             Generate Prompt
                         </button>
-                    )}
-                    {/* --- FIN NUEVO BOTÓN --- */}
+                    )} */}
                 </div>
 
-                {/* Botón "Next" / "Submit" a la derecha del todo */}
+                {/* Botón "Next" / "Submit" */}
                 <button
                     type="button"
                     onClick={onNext}
                     disabled={isSubmitting || isSendingLink}
                     className="button primary"
-                    style={{ marginLeft: 'auto' }} // Empuja este botón a la derecha
+                    // Si no hay botón "Previous", el "Next" no necesita margen izquierdo automático
+                    style={{ marginLeft: currentStep > 0 ? 'auto' : '0' }} 
                 >
                     {isSubmitting ? 'Submitting...' : (isLastStep ? 'View Results & Submit' : 'Next')}
                 </button>
