@@ -2,6 +2,96 @@
 import React from 'react';
 import { NumericFormat } from 'react-number-format'; // Asegúrate que esté importado
 
+const D2SIntroductoryText = () => (
+    <div className="d2s-intro-text" style={{ marginBottom: '25px', padding: '15px', border: '1px solid #e0e0e0', borderRadius: '5px', backgroundColor: '#f9f9f9', lineHeight: '1.6' }}>
+        <h3 style={{ marginTop: '0', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>The 5 R's of Customer Success Framework</h3>
+        <h4 style={{ marginTop: '15px' }}>Understanding Customer Success as a Business Growth Engine</h4>
+        <p>The "Delivery to Success" process isn't just about fulfilling what you promised—it's about turning every customer into a growth engine for your business. Great Customer Success departments focus on five key outcomes, which we call The 5 R's:</p>
+        <ul style={{ paddingLeft: '20px' }}>
+            <li style={{ marginBottom: '10px' }}>
+                <strong>Results – The customer achieves the promised outcome</strong>
+                <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginTop: '5px' }}>
+                    <li>How many milestones are customers meeting?</li>
+                    <li>How long do they take to achieve success?</li>
+                    <li>NPS and CSAT scores at key customer journey moments</li>
+                    <li>Customer support metrics and resolution times</li>
+                    <li>Measurable business impact for the customer</li>
+                </ul>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+                <strong>Retention – The customer stays and keeps using the product or service</strong>
+                <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginTop: '5px' }}>
+                    <li>Renewal rates and contract extensions</li>
+                    <li>Usage metrics and engagement levels</li>
+                    <li>Early warning systems for at-risk customers</li>
+                    <li>Proactive intervention strategies</li>
+                    <li>Customer lifetime value optimization</li>
+                </ul>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+                <strong>Reviews – The customer leaves feedback that drives improvement</strong>
+                <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginTop: '5px' }}>
+                    <li>Detractors (NPS 0-6): Feedback should be internal and inform strategic planning</li>
+                    <li>Promoters (NPS 9-10): Feedback should become public testimonials and case studies</li>
+                    <li>Systematic review collection at optimal moments</li>
+                    <li>Review response and follow-up processes</li>
+                </ul>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+                <strong>Referrals – The customer actively recommends your product or service</strong>
+                <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginTop: '5px' }}>
+                    <li>Systematic referral request workflows</li>
+                    <li>Referral tracking and attribution systems</li>
+                    <li>Community building among successful customers</li>
+                    <li>Partner/affiliate programs emerging from customer advocacy</li>
+                    <li>Timing referral requests with customer success milestones</li>
+                </ul>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+                <strong>Resale – The customer buys again (upsells, renewals, cross-sells)</strong>
+                <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginTop: '5px' }}>
+                    <li>Identifying key ascension moments in the customer journey</li>
+                    <li>Upsell and cross-sell opportunity identification</li>
+                    <li>Renewal process optimization</li>
+                    <li>Expansion revenue tracking</li>
+                    <li>Success-based pricing models</li>
+                </ul>
+            </li>
+        </ul>
+        <h4 style={{ marginTop: '20px' }}>The Customer Journey Foundation</h4>
+        <p>Before diving into processes, successful businesses map their Customer Journey with clear stages and Ascension Points—moments when customers are most likely to:</p>
+        <ul style={{ paddingLeft: '20px', listStyleType: 'circle', marginTop: '5px' }}>
+            <li>Provide testimonials or case studies</li>
+            <li>Make referrals to colleagues</li>
+            <li>Upgrade or expand their engagement</li>
+            <li>Become community advocates</li>
+        </ul>
+        <p>This journey mapping directly informs when and how you implement each of the 5 R's.</p>
+        
+        <hr style={{ margin: '25px 0', border: '0', borderTop: '1px solid #ddd' }} />
+
+        <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>Delivery to Success Process Assessment</h3>
+        <h4 style={{ marginTop: '15px' }}>Introduction</h4>
+        <p>This assessment focuses on your entire service/product delivery process, examining how effectively you execute your core offering, ensure customer satisfaction, and convert customers into advocates using the 5 R's framework. We're evaluating your ability to deliver quality consistently, measure outcomes, address issues, and develop long-term customer relationships that fuel business growth.</p>
+        
+        <h4 style={{ marginTop: '20px' }}>Scoring Scale:</h4>
+        <ul style={{ paddingLeft: '20px', listStyleType: 'square', marginTop: '5px' }}>
+            <li>7 points = Excellent systems and processes in place</li>
+            <li>5 points = Good systems that need minor improvements</li>
+            <li>3 points = Basic systems exist but need significant improvement</li>
+            <li>1 point = Minimal or ad-hoc approach</li>
+            <li>0 points = No systems exist or unknown</li>
+        </ul>
+
+        <h4 style={{ marginTop: '20px' }}>Owner Involvement Scoring:</h4>
+        <ul style={{ paddingLeft: '20px', listStyleType: 'square', marginTop: '5px' }}>
+            <li>Not at all / Informed = 5 points (best delegation)</li>
+            <li>Consulted = 3 points</li>
+            <li>Accountable = 1 point</li>
+            <li>Responsible = 0 points (owner dependency)</li>
+        </ul>
+    </div>
+);
 // --- Función del componente ---
 function Step({
     stepIndex,
@@ -23,11 +113,12 @@ function Step({
             </div>
         );
     }
-
+const D2S_SECTION_NAME = "Delivery to Success Assessment";
     // --- Renderizado principal del paso ---
     return (
         <div className="step">
             <h2>{sectionTitle}</h2>
+            {sectionTitle === D2S_SECTION_NAME && <D2SIntroductoryText />}
             {/* Mapeo sobre las preguntas para este paso */}
             {questions.map((q) => {
                 const hasError = errors && errors[q.valueKey];
