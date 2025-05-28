@@ -2,33 +2,6 @@
 
 export const getSaleToDeliveryProcessQuestions = (sectionName) => { 
     return [
-        // --- Preguntas de Definición de Producto/Servicio ---
-        {
-            id: "s2d_productName",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "Name of Product/Service:",
-            type: "text",
-            valueKey: "s2d_productName",
-            required: true,
-        },
-        {
-            id: "s2d_productDescription",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "Description of Product/Service:",
-            type: "textarea",
-            valueKey: "s2d_productDescription",
-            required: true,
-            rows: 4
-        },
-        {
-            id: "s2d_productRevenue",
-            section: sectionName, // MODIFICACIÓN: Añadido
-            text: "Annual Revenue of Product/Service:",
-            type: "number",
-            valueKey: "s2d_productRevenue",
-            placeholder: "e.g., 500000",
-            required: true,
-        },
 
         // --- 1. Contract and Payment Processing ---
         {

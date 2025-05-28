@@ -10,6 +10,8 @@ import {
 } from '../questions';
 import { getSaleToDeliveryProcessQuestions } from '../sections-data/saleToDeliveryQuestions';
 import { getDeliveryToSuccessQuestions } from '../sections-data/deliveryToSuccessQuestions';
+import { getMarketToLeadPart1Questions, getMarketToLeadPart2Questions } from '../sections-data/marketToLeadQuestions';
+import { /* ..., */ MARKETING_CHANNELS_OPTIONS } from '../sections-data/marketToLeadQuestions';
 import Step from './Step';
 import ProgressIndicator from './ProgressIndicator';
 import Navigation from './Navigation';
@@ -31,7 +33,6 @@ const downloadAsTxtFile = (text, filename) => {
 
 const LOCAL_STORAGE_FORM_DATA_KEY = 'valuationFormData';
 const LOCAL_STORAGE_CURRENT_STEP_KEY = 'valuationFormCurrentStep';
-// ---- USAR ESTAS CONSTANTES consistentemente ----
 const LOCAL_STORAGE_CALC_RESULT_KEY = 'valuationCalculationResult';
 const LOCAL_STORAGE_SUBMISSION_SUCCESS_KEY = 'valuationSubmissionSuccess';
 
@@ -43,16 +44,28 @@ const buildInitialFormData = () => { /* ... Tu función buildInitialFormData sin
     });
     initialFormState.ebitdaAdjustments = 0;
     initialFormState.assessmentId = null;
-    const profileAndBaseDefaults = {
+
+const profileAndBaseDefaults = {
         userEmail: '', ownerRole: '', naicsSector: '', naicsSubSector: '',
         employeeCount: null, locationState: '', locationZip: '',
         revenueSourceBalance: '', customerTypeBalance: '', currentRevenue: null,
         grossProfit: null, ebitda: null,
+        
+        // S2D Defaults
         s2d_productName: '', s2d_productDescription: '', s2d_productRevenue: null,
         s2d_q1_process: '', s2d_q1_owner: '', s2d_q2_process: '', s2d_q2_owner: '',
         s2d_q3_process: '', s2d_q3_owner: '', s2d_q4_process: '', s2d_q4_owner: '',
         s2d_q5_process: '', s2d_q5_owner: '', s2d_q6_process: '', s2d_q6_owner: '',
         s2d_q7_process: '', s2d_q7_owner: '', s2d_q8_process: '', s2d_q8_owner: '',
+
+        // D2S Defaults (Si ya los tienes, si no, los añadiríamos cuando implementemos D2S completamente)
+        // d2s_... : '', 
+
+        //M2L
+        m2l_productName: '',
+        m2l_productDescription: '',
+        m2l_productRevenue: null, // null para números, '' para texto/select
+        m2l_primaryMarketingChannel: '',
     };
     return { ...profileAndBaseDefaults, ...initialFormState };
 };
@@ -69,7 +82,7 @@ function MultiStepForm({ initialFormData: initialFormDataProp = null }) {
             return { ...baseStructure, ...initialFormDataProp };
         }
         const savedData = localStorage.getItem(LOCAL_STORAGE_FORM_DATA_KEY);
-        let dataToUse = savedData ? JSON.parse(savedData) : baseStructure; // Cuidado con JSON.parse(null)
+        let dataToUse = savedData ? JSON.parse(savedData) : baseStructure;
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const emailFromUrl = params.get('email');
@@ -502,6 +515,176 @@ const calculateD2SSectionData = useCallback(() => {
     };
 }, [formData, allAppSections, getDeliveryToSuccessQuestions]); // Añadir getDeliveryToSuccessQuestions aquí
 
+// En MultiStepForm.jsx
+
+const calculateMarketToLeadData = useCallback(() => {
+    // --- INICIALIZAR TODAS LAS VARIABLES QUE SE USARÁN EN EL RETURN O PARA CÁLCULOS INTERNOS ---
+    let m2l_processMaturityScore = 0;
+    let m2l_ownerIndependenceScore = 0;
+    
+    let activeChannelsCount = 0; 
+    let m2l_channelDiversificationInterpretation = "High risk - single point of failure";
+    
+    let ltvToCacRatio = 0; // <--- INICIALIZACIÓN CORRECTA
+    let m2l_unitEconomicsHealthInterpretation = "Data incomplete for LTV:CAC calculation";
+
+    const m2l_processAssessmentDetails = [];
+    let m2l_ownerStrategicPositioning = { areasForDelegation: [], areasForActiveManagement: [] };
+    const m2lFormDataForPrompt = {};
+    
+    // Obtener las definiciones de preguntas
+    // Estas funciones se usan más abajo para construir m2lFormDataForPrompt, así que es bueno tenerlas.
+    const m2lPart1Questions = getMarketToLeadPart1Questions(allAppSections[3]); 
+    const m2lPart2Questions = getMarketToLeadPart2Questions(allAppSections[4]);
+
+    // --- CÁLCULO DE SCORES PRINCIPALES (Process Maturity y Owner Independence de M2L Parte 2) ---
+    m2lPart2Questions.forEach(q => {
+        const answerValue = formData[q.valueKey];
+        if (q.type === 'mcq' && answerValue && q.options) {
+            const selectedOption = q.options.find(opt => opt.value === answerValue);
+            if (selectedOption && typeof selectedOption.score === 'number') {
+                if (q.valueKey.endsWith('_process')) {
+                    m2l_processMaturityScore += selectedOption.score;
+                } else if (q.valueKey.endsWith('_owner')) {
+                    m2l_ownerIndependenceScore += selectedOption.score;
+                }
+            }
+        }
+    });
+
+    // --- CONSTRUCCIÓN DE m2l_processAssessmentDetails (de M2L Parte 2) ---
+    m2lPart2Questions.forEach(qDef => {
+        if (qDef.valueKey.endsWith('_process')) {
+            const baseValueKeyWithoutSuffix = qDef.valueKey.replace('_process', '');
+            const ownerQuestionValueKey = `${baseValueKeyWithoutSuffix}_owner`;
+            const processAnswerValue = formData[qDef.valueKey];
+            const ownerAnswerValue = formData[ownerQuestionValueKey];
+            const processQuestionText = qDef.text;
+            let processAnswerText = "(Not answered)";
+            let processAnswerScore = 0;
+
+            if (processAnswerValue && qDef.options) {
+                const selectedOpt = qDef.options.find(opt => opt.value === processAnswerValue);
+                if (selectedOpt && typeof selectedOpt.score === 'number') {
+                    processAnswerText = selectedOpt.text;
+                    processAnswerScore = selectedOpt.score;
+                }
+            }
+
+            const ownerQuestionDef = m2lPart2Questions.find(q => q.valueKey === ownerQuestionValueKey);
+            let ownerQuestionText = "";
+            let ownerAnswerText = "(Not answered)";
+            let ownerAnswerScore = 0;
+
+            if (ownerQuestionDef) {
+                ownerQuestionText = ownerQuestionDef.text;
+                if (ownerAnswerValue && ownerQuestionDef.options) {
+                    const selectedOwnerOpt = ownerQuestionDef.options.find(opt => opt.value === ownerAnswerValue);
+                    if (selectedOwnerOpt && typeof selectedOwnerOpt.score === 'number') {
+                        ownerAnswerText = selectedOwnerOpt.text;
+                        ownerAnswerScore = selectedOwnerOpt.score;
+                    }
+                }
+            }
+            m2l_processAssessmentDetails.push({
+                id: qDef.id, processQuestionText, processAnswerText, processAnswerScore,
+                ownerQuestionText, ownerAnswerText, ownerAnswerScore
+            });
+        }
+    });
+    m2l_processAssessmentDetails.sort((a, b) => {
+        const numA = parseInt(a.id.split('_')[2]);
+        const numB = parseInt(b.id.split('_')[2]);
+        return numA - numB;
+    });
+
+    // --- Channel Diversification Score (de M2L Parte 1) ---
+    const channelUseValueKeys = [
+        'm2l_meta_ads_use', 'm2l_tiktok_ads_use', 'm2l_google_ads_use', 
+        'm2l_linkedin_ads_use', 'm2l_youtube_ads_use', 'm2l_otherPaidChannels_list',
+        'm2l_youtube_organic_use', 'm2l_linkedin_organic_use', 'm2l_google_seo_use', 
+        'm2l_instagram_organic_use', 'm2l_otherOrganicChannels_list',
+        'm2l_email_marketing_use', 'm2l_text_sms_marketing_use',
+        'm2l_referral_formal_programs'
+    ];
+    // activeChannelsCount ya está declarada e inicializada arriba.
+    channelUseValueKeys.forEach(valueKey => {
+        if (valueKey.includes('_list')) { 
+            if (formData[valueKey] && String(formData[valueKey]).trim() !== '') activeChannelsCount++;
+        } else if (valueKey === 'm2l_referral_formal_programs') {
+             if (formData[valueKey] === 'yes') activeChannelsCount++;
+        } else if (formData[valueKey] === 'yes') { 
+            activeChannelsCount++;
+        }
+    });
+    // m2l_channelDiversificationInterpretation ya está declarada e inicializada arriba.
+    if (activeChannelsCount >= 5) m2l_channelDiversificationInterpretation = "Excellent diversification reducing platform risk";
+    else if (activeChannelsCount >= 3) m2l_channelDiversificationInterpretation = "Good diversification with room for expansion";
+    else if (activeChannelsCount === 2) m2l_channelDiversificationInterpretation = "Basic diversification, vulnerable to channel changes";
+
+    // --- Unit Economics Health Score (de M2L Parte 1) ---
+    // ltvToCacRatio y m2l_unitEconomicsHealthInterpretation ya están declaradas e inicializadas arriba.
+    const ltv = parseFloat(formData.m2l_unit_90DayGrossProfit);
+    const cac = parseFloat(formData.m2l_unit_overallCAC);
+    if (!isNaN(ltv) && !isNaN(cac) && cac > 0) {
+        ltvToCacRatio = ltv / cac; // Asignación a la variable local 'ltvToCacRatio'
+        if (ltvToCacRatio > 3) m2l_unitEconomicsHealthInterpretation = "Excellent unit economics (LTV:CAC > 3:1)";
+        else if (ltvToCacRatio >= 2) m2l_unitEconomicsHealthInterpretation = "Good unit economics (LTV:CAC 2-3:1)";
+        else if (ltvToCacRatio >= 1.5) m2l_unitEconomicsHealthInterpretation = "Acceptable but needs improvement (LTV:CAC 1.5-2:1)";
+        else m2l_unitEconomicsHealthInterpretation = "Critical - unsustainable economics (LTV:CAC < 1.5:1)";
+    } else if (!isNaN(ltv) && !isNaN(cac) && cac === 0 && ltv > 0) {
+        m2l_unitEconomicsHealthInterpretation = "Excellent (Infinite LTV:CAC due to $0 CAC with positive LTV)";
+        ltvToCacRatio = Infinity; // Asignación a la variable local 'ltvToCacRatio'
+    } else if (cac < 0) {
+        m2l_unitEconomicsHealthInterpretation = "Invalid CAC (negative value)";
+    }
+
+    // --- Owner Strategic Positioning para M2L (de M2L Parte 2) ---
+    // m2l_ownerStrategicPositioning ya está declarada e inicializada arriba.
+    m2lPart2Questions.forEach(qDef_strat => { 
+        if (qDef_strat.valueKey.endsWith('_process')) {
+            const baseValueKey = qDef_strat.valueKey.replace('_process', '');
+            const ownerValueKey = `${baseValueKey}_owner`;
+            const processAnswerValue = formData[qDef_strat.valueKey];
+            const ownerAnswerValue = formData[ownerValueKey];
+            const ownerQDef_strat = m2lPart2Questions.find(q => q.valueKey === ownerValueKey);
+            if (processAnswerValue && ownerAnswerValue && qDef_strat.options && ownerQDef_strat && ownerQDef_strat.options) {
+                const processOpt = qDef_strat.options.find(o => o.value === processAnswerValue);
+                const ownerOpt = ownerQDef_strat.options.find(o => o.value === ownerAnswerValue);
+                if (processOpt && ownerOpt && typeof processOpt.score === 'number' && typeof ownerOpt.score === 'number') {
+                    const pScore = processOpt.score; const oScore = ownerOpt.score;   
+                    const qTitle = qDef_strat.text.substring(qDef_strat.text.indexOf(' ') + 1, qDef_strat.text.indexOf(':')).trim() || `Area for ${baseValueKey}`;
+                    if (pScore >= 5 && (oScore === 0 || oScore === 1)) m2l_ownerStrategicPositioning.areasForDelegation.push(qTitle);
+                    if (pScore <= 3 && oScore === 5) m2l_ownerStrategicPositioning.areasForActiveManagement.push(qTitle);
+                }
+            }
+        }
+    });
+
+    // --- Recopilar formData para el prompt ---
+    // m2lFormDataForPrompt ya está declarada e inicializada arriba.
+    // getMarketToLeadPart1Questions y m2lPart2Questions ya están obtenidas arriba.
+    const allM2LQuestions = [...m2lPart1Questions, ...m2lPart2Questions];
+    allM2LQuestions.forEach(q => {
+        if (formData.hasOwnProperty(q.valueKey)) {
+            m2lFormDataForPrompt[q.valueKey] = formData[q.valueKey];
+        }
+    });
+
+    return {
+        isM2L: true,
+        m2l_processMaturityScore,
+        m2l_ownerIndependenceScore,
+        m2l_activeChannelsCount: activeChannelsCount, 
+        m2l_channelDiversificationInterpretation,
+        m2l_ltvToCacRatio: ltvToCacRatio, // <--- Ahora 'ltvToCacRatio' está definida
+        m2l_unitEconomicsHealthInterpretation,
+        m2l_ownerStrategicPositioning,
+        formDataForPrompt: m2lFormDataForPrompt,
+        m2l_processAssessmentDetails,
+    };
+}, [formData, allAppSections, getMarketToLeadPart1Questions, getMarketToLeadPart2Questions]);
+
     const currentSectionName = visibleSections[currentStep];
     const currentQuestions = useMemo(() => {
         if (currentSectionName === undefined) return [];
@@ -811,60 +994,269 @@ const generateD2SPromptTextInternal = useCallback((
     return output;
 }, []); // No necesita dependencias si d2sCalculatedData se pasa como argumento y no se accede a `formData` directamente
 
-    const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
+const generateM2LPromptTextInternal = useCallback((
+    m2lCalculatedData, // Objeto con todos los scores, datos de formDataForPrompt, positioning, etc.
+    m2lPart1QuestionDefs, // Array de definiciones de preguntas para M2L P1
+    m2lPart2QuestionDefs  // Array de definiciones de preguntas para M2L P2
+) => {
+    if (!m2lCalculatedData || !m2lCalculatedData.formDataForPrompt) {
+        console.error("generateM2LPromptTextInternal: Missing critical m2lCalculatedData or formDataForPrompt.");
+        return "Error: Could not generate M2L prompt due to missing data.";
+    }
+
+    const fd = m2lCalculatedData.formDataForPrompt; // Alias para las respuestas directas
+    let output = "Market to Lead Current Company Scoring\n\n"; // Título según documento
+
+    // --- Primary Product/Service Marketing Profile ---
+    output += "Primary Product/Service Marketing Profile\n";
+    output += `Product/Service: ${fd.m2l_productName || "N/A"} - ${fd.m2l_productDescription || "N/A"}\n`;
+    output += `Annual Revenue: $${parseFloat(fd.m2l_productRevenue || 0).toLocaleString()}\n`;
+    // Para el Primary Marketing Channel, necesitamos el texto de la opción, no el valueKey
+    const primaryChannelOption = MARKETING_CHANNELS_OPTIONS.find(opt => opt.value === fd.m2l_primaryMarketingChannel);
+    output += `Primary Marketing Channel: ${primaryChannelOption ? primaryChannelOption.text : (fd.m2l_primaryMarketingChannel || "N/A")}\n\n`;
+
+    // --- Complete Marketing Channel Attribution ---
+    output += "Complete Marketing Channel Attribution\n";
+    output += "Paid Advertising Channels:\n";
+    let totalPaidSpend = 0;
+
+    const paidChannels = [
+        { key: 'meta_ads', name: 'Meta (Facebook/Instagram)' }, { key: 'tiktok_ads', name: 'TikTok Ads' },
+        { key: 'google_ads', name: 'Google Ads' }, { key: 'linkedin_ads', name: 'LinkedIn Ads' },
+        { key: 'youtube_ads', name: 'YouTube Ads' }
+    ];
+
+    paidChannels.forEach(ch => {
+        if (fd[`m2l_${ch.key}_use`] === 'yes') {
+            const spend = parseFloat(fd[`m2l_${ch.key}_monthlySpend`] || 0);
+            totalPaidSpend += spend;
+            output += `${ch.name}: ${fd[`m2l_${ch.key}_customerPercent`] || 0}% of customers, $${spend.toLocaleString()}/month spend, ${fd[`m2l_${ch.key}_warmTrafficPercent`] || 0}% warm traffic\n`;
+        } else {
+            // output += `${ch.name}: Not used\n`; // Opcional: mostrar los no usados
+        }
+    });
+    output += `Other Paid Channels: ${fd.m2l_otherPaidChannels_list || "None"}, ${fd.m2l_otherPaidChannels_customerPercent || 0}% of customers combined, $${parseFloat(fd.m2l_otherPaidChannels_monthlySpend || 0).toLocaleString()}/month spend\n`;
+    totalPaidSpend += parseFloat(fd.m2l_otherPaidChannels_monthlySpend || 0);
+    output += `Total Paid Advertising Spend: $${totalPaidSpend.toLocaleString()}/month\n\n`;
+    
+    output += "Content/Organic Channels:\n";
+    const organicChannels = [
+        { key: 'youtube_organic', name: 'YouTube Organic' }, { key: 'linkedin_organic', name: 'LinkedIn Organic' },
+        { key: 'google_seo', name: 'Google SEO' }, { key: 'instagram_organic', name: 'Instagram Organic' }
+    ];
+    organicChannels.forEach(ch => {
+        if (fd[`m2l_${ch.key}_use`] === 'yes') {
+            const warmSuffix = ch.key === 'google_seo' ? " (branded searches)" : "";
+            output += `${ch.name}: ${fd[`m2l_${ch.key}_customerPercent`] || 0}% of customers, ${fd[`m2l_${ch.key}_warmTrafficPercent`] || 0}% warm traffic${warmSuffix}\n`;
+        }
+    });
+    output += `Other Organic Channels: ${fd.m2l_otherOrganicChannels_list || "None"}, ${fd.m2l_otherOrganicChannels_customerPercent || 0}% of customers combined\n\n`;
+
+    output += "Direct Outreach:\n";
+    if (fd.m2l_email_marketing_use === 'yes') {
+        output += `Email Marketing: ${fd.m2l_email_marketing_customerPercent || 0}% of customers, ${fd.m2l_email_marketing_warmTrafficPercent || 0}% warm audiences\n`;
+    }
+    if (fd.m2l_text_sms_marketing_use === 'yes') {
+        output += `Text/SMS Marketing: ${fd.m2l_text_sms_marketing_customerPercent || 0}% of customers, ${fd.m2l_text_sms_marketing_warmTrafficPercent || 0}% warm audiences\n`;
+    }
+    output += "\n";
+
+    output += "Affiliate/Referral Programs:\n";
+    if (fd.m2l_referral_formal_programs === 'yes') {
+        output += `Referral Programs: ${fd.m2l_referral_customerPercent || 0}% of customers, ${fd.m2l_referral_internalExternalPercent || 0}% internal vs external referrals\n`;
+    } else {
+        output += "Referral Programs: No formal programs indicated.\n";
+    }
+    output += "\n";
+
+    // --- Unit Economics Data ---
+    output += "Unit Economics Data\n";
+    output += `Overall Blended CAC: $${parseFloat(fd.m2l_unit_overallCAC || 0).toLocaleString()}\n`;
+    output += `Primary Channel CAC: $${parseFloat(fd.m2l_unit_primaryChannelCAC || 0).toLocaleString()}\n`;
+    output += `90-Day Customer Gross Profit: $${parseFloat(fd.m2l_unit_90DayGrossProfit || 0).toLocaleString()}\n`;
+    output += `LTV:CAC Ratio: ${typeof m2lCalculatedData.m2l_ltvToCacRatio === 'number' ? m2lCalculatedData.m2l_ltvToCacRatio.toFixed(2) : 'N/A'}\n`;
+    output += `Monthly Customer Acquisition Fixed Costs: $${parseFloat(fd.m2l_unit_monthlyAcqFixedCosts || 0).toLocaleString()}\n`;
+    output += `Monthly Sales Needed for Customer Acquisition Breakeven: ${fd.m2l_unit_salesForAcqBreakeven || 0} sales\n`;
+    output += `Total Monthly Fixed Costs: $${parseFloat(fd.m2l_unit_totalMonthlyFixedCosts || 0).toLocaleString()}\n`;
+    output += `Monthly Sales Needed for Overall Profitability: ${fd.m2l_unit_salesForOverallProfitability || 0} sales\n\n`;
+
+    // --- Channel Performance Analysis & AI Recommendations ---
+    // Esta sección requiere un análisis más profundo que solo listar datos.
+    // Por ahora, un placeholder. Necesitaríamos lógica para identificar underperforming/high-opportunity.
+    output += "Channel Performance Analysis & AI Recommendations\n";
+    output += `Primary channel performance: [Analysis for ${primaryChannelOption ? primaryChannelOption.text : (fd.m2l_primaryMarketingChannel || "N/A")} needed]\n`;
+    output += "Underperforming channels: [Logic to identify these needed]\n";
+    output += "High-opportunity channels: [Logic to identify these needed]\n";
+    output += "Warm traffic optimization: [Logic to identify channels needing warm traffic optimization needed]\n\n";
+
+    // --- Complete Competitive Analysis ---
+    output += "Complete Competitive Analysis\nDirect Competitors:\n";
+    output += `Competitor #1: ${fd.m2l_pa_14_top3Competitors ? fd.m2l_pa_14_top3Competitors.split('\n')[0] : 'N/A'} - Primary advantage: [Extract from m2l_pa_14_competitorAdvantages] - How you differentiate: ${fd.m2l_pa_14_diffFromComp1 || 'N/A'}\n`;
+    // ... (Similar para Competitor #2 y #3, requiere parsear los textareas)
+    output += "\nCompetitive Positioning:\n";
+    output += `What competitors do better: ${fd.m2l_pa_14_competitorsDoBetter || 'N/A'}\n`;
+    output += `What you do better than all competitors: ${fd.m2l_pa_14_youDoBetter || 'N/A'}\n`;
+    // "Category of One positioning" necesitaría una lógica de score/análisis de las respuestas de diferenciación.
+    output += "Category of One positioning: [Analysis needed based on differentiation inputs]\n\n";
+    output += "When discussing competitive strategy, AI should:\n";
+    output += "- Reference specific competitor strengths and how to counter them\n";
+    output += "- Leverage your unique advantages identified in the assessment\n";
+    // ... (resto de los puntos fijos para AI)
+    output += "- Focus on building \"category of one\" positioning to escape commodity competition\n\n";
+
+
+    // --- Owner Strategic Positioning (M2L) ---
+    const m2lOSP = m2lCalculatedData.m2l_ownerStrategicPositioning;
+    output += "**Owner Strategic Positioning**\n"; // Usar ** según el formato S2D, no en el título general
+    output += "Areas for strategic oversight (delegation opportunities): " 
+            + (m2lOSP.areasForDelegation.length > 0 ? m2lOSP.areasForDelegation.join(', ') : "None identified") 
+            + ". User wants to begin delegating these areas to other members of the team.\n";
+    output += "Areas for active management: " 
+            + (m2lOSP.areasForActiveManagement.length > 0 ? m2lOSP.areasForActiveManagement.join(', ') : "None identified") 
+            + ". User wants to become actively involved in these areas to bring up competency. AI should share information whenever possible on best practices, templates, etc.\n\n";
+
+    // --- Process Improvement Priorities ---
+    output += "Process Improvement Priorities\n";
+    const m2lProcessAssessmentQuestionsMap = {}; // Para mapear valueKey a la pregunta y el texto del prompt
+    m2lPart2QuestionDefs.forEach(q => {
+        if (q.valueKey.endsWith('_process')) {
+            m2lProcessAssessmentQuestionsMap[q.valueKey] = {
+                text: q.text, // Texto completo de la pregunta
+                // Necesitaremos los templates de prompt para cada área
+            };
+        }
+    });
+    
+    // Definir los templates para las prioridades de mejora (similar a S2D)
+    const m2lImprovementTemplates = {
+        'm2l_pa_1_marketResearchICP_process': "Market Research & ICP Development: Current customer profiling needs strengthening. AI should proactively suggest ICP refinement exercises, customer interview templates, and data analysis frameworks when discussing target audience or marketing strategy. Prioritize creating detailed buyer personas based on the [%CUSTOMER_PERCENT_PRIMARY_CHANNEL%]% of customers coming from [%PRIMARY_CHANNEL%] and analyze why [%SECONDARY_CHANNEL%] drives [%CUSTOMER_PERCENT_SECONDARY_CHANNEL%]% despite [%INVESTMENT_LEVEL_SECONDARY_CHANNEL%] investment.",
+        'm2l_pa_2_brandPositioning_process': "Brand Positioning & Messaging: Current positioning lacks clarity or differentiation. AI should suggest messaging frameworks, competitive differentiation exercises, and value proposition templates. When discussing marketing content, prioritize developing clear positioning that explains why customers choose you over competitors, especially given your success in [%PRIMARY_CHANNEL%] versus [%UNDERPERFORMING_CHANNELS%].",
+        // ... (AÑADIR LOS 12 TEMPLATES RESTANTES AQUÍ, MAPEADOS A SUS valueKey _process)
+        // Ejemplo para Content Strategy:
+        'm2l_pa_3_contentStrategy_process': "Content Strategy & Development: Content creation lacks systematic approach. AI should recommend editorial calendar templates, content pillar frameworks, and repurposing strategies. Focus on scaling content for [%ORGANIC_CHANNELS_DRIVING_CUSTOMERS%] and creating content that converts cold traffic to warm audiences for [%CHANNELS_LOW_WARM_TRAFFIC%].",
+        // ... y así sucesivamente para las 14 preguntas de proceso.
+    };
+
+    m2lPart2QuestionDefs.forEach(qDef => {
+        if (qDef.valueKey.endsWith('_process')) {
+            const answerValue = fd[qDef.valueKey];
+            if (answerValue && qDef.options) {
+                const selectedOpt = qDef.options.find(o => o.value === answerValue);
+                if (selectedOpt && typeof selectedOpt.score === 'number' && selectedOpt.score < 5) {
+                    const templateText = m2lImprovementTemplates[qDef.valueKey];
+                    if (templateText) {
+                        // Reemplazar placeholders en templateText con datos reales del formData o calculados
+                        // Esto es complejo y requiere más lógica para obtener [%PRIMARY_CHANNEL%], etc.
+                        // Por ahora, solo incluimos el template y la respuesta del usuario.
+                        let filledTemplate = templateText; 
+                        // Ejemplo de reemplazo (necesitarás más lógica para estos placeholders):
+                        // filledTemplate = filledTemplate.replace("[%PRIMARY_CHANNEL%]", primaryChannelOption ? primaryChannelOption.text : 'your primary channel');
+                        // ... otros reemplazos ...
+                        output += `**${qDef.text.substring(qDef.text.indexOf(' ') + 1, qDef.text.indexOf(':'))}**\n`; // Título del área
+                        output += filledTemplate + `\n(User's current approach: "${selectedOpt.text}")\n\n`;
+                    }
+                }
+            }
+        }
+    });
+    
+    output += "Industry-Specific Marketing Guidance\n";
+    output += "[Based on selected industry - consulting, manufacturing, retail, construction, or general small business]\n\n"; // Placeholder
+    
+    output += "This enhanced Master Prompt will enable AI to provide sophisticated marketing guidance, channel optimization recommendations, and specific implementation strategies based on your current marketing maturity level, actual channel performance data, and unit economics.\n";
+
+    return output;
+}, [MARKETING_CHANNELS_OPTIONS]); 
+
+const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
     console.log(`[MultiStepForm] Generating prompt for section: ${sectionNameForPrompt}`);
     let promptText = "";
-    const S2D_SECTION_NAME = allAppSections[1]; // Asumiendo que el índice 1 es S2D
-    const D2S_SECTION_NAME = allAppSections[2]; // Asumiendo que el índice 2 es D2S
+
+    const S2D_SECTION_NAME = allAppSections[1]; // Índice 1 es S2D
+    const D2S_SECTION_NAME = allAppSections[2]; // Índice 2 es D2S
+    // --- NUEVAS CONSTANTES PARA M2L ---
+    const M2L_PART1_NAME = allAppSections[3];   // Índice 3 es M2L P1 ("Market to Lead - Channels & Economics")
+    const M2L_PART2_NAME = allAppSections[4];   // Índice 4 es M2L P2 ("Market to Lead - Process Assessment")
+    const M2L_UNIFIED_NAME = "Market to Lead Process Assessment"; // Título unificado para el prompt
 
     if (sectionNameForPrompt === S2D_SECTION_NAME) {
         const s2dQuestionDefinitions = getSaleToDeliveryProcessQuestions(S2D_SECTION_NAME);
         promptText = generateS2DPromptTextInternal(formData, s2dQuestionDefinitions);
-    } else if (sectionNameForPrompt === D2S_SECTION_NAME) { // <--- AÑADE ESTE ELSE IF
+    } else if (sectionNameForPrompt === D2S_SECTION_NAME) {
         const d2sQuestionDefinitions = getDeliveryToSuccessQuestions(D2S_SECTION_NAME);
-        const d2sData = calculateD2SSectionData(); // Calcula los datos D2S
+        // Si generateD2SPromptTextInternal necesita d2sData, asegúrate que calculateD2SSectionData()
+        // esté disponible y se llame aquí o que d2sData se obtenga de sectionResultsData si es aplicable.
+        const d2sData = sectionResultsData && sectionResultsData.isD2S ? sectionResultsData : calculateD2SSectionData();
         if (d2sData) {
             promptText = generateD2SPromptTextInternal(formData, d2sData, d2sQuestionDefinitions);
         } else {
             promptText = "Error: Could not calculate D2S data for prompt generation.";
-            console.error("Failed to generate D2S prompt because d2sData was null.");
+            console.error("Failed to generate D2S prompt because d2sData was null/undefined.");
         }
-    } else {
+    // --- NUEVO BLOQUE ELSE IF PARA M2L ---
+    } else if (
+        sectionNameForPrompt === M2L_PART1_NAME || 
+        sectionNameForPrompt === M2L_PART2_NAME ||
+        sectionNameForPrompt === M2L_UNIFIED_NAME // Para cuando se llama desde la página de resultados M2L
+    ) {
+        const m2lP1Defs = getMarketToLeadPart1Questions(M2L_PART1_NAME);
+        const m2lP2Defs = getMarketToLeadPart2Questions(M2L_PART2_NAME);
+        
+        // generateM2LPromptTextInternal espera el objeto m2lCalculatedData completo.
+        // Si el prompt se genera desde SectionResultsPage, sectionResultsData debería tenerlo.
+        // Si se genera en otro momento (no debería para M2L ya que el prompt está en SectionResultsPage),
+        // necesitaríamos una forma de obtener o recalcular estos datos.
+        let m2lDataForPrompt;
+        if (sectionResultsData && sectionResultsData.isM2L) {
+            m2lDataForPrompt = sectionResultsData;
+        } else {
+            // Fallback: Recalcular. Esto asegura que la función tenga datos,
+            // pero es menos eficiente si ya se habían calculado para la página de resultados.
+            console.warn("[handleGenerateStepPrompt] Recalculating M2L data for prompt. Consider optimizing if called frequently outside results page.");
+            m2lDataForPrompt = calculateMarketToLeadData(); 
+        }
+
+        if (m2lDataForPrompt) {
+            promptText = generateM2LPromptTextInternal(m2lDataForPrompt, m2lP1Defs, m2lP2Defs);
+        } else {
+            promptText = "Error: Could not calculate Market to Lead data for prompt generation.";
+            console.error("Failed to generate M2L prompt because m2lDataForPrompt was null/undefined.");
+        }
+    // --- FIN NUEVO BLOQUE ELSE IF PARA M2L ---
+    } else { // Para las secciones estándar (Expansion, Marketing, etc.)
         promptText = `## Prompt for Section: ${sectionNameForPrompt} ##\n\n`;
         
-        // Obtener las preguntas de la sección actual. Asumimos que currentStep es correcto.
-        const questionsForThisSection = getQuestionsForStep(currentStep); 
+        // Usar el índice correcto para getQuestionsForStep.
+        // Si sectionNameForPrompt es confiable, podemos buscar su índice.
+        const sectionIndex = allAppSections.indexOf(sectionNameForPrompt);
+        const questionsForThisSection = sectionIndex !== -1 ? getQuestionsForStep(sectionIndex) : [];
         
-        promptText += `Your current answers for this section:\n`;
-        questionsForThisSection.forEach(q => {
-            const answer = formData[q.valueKey];
-            let displayAnswer = '(Not answered)';
-            if (answer !== undefined && answer !== '' && answer !== null) {
-                if (q.type === 'mcq' && q.options) {
-                    // Para MCQ, intentamos encontrar el texto de la opción.
-                    // El valor guardado en formData puede ser 'value' o 'text' de la opción.
-                    const selectedOpt = q.options.find(opt => opt.value === answer || opt.text === answer);
-                    if (selectedOpt) {
-                        displayAnswer = `"${selectedOpt.text}"`;
+        if (questionsForThisSection.length > 0) {
+            promptText += `Your current answers for this section:\n`;
+            questionsForThisSection.forEach(q => {
+                const answer = formData[q.valueKey];
+                let displayAnswer = '(Not answered)';
+                if (answer !== undefined && answer !== '' && answer !== null) {
+                    if (q.type === 'mcq' && q.options) {
+                        const selectedOpt = q.options.find(opt => opt.value === answer || opt.text === answer);
+                        displayAnswer = selectedOpt ? `"${selectedOpt.text}"` : `"${String(answer)}"`;
                     } else {
-                        displayAnswer = `"${String(answer)}"`; // Fallback si no se encuentra la opción
+                        displayAnswer = String(answer);
                     }
-                } else {
-                    displayAnswer = String(answer);
                 }
-            }
-            promptText += `- ${q.text}: ${displayAnswer}\n`;
-        });
-        promptText += "\n";
-
-        // NO incluimos el "Section Score" numérico aquí.
+                promptText += `- ${q.text}: ${displayAnswer}\n`;
+            });
+            promptText += "\n";
+        } else {
+            promptText += "No questions found for this section to display answers.\n\n";
+        }
 
         promptText += "--- AI Suggestions & Considerations ---\n";
 
         // Aquí va toda tu lógica condicional existente para las secciones 2 a 8
         // (índices de allAppSections)
         
-        if (sectionNameForPrompt === allAppSections[2]) { // "Expansion Capability"
+        if (sectionNameForPrompt === allAppSections[5]) { // "Expansion Capability"
             promptText += "Considering your Expansion Capability:\n";
             if (formData.expansionVolumePrep && String(formData.expansionVolumePrep).toLowerCase().includes("not prepared")) {
                 promptText += "- Your systems may not be ready for 3x volume. Prioritize documenting key processes and identifying bottlenecks.\n";
@@ -882,7 +1274,7 @@ const generateD2SPromptTextInternal = useCallback((
             }
             promptText += "\nKey Reflection: What is the single biggest barrier to your business handling 2-3x its current volume smoothly?\n";
         
-        } else if (sectionNameForPrompt === allAppSections[3]) { // "Marketing & Brand Equity"
+        } else if (sectionNameForPrompt === allAppSections[6]) { // "Marketing & Brand Equity"
             promptText += "Reflecting on your Marketing & Brand Equity:\n";
             if (formData.marketingBrandRec && String(formData.marketingBrandRec).toLowerCase().includes("unknown")) {
                 promptText += "- Low brand recognition is a hurdle. What are 2-3 low-cost activities you can start to increase visibility in your target market (e.g., local networking, targeted social media, an introductory offer)?\n";
@@ -898,7 +1290,7 @@ const generateD2SPromptTextInternal = useCallback((
             }
             promptText += "\nKey Reflection: If you had to double your qualified leads next month with a small budget, what ONE marketing activity would you focus all your energy on?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[4]) { // "Profitability Metrics"
+        } else if (sectionNameForPrompt === allAppSections[7]) { // "Profitability Metrics"
             promptText += "Analyzing your Profitability Metrics:\n";
             if (formData.profitTrend && (String(formData.profitTrend).toLowerCase().includes("declining") || String(formData.profitTrend).toLowerCase().includes("flat or inconsistent"))) {
                 promptText += "- Declining or flat profitability requires urgent attention. Schedule time this week to review your P&L for the last 3-6 months. Where are anomolies or concerning trends in revenue or key expense categories?\n";
@@ -911,7 +1303,7 @@ const generateD2SPromptTextInternal = useCallback((
             }
             promptText += "\nKey Reflection: What is the ONE financial metric (e.g., Gross Profit Margin, Net Profit Margin, Recurring Revenue %) that, if improved, would have the biggest positive impact on your business's health and value?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[5]) { // "Offering & Sales Effectiveness"
+        } else if (sectionNameForPrompt === allAppSections[8]) { // "Offering & Sales Effectiveness"
             promptText += "Evaluating Offering & Sales Effectiveness:\n";
             if (formData.offeringSatisfaction && (String(formData.offeringSatisfaction).toLowerCase().includes("no systematic measurement") || String(formData.offeringSatisfaction).toLowerCase().includes("informally or rarely"))) {
                 promptText += "- Without systematic customer satisfaction measurement, you're flying blind. Implement a simple 1-2 question survey (e.g., NPS + 'What's one thing we could do better?') after each service delivery/sale.\n";
@@ -924,7 +1316,7 @@ const generateD2SPromptTextInternal = useCallback((
             }
             promptText += "\nKey Reflection: What is the single biggest friction point for your customers in your current sales OR offering delivery process?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[6]) { // "Workforce & Leadership"
+        } else if (sectionNameForPrompt === allAppSections[9]) { // "Workforce & Leadership"
             promptText += "Assessing your Workforce & Leadership:\n";
             if (formData.workforceOwnerReliance && (String(formData.workforceOwnerReliance).toLowerCase().includes("heavily reliant") || String(formData.workforceOwnerReliance).toLowerCase().includes("completely reliant"))) {
                 promptText += "- High owner reliance is a significant bottleneck and risk. Identify ONE recurring task you do that someone else could potentially do (even 70% as well as you). Plan to delegate it in the next 30 days with clear instructions.\n";
@@ -937,7 +1329,7 @@ const generateD2SPromptTextInternal = useCallback((
             }
             promptText += "\nKey Reflection: If you were forced to take a 4-week vacation starting tomorrow, what would be the biggest operational fire in your business, and who would (or wouldn't) be able to handle it?\n";
         
-        } else if (sectionNameForPrompt === allAppSections[7]) { // "Execution Systems"
+        } else if (sectionNameForPrompt === allAppSections[10]) { // "Execution Systems"
             promptText += "Reviewing your Execution Systems:\n";
             if (formData.systemsSOPs && (String(formData.systemsSOPs).toLowerCase().includes("minimally documented") || String(formData.systemsSOPs).toLowerCase().includes("few documented"))) {
                 promptText += "- Lack of SOPs leads to errors and inefficiency. Choose ONE critical process and create a simple checklist or a short (1-page) SOP for it this week.\n";
@@ -950,7 +1342,7 @@ const generateD2SPromptTextInternal = useCallback((
             }
             promptText += "\nKey Reflection: What is the ONE system or process that, if improved or implemented, would give you the most leverage or peace of mind in your business operations?\n";
 
-        } else if (sectionNameForPrompt === allAppSections[8]) { // "Robust Market Position"
+        } else if (sectionNameForPrompt === allAppSections[11]) { // "Robust Market Position"
             promptText += "Evaluating your Robust Market Position:\n";
             if (formData.marketGrowthPotential && String(formData.marketGrowthPotential).toLowerCase().includes("declining market")) {
                 promptText += "- A declining market requires strategic shifts. What adjacent markets, new customer segments, or innovative offerings could you explore to find new growth avenues?\n";
@@ -975,19 +1367,20 @@ if (promptText) { // Solo descargar si hay texto
 
 }, [
     formData, 
-    currentStep, // o visibleSections.indexOf(sectionNameForPrompt) para las genéricas
-    allAppSections, // o visibleSections
+    currentStep, // Mantenido para las secciones genéricas si getQuestionsForStep lo usa
+    allAppSections, 
+    sectionResultsData, // Añadido porque lo usamos para M2L y D2S
     generateS2DPromptTextInternal,
-    generateD2SPromptTextInternal, // <--- AÑADE A DEPENDENCIAS
     getSaleToDeliveryProcessQuestions,
-    getDeliveryToSuccessQuestions, // <--- AÑADE A DEPENDENCIAS
-    calculateD2SSectionData,    // <--- AÑADE A DEPENDENCIAS
-    getQuestionsForStep,
-    // visibleSections // <--- AÑADE SI USAS visibleSections.indexOf
+    generateD2SPromptTextInternal, 
+    getDeliveryToSuccessQuestions, 
+    calculateD2SSectionData,
+    generateM2LPromptTextInternal,    // <--- AÑADIDO
+    getMarketToLeadPart1Questions,  // <--- AÑADIDO
+    getMarketToLeadPart2Questions,  // <--- AÑADIDO
+    calculateMarketToLeadData,      // <--- AÑADIDO (para el fallback de M2L)
+    getQuestionsForStep
 ]);
-
-
-
 
     const handleSubmit = useCallback(async () => {
         console.log("[MultiStepForm] handleSubmit triggered. isSubmitting:", isSubmitting);
@@ -1087,143 +1480,150 @@ if (promptText) { // Solo descargar si hay texto
         }
     }, [formData, calculateScores, generateImprovementRoadmap, allAppSections, ScoringAreas, isSubmitting, calculateS2DSectionData, getFunctionsBaseUrl]);
 
-    const handleNext = useCallback(() => { /* ... tu función sin cambios ... */
-        const questionsToValidate = currentQuestions;
-        const stepErrors = {};
-        let isValid = true;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        questionsToValidate.forEach(q => {
-            const value = formData[q.valueKey];
-            let isEmptyOrInvalid = false;
-            if (q.type === 'number') {
-                isEmptyOrInvalid = (value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || isNaN(Number(value))) && value !== 0;
-            } else {
-                isEmptyOrInvalid = value == null || (typeof value === 'string' && value.trim() === '');
-            }
-            if (q.required && isEmptyOrInvalid) {
-                stepErrors[q.valueKey] = `${q.text || 'This field'} is required.`;
-                isValid = false;
-            } else if (q.type === 'email' && value && !emailRegex.test(value)) {
-                stepErrors[q.valueKey] = "Invalid email format.";
-                isValid = false;
-            }
-        });
-        setErrors(stepErrors);
-    if (isValid) {
+    const handleNext = useCallback(() => {
+    const questionsToValidate = currentQuestions;
+    const stepErrors = {};
+    let isValid = true;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    questionsToValidate.forEach(q => {
+        const value = formData[q.valueKey];
+        let isEmptyOrInvalid = false;
+        if (q.type === 'number') {
+            isEmptyOrInvalid = (value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || isNaN(Number(value))) && value !== 0;
+        } else {
+            isEmptyOrInvalid = value == null || (typeof value === 'string' && value.trim() === '');
+        }
+        if (q.required && isEmptyOrInvalid) {
+            stepErrors[q.valueKey] = `${q.text || 'This field'} is required.`;
+            isValid = false;
+        } else if (q.type === 'email' && value && !emailRegex.test(value)) {
+            stepErrors[q.valueKey] = "Invalid email format.";
+            isValid = false;
+        }
+    });
+    setErrors(stepErrors);
 
-        const S2D_SECTION_INDEX = 1;
-        const D2S_SECTION_INDEX = 2;
+    if (isValid) {
+        const S2D_SECTION_INDEX = 1; // "Sale to Delivery"
+        const D2S_SECTION_INDEX = 2; // "Delivery to Success"
+        const M2L_PART1_INDEX = 3;   // "Market to Lead - Channels & Economics"
+        const M2L_PART2_INDEX = 4;   // "Market to Lead - Process Assessment"
+
         const isLastQuestionStep = currentStep === TOTAL_STEPS_QUESTIONS - 1; 
 
+        // --- DEFINIR QUÉ PASOS MUESTRAN UNA PÁGINA DE RESULTADOS DESPUÉS DE ELLOS ---
+        const stepsThatTriggerResultsPage = [
+            S2D_SECTION_INDEX, 
+            D2S_SECTION_INDEX, 
+            M2L_PART2_INDEX, // Los resultados de M2L se muestran DESPUÉS de la Parte 2
+            5, // Expansion Capability
+            6, // Marketing & Brand Equity
+            7, // Profitability Metrics
+            8, // Offering & Sales Effectiveness
+            9, // Workforce & Leadership
+            10, // Execution Systems
+            11, // Robust Market Position
+        ];
 
-           const shouldShowSectionResultsPage =
-            currentStep >= 1 &&
-            currentStep < TOTAL_STEPS_QUESTIONS - 1 && // No mostrar para el último paso de preguntas
-            (currentStep === S2D_SECTION_INDEX || currentStep === D2S_SECTION_INDEX ||
-             (allAppSections[currentStep] && // Para otras secciones que también podrían tener una página de resultados
-             (allAppSections[currentStep].includes("Expansion Capability") || 
-              allAppSections[currentStep].includes("Marketing") ||
-              allAppSections[currentStep].includes("Profitability Metrics") ||
-              allAppSections[currentStep].includes("Offering & Sales Effectiveness") ||
-              allAppSections[currentStep].includes("Workforce & Leadership") ||
-              allAppSections[currentStep].includes("Execution Systems") ||
-              allAppSections[currentStep].includes("Robust Market Position")
-             ))
-            );
-       if (shouldShowSectionResultsPage) {
+        // Determinar si el paso actual debe mostrar una página de resultados
+        const shouldShowSectionResultsPage = stepsThatTriggerResultsPage.includes(currentStep);
+
+        if (currentStep === M2L_PART1_INDEX) {
+            // Si estamos en M2L Parte 1, simplemente avanzamos a M2L Parte 2
+            // sin mostrar página de resultados intermedia.
+            if (!isLastQuestionStep) { // Doble chequeo por si acaso
+                 setCurrentStep(prevStep => prevStep + 1);
+            } else {
+                handleSubmit(); // No debería ocurrir si M2L P1 no es el último
+            }
+        } else if (shouldShowSectionResultsPage) {
             let resultsForSectionPage;
+            let sectionTitleForResultsPage = allAppSections[currentStep]; // Título por defecto
+
             if (currentStep === S2D_SECTION_INDEX) {
                 console.log(`[MultiStepForm] Completed S2D section. Calculating results...`);
                 resultsForSectionPage = calculateS2DSectionData();
-            } else if (currentStep === D2S_SECTION_INDEX) { // <--- AÑADE ESTE ELSE IF
+            } else if (currentStep === D2S_SECTION_INDEX) {
                 console.log(`[MultiStepForm] Completed D2S section. Calculating results...`);
-                resultsForSectionPage = calculateD2SSectionData(); // <--- LLAMA A LA NUEVA FUNCIÓN
+                resultsForSectionPage = calculateD2SSectionData(); // Asume que esta función existe y está implementada
+            } else if (currentStep === M2L_PART2_INDEX) {
+                console.log(`[MultiStepForm] Completed M2L Part 2. Calculating M2L results...`);
+                resultsForSectionPage = calculateMarketToLeadData(); // Llama a la nueva función para M2L
+                sectionTitleForResultsPage = "Market to Lead Process Assessment"; // Título unificado para M2L
             } else {
+                // Lógica para las secciones estándar (Expansion, Marketing, etc.)
+                console.log(`[MultiStepForm] Completed section: ${sectionTitleForResultsPage}. Calculating results...`);
+                const generalScores = calculateScores(formData);
+                const questionsForCurrentSection = getQuestionsForStep(currentStep);
+                let sectionScore = 0;
+                let maxSectionScore = 0;
+                let interpretation = "No scoring data available for this section.";
+                let primaryScoringAreaName = null;
 
-                   const sectionTitle = allAppSections[currentStep];
-    console.log(`[MultiStepForm] Completed section: ${sectionTitle}. Calculating results...`);
+                if (questionsForCurrentSection.length > 0) {
+                    const firstScoringQuestion = questionsForCurrentSection.find(q => q.scoringArea);
+                    if (firstScoringQuestion) {
+                        primaryScoringAreaName = firstScoringQuestion.scoringArea;
+                    }
+                }
 
-    const generalScores = calculateScores(formData); // Todos los scores de áreas cualitativas
-    const questionsForCurrentSection = getQuestionsForStep(currentStep);
-    
-    let sectionScore = 0;
-    let maxSectionScore = 0;
-    let interpretation = "No scoring data available for this section.";
-    let primaryScoringAreaName = null;
+                if (primaryScoringAreaName) {
+                    sectionScore = generalScores[primaryScoringAreaName] || 0;
+                    maxSectionScore = calculateMaxScoreForArea(primaryScoringAreaName);
+                    if (maxSectionScore > 0) {
+                        const percentage = (sectionScore / maxSectionScore) * 100;
+                        if (percentage >= 80) interpretation = "Strong performance in this area.";
+                        else if (percentage >= 50) interpretation = "Good performance, with some room for improvement.";
+                        else interpretation = "This area may need more focus for development.";
+                    } else {
+                        interpretation = "Scoring not applicable or max score is zero for this area.";
+                    }
+                }
 
-    // Encontrar la scoringArea principal para esta sección (si existe)
-    if (questionsForCurrentSection.length > 0) {
-        const firstScoringQuestion = questionsForCurrentSection.find(q => q.scoringArea);
-        if (firstScoringQuestion) {
-            primaryScoringAreaName = firstScoringQuestion.scoringArea;
-        }
-    }
+                const questionsAndAnswers = questionsForCurrentSection.map(q => {
+                    const answerValue = formData[q.valueKey];
+                    let displayAnswer = '(Not answered)';
+                    if (answerValue !== undefined && answerValue !== null && answerValue !== '') {
+                        if (q.type === 'mcq' && q.options) {
+                            const opt = q.options.find(o => o.text === answerValue || o.value === answerValue);
+                            displayAnswer = opt ? opt.text : String(answerValue);
+                        } else {
+                            displayAnswer = String(answerValue);
+                        }
+                    }
+                    return { id: q.id, text: q.text, answer: displayAnswer };
+                });
 
-    if (primaryScoringAreaName) {
-        sectionScore = generalScores[primaryScoringAreaName] || 0;
-        maxSectionScore = calculateMaxScoreForArea(primaryScoringAreaName);
-        if (maxSectionScore > 0) {
-            const percentage = (sectionScore / maxSectionScore) * 100;
-            if (percentage >= 80) interpretation = "Strong performance in this area.";
-            else if (percentage >= 50) interpretation = "Good performance, with some room for improvement.";
-            else interpretation = "This area may need more focus for development.";
-        } else {
-            interpretation = "Scoring not applicable or max score is zero for this area."
-        }
-    }
-
-    const questionsAndAnswers = questionsForCurrentSection.map(q => {
-        const answerValue = formData[q.valueKey];
-        let displayAnswer = '(Not answered)';
-        if (answerValue !== undefined && answerValue !== null && answerValue !== '') {
-            if (q.type === 'mcq' && q.options) {
-
-                const opt = q.options.find(o => o.text === answerValue || o.value === answerValue);
-                displayAnswer = opt ? opt.text : String(answerValue);
-            } else {
-                displayAnswer = String(answerValue);
-            }
-        }
-        return {
-            id: q.id,
-            text: q.text,
-            answer: displayAnswer,
-            // No necesitamos pasar 'options' aquí si ya procesamos la respuesta
-        };
-    });
-
-   resultsForSectionPage = {
-                    isS2D: false,
-                    isD2S: false, // <--- AÑADIDO
-                    sectionTitle: sectionTitle,
-                    score: sectionScore, // o el score específico de la sección
-                    maxScore: maxSectionScore, // o el max score específico
+                resultsForSectionPage = {
+                    isS2D: false, isD2S: false, isM2L: false, // Marcar que no es una de las especiales
+                    sectionTitle: sectionTitleForResultsPage,
+                    score: sectionScore,
+                    maxScore: maxSectionScore,
                     interpretation: interpretation,
-                    questions: questionsAndAnswers // el desglose de preguntas/respuestas
+                    questions: questionsAndAnswers
                 };
             }
             setSectionResultsData(resultsForSectionPage);
-            setShowingSectionResultsFor(allAppSections[currentStep]);
+            setShowingSectionResultsFor(sectionTitleForResultsPage); // Usar el título de la página de resultados
+        
         } else if (!isLastQuestionStep) {
+            // Para pasos que no tienen página de resultados intermedios Y no son el último paso
+            // (Ej: "Your Profile", o si M2L_PART1_INDEX no estuviera manejado explícitamente arriba)
             setCurrentStep(prevStep => prevStep + 1);
         } else {
+            // Es el último paso de preguntas global ("Your Financials & Industry")
             handleSubmit();
         }
     }
 }, [
-    currentStep, 
-    TOTAL_STEPS_QUESTIONS, 
-    currentQuestions, 
-    formData, 
-    handleSubmit, 
-    // errors, // Si 'errors' no cambia frecuentemente, considera si es necesaria aquí para 'handleNext' en sí
+    currentStep, TOTAL_STEPS_QUESTIONS, currentQuestions, formData, handleSubmit, errors, 
     allAppSections, 
     calculateS2DSectionData,
-    calculateD2SSectionData, // <--- AÑADE A DEPENDENCIAS
+    calculateD2SSectionData, // Asegúrate de que esta función esté definida y en dependencias
+    calculateMarketToLeadData, // Añade la nueva función a dependencias
     calculateScores, 
-    // ScoringAreas, // Si calculateScores ya lo tiene en sus dependencias, puede no ser necesario aquí
-    // calculateMaxScoreForArea, // Igual que ScoringAreas
-    getQuestionsForStep // <--- AÑADE SI AÚN NO ESTÁ (para las secciones genéricas)
+    calculateMaxScoreForArea, // Necesaria para las secciones estándar
+    getQuestionsForStep 
 ]);
 
     const handlePrevious = useCallback(() => { /* ... tu función sin cambios ... */

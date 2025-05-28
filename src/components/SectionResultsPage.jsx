@@ -4,13 +4,18 @@ import React, { useState, useMemo } from 'react';
 // -----------------------------------------------------------------------------
 // HELPERS E INTERPRETACIONES (Mantener o mover a utils)
 // -----------------------------------------------------------------------------
-const getS2DInterpretationText = (score, maxScore, type) => { // Puedes renombrar a getSectionInterpretationText si se vuelve muy genérica
-    const numericScore = Number(score);
-    if (isNaN(numericScore)) return "N/A (Invalid Score)";
+// src/components/SectionResultsPage.jsx
 
-    let ranges;
-    // S2D (ya existente)
-    if (type === 's2d_process_maturity') { // Max 56
+const getS2DInterpretationText = (score, maxScore, type) => {
+    const numericScore = Number(score);
+    if (isNaN(numericScore)) {
+        console.warn(`[getS2DInterpretationText] Invalid score: ${score} for type: ${type}`);
+        return "N/A (Invalid Score)";
+    }
+
+    let ranges; // Declarar ranges aquí
+
+    if (type === 's2d_process_maturity') {
         ranges = [
             { limit: 48, text: "Excellent - Your Sale to Delivery process is a competitive advantage" },
             { limit: 39, text: "Good - Your process works well but has some improvement opportunities" },
@@ -18,7 +23,7 @@ const getS2DInterpretationText = (score, maxScore, type) => { // Puedes renombra
             { limit: 12, text: "Basic - Major improvements needed to create consistent, scalable delivery" },
             { limit: 0,  text: "Critical - Immediate attention required to establish fundamental processes" }
         ];
-    } else if (type === 's2d_owner_independence') { // Max 40
+    } else if (type === 's2d_owner_independence') {
         ranges = [
             { limit: 32, text: "Excellent - Processes run independently with minimal owner involvement" },
             { limit: 24, text: "Good - Owner is appropriately positioned in oversight rather than execution" },
@@ -26,36 +31,64 @@ const getS2DInterpretationText = (score, maxScore, type) => { // Puedes renombra
             { limit: 8,  text: "Concerning - Owner is a critical bottleneck in multiple processes" },
             { limit: 0,  text: "Critical - Business is entirely dependent on owner involvement" }
         ];
-    // --- AÑADIR LÓGICA PARA D2S ---
-    } else if (type === 'd2s_process_maturity') { // D2S Process Maturity, Max 70 (según tu guía D2S)
+    } else if (type === 'd2s_process_maturity') {
         ranges = [
-            { limit: 60, text: "Excellent - Your Delivery to Success process is a competitive advantage" }, // 85-100%
-            { limit: 50, text: "Good - Your process works well but has some improvement opportunities" },    // 70-84%
-            { limit: 35, text: "Developing - Basic processes exist but significant improvements would drive better results" }, // 50-69%
-            { limit: 15, text: "Basic - Major improvements needed to create consistent, scalable success" }, // 21-49%
-            { limit: 0,  text: "Critical - Immediate attention required to establish fundamental processes" }  // 0-20%
+            { limit: 60, text: "Excellent - Your Delivery to Success process is a competitive advantage" },
+            { limit: 50, text: "Good - Your process works well but has some improvement opportunities" },
+            { limit: 35, text: "Developing - Basic processes exist but significant improvements would drive better results" },
+            { limit: 15, text: "Basic - Major improvements needed to create consistent, scalable success" },
+            { limit: 0,  text: "Critical - Immediate attention required to establish fundamental processes" }
         ];
-    } else if (type === 'd2s_owner_independence') { // D2S Owner Independence, Max 50 (según tu guía D2S)
+    } else if (type === 'd2s_owner_independence') {
         ranges = [
-            { limit: 40, text: "Excellent - Processes run independently with minimal owner involvement" }, // 80-100%
-            { limit: 30, text: "Good - Owner is appropriately positioned in oversight rather than execution" },    // 60-79%
-            { limit: 20, text: "Developing - Some delegation exists, but owner remains too involved in execution" }, // 40-59%
-            { limit: 10, text: "Concerning - Owner is a critical bottleneck in multiple processes" }, // 20-39%
-            { limit: 0,  text: "Critical - Business is entirely dependent on owner involvement" }  // 0-19%
+            { limit: 40, text: "Excellent - Processes run independently with minimal owner involvement" },
+            { limit: 30, text: "Good - Owner is appropriately positioned in oversight rather than execution" },
+            { limit: 20, text: "Developing - Some delegation exists, but owner remains too involved in execution" },
+            { limit: 10, text: "Concerning - Owner is a critical bottleneck in multiple processes" },
+            { limit: 0,  text: "Critical - Business is entirely dependent on owner involvement" }
         ];
-    // --- FIN DE LÓGICA PARA D2S ---
-    } else if (type === 'sub_score') { // Para sub-scores S2D y D2S
+    } else if (type === 'm2l_process_maturity') {
+        ranges = [
+            { limit: 83, text: "Excellent - Your Market to Lead process is a competitive advantage" },
+            { limit: 69, text: "Good - Your process works well but has improvement opportunities" },
+            { limit: 49, text: "Developing - Basic processes exist but significant improvements would drive better results" },
+            { limit: 25, text: "Basic - Major improvements needed to create consistent, scalable lead generation" },
+            { limit: 0,  text: "Critical - Immediate attention required to establish fundamental marketing processes" }
+        ];
+    } else if (type === 'm2l_owner_independence') {
+        ranges = [
+            { limit: 56, text: "Excellent - Marketing processes run independently with minimal owner involvement" },
+            { limit: 42, text: "Good - Owner is appropriately positioned in oversight rather than execution" },
+            { limit: 28, text: "Developing - Some delegation exists, but owner remains too involved in execution" },
+            { limit: 14, text: "Concerning - Owner is a critical bottleneck in multiple marketing processes" },
+            { limit: 0,  text: "Critical - Marketing is entirely dependent on owner involvement" }
+        ];
+    } else if (type === 'sub_score') {
         const percentage = maxScore > 0 ? (numericScore / maxScore) * 100 : 0;
-        // Usaremos una interpretación genérica para sub-scores, puedes especializarla si es necesario
         if (percentage >= 75) return "Strong performance in this sub-area.";
         if (percentage >= 50) return "Adequate performance, some opportunities for optimization.";
-        return "This sub-area may require focused improvement.";
+        return "This sub-area may require focused improvement."; // Este return es correcto para 'sub_score'
     } else {
-        return "N/A (Unknown score type)";
+        console.warn(`[getS2DInterpretationText] Unknown score type: ${type} for score: ${numericScore}`);
+        return `N/A (Unknown score type: ${type})`; // Este return es correcto para tipos desconocidos
     }
 
-    const interpretation = ranges.find(r => numericScore >= r.limit);
-    return interpretation ? interpretation.text : (ranges.length > 0 ? ranges[ranges.length - 1].text : "N/A");
+    // Si llegamos aquí, significa que 'type' era uno de los que definen 'ranges'
+    // y no era 'sub_score' ni un tipo desconocido.
+    if (ranges && ranges.length > 0) {
+        const interpretation = ranges.find(r => numericScore >= r.limit);
+        if (interpretation) {
+            return interpretation.text;
+        } else {
+            // Esto no debería suceder si el último limit es 0 y el score es >= 0
+            console.warn(`[getS2DInterpretationText] No range found for score ${numericScore} in type ${type}. Falling back to lowest range. Ranges:`, ranges);
+            return ranges[ranges.length - 1].text; // Devuelve la interpretación del rango más bajo como fallback
+        }
+    }
+
+    // Fallback final si algo salió muy mal (no debería alcanzarse)
+    console.error(`[getS2DInterpretationText] Logic error. Ranges not defined for a type that should have them: ${type}`);
+    return "N/A (Logic Error)";
 };
 
 const D2SAssessmentDetails = ({ d2sData }) => {
@@ -229,20 +262,164 @@ const getSubScoreLevel = (score, maxScore) => { // Helper para S2DReportDetails
     return "an area for development";
 };
 
-// -----------------------------------------------------------------------------
-// COMPONENTES DE DETALLE PARA LAS PESTAÑAS
-// -----------------------------------------------------------------------------
-
-// --- ASSESSMENT TAB DETAILS ---
-const S2DAssessmentDetails = ({ s2dData }) => { // CAMBIO: Recibe props renombrada para claridad
-    const processMaturityInterpretation = useMemo(() => 
-        getS2DInterpretationText(s2dData.s2d_processMaturityScore, 56, 'process_maturity'),
-        [s2dData.s2d_processMaturityScore]
+const M2LAssessmentDetails = ({ m2lData }) => {
+    // Interpretaciones para los scores principales de M2L
+    // Asegúrate de que getS2DInterpretationText (o una nueva función) tenga los rangos para estos types
+    const processMaturityInterpretation = useMemo(() =>
+        getS2DInterpretationText(m2lData.m2l_processMaturityScore, 98, 'm2l_process_maturity'), // Necesitas este type en getS2DInterpretationText
+        [m2lData.m2l_processMaturityScore]
     );
     const ownerIndependenceInterpretation = useMemo(() =>
-        getS2DInterpretationText(s2dData.s2d_ownerIndependenceScore, 40, 'owner_independence'),
-        [s2dData.s2d_ownerIndependenceScore]
+        getS2DInterpretationText(m2lData.m2l_ownerIndependenceScore, 70, 'm2l_owner_independence'), // Necesitas este type
+        [m2lData.m2l_ownerIndependenceScore]
     );
+
+    return (
+        <div className="m2l-assessment-details">
+            <h3 style={styles.pageSubHeader}>Market to Lead Process Assessment</h3>
+
+            <div style={styles.sectionBox}>
+                <h4>Overall M2L Scores</h4>
+                <div style={styles.scoreItem}>
+                    <p><strong>Process Maturity Score:</strong> {m2lData.m2l_processMaturityScore} / 98</p>
+                    <p style={styles.interpretationText}><em>{processMaturityInterpretation}</em></p>
+                </div>
+                <div style={styles.scoreItem}>
+                    <p><strong>Owner Independence Score:</strong> {m2lData.m2l_ownerIndependenceScore} / 70</p>
+                    <p style={styles.interpretationText}><em>{ownerIndependenceInterpretation}</em></p>
+                </div>
+                <div style={styles.scoreItem}>
+                    <p><strong>Channel Diversification:</strong> {m2lData.m2l_activeChannelsCount} active channel(s)</p>
+                    <p style={styles.interpretationText}><em>{m2lData.m2l_channelDiversificationInterpretation}</em></p>
+                </div>
+                <div style={styles.scoreItem}>
+                    <p><strong>Unit Economics Health (LTV:CAC Ratio):</strong> {typeof m2lData.m2l_ltvToCacRatio === 'number' ? m2lData.m2l_ltvToCacRatio.toFixed(2) : 'N/A'}</p>
+                    <p style={styles.interpretationText}><em>{m2lData.m2l_unitEconomicsHealthInterpretation}</em></p>
+                </div>
+            </div>
+            
+           {m2lData.m2l_processAssessmentDetails && m2lData.m2l_processAssessmentDetails.length > 0 && (
+                <div style={styles.sectionBox}>
+                    <h4>Detailed Process Assessment Breakdown</h4>
+                    {m2lData.m2l_processAssessmentDetails.map((item, index) => (
+                        <div key={item.id || `m2l-pa-${index}`} style={{ ...styles.detailedItemS2D, marginBottom: '15px' }}> {/* Reusar estilos o crear nuevos */}
+                            <p style={styles.questionTextS2D}><strong>{item.processQuestionText}</strong></p>
+                            <p style={styles.answerTextS2D}>Your Answer: "{item.processAnswerText}" (Score: {item.processAnswerScore})</p>
+                            
+                            {item.ownerQuestionText && ( // Mostrar solo si hay pregunta de owner
+                                <>
+                                    <p style={{...styles.questionTextS2D, marginTop: '8px', color: '#555'}}>{item.ownerQuestionText}</p>
+                                    <p style={styles.answerTextS2D}>Owner Involvement: "{item.ownerAnswerText}" (Score: {item.ownerAnswerScore})</p>
+                                </>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const M2LReportDetails = ({ m2lData }) => {
+    // Obtener interpretaciones para los scores principales de M2L
+    const processMaturityInterpretation = useMemo(() =>
+        getS2DInterpretationText(m2lData.m2l_processMaturityScore, 98, 'm2l_process_maturity'),
+        [m2lData.m2l_processMaturityScore]
+    );
+    const ownerIndependenceInterpretation = useMemo(() =>
+        getS2DInterpretationText(m2lData.m2l_ownerIndependenceScore, 70, 'm2l_owner_independence'),
+        [m2lData.m2l_ownerIndependenceScore]
+    );
+
+    const {
+        m2l_ownerStrategicPositioning,
+        m2l_channelDiversificationInterpretation,
+        m2l_unitEconomicsHealthInterpretation,
+        m2l_activeChannelsCount,
+        m2l_ltvToCacRatio,
+        m2l_processMaturityScore, 
+        m2l_ownerIndependenceScore 
+    } = m2lData;
+
+    return (
+        <div className="m2l-report-details">
+            <h3 style={styles.pageSubHeader}>Report for: Market to Lead Process Assessment</h3>
+
+            {/* === SECCIÓN DE EXECUTIVE SUMMARY === */}
+            <div style={styles.sectionBox}>
+                <h4>Executive Summary (Market to Lead)</h4>
+                <p>
+                    Your Market to Lead process assessment indicates a
+                    <strong> "{processMaturityInterpretation.toLowerCase().split(" - ")[0]}"</strong> level of process maturity.
+                    Owner involvement in marketing processes is currently
+                    <strong> "{ownerIndependenceInterpretation.toLowerCase().split(" - ")[0]}"</strong>.
+                </p>
+                <p>
+                    Channel diversification is assessed as: <em>{m2l_channelDiversificationInterpretation}</em> (with {m2l_activeChannelsCount} active channel(s) identified).
+                    The Unit Economics Health, based on an LTV:CAC ratio of {typeof m2l_ltvToCacRatio === 'number' ? m2l_ltvToCacRatio.toFixed(2) : 'N/A'}, is considered: <em>{m2l_unitEconomicsHealthInterpretation}</em>.
+                </p>
+            </div>
+
+            {/* === SECCIÓN DE KEY FINDINGS & STRATEGIC POSITIONING === */}
+            <div style={styles.sectionBox}>
+                <h4>Key Findings & Strategic Positioning (M2L)</h4>
+                <h5>Process Maturity (M2L):</h5>
+                <p><em>{processMaturityInterpretation}</em></p>
+
+                <h5 style={{ marginTop: '15px' }}>Owner Independence (M2L):</h5>
+                <p><em>{ownerIndependenceInterpretation}</em></p>
+
+                {m2l_ownerStrategicPositioning && (
+                    <>
+                        <h5 style={{ marginTop: '15px' }}>Owner Strategic Positioning (M2L):</h5>
+                        <p>
+                            <strong>Areas for strategic oversight (delegation opportunities):</strong><br />
+                            {m2l_ownerStrategicPositioning.areasForDelegation.length > 0
+                                ? m2l_ownerStrategicPositioning.areasForDelegation.join(', ')
+                                : "None specifically identified from the 14 process areas. Review marketing tasks for delegation potential."}
+                        </p>
+                        <p>
+                            <strong>Areas for active management (where process is weak & owner not involved):</strong><br />
+                            {m2l_ownerStrategicPositioning.areasForActiveManagement.length > 0
+                                ? m2l_ownerStrategicPositioning.areasForActiveManagement.join(', ')
+                                : "None specifically identified. Ensure key marketing processes are not neglected."}
+                        </p>
+                    </>
+                )}
+            </div>
+            
+            {/* === SECCIÓN DE FOCUS AREAS & NEXT STEPS === */}
+            <div style={styles.sectionBox}>
+                <h4>Focus Areas & Next Steps (M2L - Conceptual)</h4>
+                <ul>
+                    {m2l_processMaturityScore < 49 && ( 
+                        <li>Prioritize improving the 2-3 lowest-scoring areas from the 14 marketing process assessments.</li>
+                    )}
+                    {m2l_ownerIndependenceScore < 28 && ( 
+                        <li>Identify specific marketing tasks currently handled by the owner that can be delegated or automated.</li>
+                    )}
+                    {m2l_activeChannelsCount < 3 && (
+                        <li>Explore opportunities to diversify marketing channels to reduce risk and reach new audiences.</li>
+                    )}
+                    {(typeof m2l_ltvToCacRatio === 'number' && m2l_ltvToCacRatio < 1.5 && m2l_ltvToCacRatio !== Infinity) && (
+                        <li>Urgently review marketing spend and customer value as unit economics may be unsustainable.</li>
+                    )}
+                    <li>Consider using the "Generate Prompt" feature for AI-driven suggestions tailored to your specific M2L assessment results.</li>
+                </ul>
+            </div>
+        </div>
+    );
+};
+
+// --- ASSESSMENT TAB DETAILS ---
+const S2DAssessmentDetails = ({ s2dData }) => { 
+    const processMaturityInterpretation = useMemo(() => {
+        return getS2DInterpretationText(s2dData.s2d_processMaturityScore, 56, 's2d_process_maturity');
+    }, [s2dData.s2d_processMaturityScore]);
+
+    const ownerIndependenceInterpretation = useMemo(() => {
+        return getS2DInterpretationText(s2dData.s2d_ownerIndependenceScore, 40, 's2d_owner_independence');
+    }, [s2dData.s2d_ownerIndependenceScore]);
 
     const subScoreGroups = [
         { title: "Customer Experience Quality", score: s2dData.s2d_customerExperienceScore, max: 21, details: s2dData.s2d_detailedAnswers?.customerExperience },
@@ -317,14 +494,15 @@ const StandardSectionAssessmentDetails = ({ sectionData }) => {
     );
 };
 
+
 // --- REPORT TAB DETAILS ---
 const S2DReportDetails = ({ s2dData }) => { // CAMBIO: Recibe props renombrada para claridad
     const processMaturityInterpretation = useMemo(() => 
-        getS2DInterpretationText(s2dData.s2d_processMaturityScore, 56, 'process_maturity'),
+        getS2DInterpretationText(s2dData.s2d_processMaturityScore, 56, 's2d_process_maturity'),
         [s2dData.s2d_processMaturityScore]
     );
     const ownerIndependenceInterpretation = useMemo(() =>
-        getS2DInterpretationText(s2dData.s2d_ownerIndependenceScore, 40, 'owner_independence'),
+        getS2DInterpretationText(s2dData.s2d_ownerIndependenceScore, 40, 's2d_owner_independence'),
         [s2dData.s2d_ownerIndependenceScore]
     );
 
@@ -436,25 +614,30 @@ const StandardSectionReportDetails = ({ sectionData }) => {
     );
 };
 
+// Actualizar AssessmentTabContent
 const AssessmentTabContent = ({ sectionData }) => {
     if (!sectionData) return <p>Loading assessment data...</p>;
 
-    if (sectionData.isS2D) { // S2D tiene prioridad si ambos fueran true por error
+    if (sectionData.isS2D) {
         return <S2DAssessmentDetails s2dData={sectionData} />;
-    } else if (sectionData.isD2S) { // <--- AÑADE ESTA CONDICIÓN
+    } else if (sectionData.isD2S) {
         return <D2SAssessmentDetails d2sData={sectionData} />;
+    } else if (sectionData.isM2L) { // <--- AÑADIR ESTA CONDICIÓN
+        return <M2LAssessmentDetails m2lData={sectionData} />;
     } else {
         return <StandardSectionAssessmentDetails sectionData={sectionData} />;
     }
 };
 
-const ReportTabContent = ({ sectionData }) => {
+const ReportTabContent = ({ sectionData }) => { // sectionName ya no es necesario aquí
     if (!sectionData) return <p>Loading report data...</p>;
 
     if (sectionData.isS2D) {
         return <S2DReportDetails s2dData={sectionData} />;
-    } else if (sectionData.isD2S) { // <--- AÑADE ESTA CONDICIÓN
+    } else if (sectionData.isD2S) { 
         return <D2SReportDetails d2sData={sectionData} />;
+    } else if (sectionData.isM2L) { // <--- AÑADIR ESTA CONDICIÓN
+        return <M2LReportDetails m2lData={sectionData} />;
     } else {
         return <StandardSectionReportDetails sectionData={sectionData} />;
     }
