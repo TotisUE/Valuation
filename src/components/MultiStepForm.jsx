@@ -18,6 +18,7 @@ import Navigation from './Navigation';
 import ResultsDisplay from './results/ResultsDisplay';
 import SectionResultsPage from './SectionResultsPage'; 
 import { getFunctionsBaseUrl } from '../utils/urlHelpers';
+import { getAssociatedNumericFieldsForChannel } from '../utils/questionHelpers';
 
 
 const downloadAsTxtFile = (text, filename) => {
@@ -58,13 +59,6 @@ const profileAndBaseDefaults = {
         s2d_q5_process: '', s2d_q5_owner: '', s2d_q6_process: '', s2d_q6_owner: '',
         s2d_q7_process: '', s2d_q7_owner: '', s2d_q8_process: '', s2d_q8_owner: '',
 
-        // D2S Defaults (Si ya los tienes, si no, los añadiríamos cuando implementemos D2S completamente)
-        // d2s_... : '', 
-
-        //M2L
-        m2l_productName: '',
-        m2l_productDescription: '',
-        m2l_productRevenue: null, // null para números, '' para texto/select
         m2l_primaryMarketingChannel: '',
     };
     return { ...profileAndBaseDefaults, ...initialFormState };
@@ -523,11 +517,12 @@ const calculateMarketToLeadData = useCallback(() => {
     let m2l_ownerIndependenceScore = 0;
     
     let activeChannelsCount = 0; 
-    let m2l_channelDiversificationInterpretation = "High risk - single point of failure";
+      let highestNonEmailChannelPercent = 0;
+    let highestNonEmailChannelName = "N/A"; // Default si no se encuentra o no aplica
+    let m2l_channelConcentrationRiskInterpretation = "Good/Excellent Diversification (No single non-email channel shows high concentration)";
     
-    let ltvToCacRatio = 0; // <--- INICIALIZACIÓN CORRECTA
+    let ltvToCacRatio = 0;
     let m2l_unitEconomicsHealthInterpretation = "Data incomplete for LTV:CAC calculation";
-
     const m2l_processAssessmentDetails = [];
     let m2l_ownerStrategicPositioning = { areasForDelegation: [], areasForActiveManagement: [] };
     const m2lFormDataForPrompt = {};
@@ -607,7 +602,6 @@ const calculateMarketToLeadData = useCallback(() => {
         'm2l_email_marketing_use', 'm2l_text_sms_marketing_use',
         'm2l_referral_formal_programs'
     ];
-    // activeChannelsCount ya está declarada e inicializada arriba.
     channelUseValueKeys.forEach(valueKey => {
         if (valueKey.includes('_list')) { 
             if (formData[valueKey] && String(formData[valueKey]).trim() !== '') activeChannelsCount++;
@@ -617,10 +611,52 @@ const calculateMarketToLeadData = useCallback(() => {
             activeChannelsCount++;
         }
     });
-    // m2l_channelDiversificationInterpretation ya está declarada e inicializada arriba.
-    if (activeChannelsCount >= 5) m2l_channelDiversificationInterpretation = "Excellent diversification reducing platform risk";
-    else if (activeChannelsCount >= 3) m2l_channelDiversificationInterpretation = "Good diversification with room for expansion";
-    else if (activeChannelsCount === 2) m2l_channelDiversificationInterpretation = "Basic diversification, vulnerable to channel changes";
+    const nonEmailChannelData = [ // Array de objetos para facilitar el acceso al nombre y valueKey del %
+        { valueKey: 'm2l_meta_ads_customerPercent', name: 'Meta (Facebook/Instagram Ads)', useKey: 'm2l_meta_ads_use' },
+        { valueKey: 'm2l_tiktok_ads_customerPercent', name: 'TikTok Ads', useKey: 'm2l_tiktok_ads_use' },
+        { valueKey: 'm2l_google_ads_customerPercent', name: 'Google Ads', useKey: 'm2l_google_ads_use' },
+        { valueKey: 'm2l_linkedin_ads_customerPercent', name: 'LinkedIn Ads', useKey: 'm2l_linkedin_ads_use' },
+        { valueKey: 'm2l_youtube_ads_customerPercent', name: 'YouTube Ads', useKey: 'm2l_youtube_ads_use' },
+        { valueKey: 'm2l_otherPaidChannels_customerPercent', name: 'Other Paid Channels', useKey: 'm2l_otherPaidChannels_list' }, // 'useKey' es la lista aquí
+        { valueKey: 'm2l_youtube_organic_customerPercent', name: 'YouTube Organic', useKey: 'm2l_youtube_organic_use' },
+        { valueKey: 'm2l_linkedin_organic_customerPercent', name: 'LinkedIn Organic', useKey: 'm2l_linkedin_organic_use' },
+        { valueKey: 'm2l_google_seo_customerPercent', name: 'Google SEO', useKey: 'm2l_google_seo_use' },
+        { valueKey: 'm2l_instagram_organic_customerPercent', name: 'Instagram Organic', useKey: 'm2l_instagram_organic_use' },
+        { valueKey: 'm2l_otherOrganicChannels_customerPercent', name: 'Other Organic Channels', useKey: 'm2l_otherOrganicChannels_list' }, // 'useKey' es la lista aquí
+        // OMITIMOS EMAIL MARKETING
+        { valueKey: 'm2l_text_sms_marketing_customerPercent', name: 'Text/SMS Marketing', useKey: 'm2l_text_sms_marketing_use' },
+        { valueKey: 'm2l_referral_customerPercent', name: 'Referral Programs', useKey: 'm2l_referral_formal_programs' }
+    ];
+highestNonEmailChannelPercent = 0; // Reiniciar para el cálculo
+    highestNonEmailChannelName = "N/A (No single non-email channel has >20% customer concentration or data incomplete)"; // Default más informativo
+
+    nonEmailChannelData.forEach(channel => {
+        // Considerar el canal solo si está en uso
+        let isUsed = false;
+        if (channel.useKey.includes('_list')) {
+            isUsed = formData[channel.useKey] && String(formData[channel.useKey]).trim() !== '';
+        } else {
+            isUsed = formData[channel.useKey] === 'yes';
+        }
+
+        if (isUsed) {
+            const percent = parseFloat(formData[channel.valueKey] || 0);
+            if (!isNaN(percent) && percent > highestNonEmailChannelPercent) {
+                highestNonEmailChannelPercent = percent;
+                highestNonEmailChannelName = channel.name;
+            }
+        }
+    });
+
+    if (highestNonEmailChannelPercent > 80) {
+        m2l_channelConcentrationRiskInterpretation = `Critical Risk: ${highestNonEmailChannelName} accounts for over 80% of customers.`;
+    } else if (highestNonEmailChannelPercent >= 60) { // 60-80% (se incluye el 80 exacto aquí)
+        m2l_channelConcentrationRiskInterpretation = `High Risk: ${highestNonEmailChannelName} accounts for ${highestNonEmailChannelPercent.toFixed(0)}% of customers.`;
+    } else if (highestNonEmailChannelPercent >= 40) { // 40-59%
+        m2l_channelConcentrationRiskInterpretation = `Medium Risk: ${highestNonEmailChannelName} accounts for ${highestNonEmailChannelPercent.toFixed(0)}% of customers.`;
+    } else if (highestNonEmailChannelPercent >= 20) { // 20-39%
+        m2l_channelConcentrationRiskInterpretation = `Low Risk: ${highestNonEmailChannelName} accounts for ${highestNonEmailChannelPercent.toFixed(0)}% of customers.`;
+    }
 
     // --- Unit Economics Health Score (de M2L Parte 1) ---
     // ltvToCacRatio y m2l_unitEconomicsHealthInterpretation ya están declaradas e inicializadas arriba.
@@ -661,9 +697,6 @@ const calculateMarketToLeadData = useCallback(() => {
         }
     });
 
-    // --- Recopilar formData para el prompt ---
-    // m2lFormDataForPrompt ya está declarada e inicializada arriba.
-    // getMarketToLeadPart1Questions y m2lPart2Questions ya están obtenidas arriba.
     const allM2LQuestions = [...m2lPart1Questions, ...m2lPart2Questions];
     allM2LQuestions.forEach(q => {
         if (formData.hasOwnProperty(q.valueKey)) {
@@ -671,13 +704,19 @@ const calculateMarketToLeadData = useCallback(() => {
         }
     });
 
-    return {
+return {
         isM2L: true,
         m2l_processMaturityScore,
         m2l_ownerIndependenceScore,
-        m2l_activeChannelsCount: activeChannelsCount, 
-        m2l_channelDiversificationInterpretation,
-        m2l_ltvToCacRatio: ltvToCacRatio, // <--- Ahora 'ltvToCacRatio' está definida
+        
+        m2l_activeChannelsCount: activeChannelsCount, // Mantenido por si lo usas en el prompt
+        
+        // Nuevas propiedades para Channel Concentration Risk
+        m2l_highestNonEmailChannelPercent: highestNonEmailChannelPercent,
+        m2l_highestNonEmailChannelName: highestNonEmailChannelName,
+        m2l_channelConcentrationRiskInterpretation: m2l_channelConcentrationRiskInterpretation, // Esta reemplaza la vieja interpretación de diversificación
+
+        m2l_ltvToCacRatio: ltvToCacRatio,
         m2l_unitEconomicsHealthInterpretation,
         m2l_ownerStrategicPositioning,
         formDataForPrompt: m2lFormDataForPrompt,
@@ -693,28 +732,114 @@ const calculateMarketToLeadData = useCallback(() => {
         return allDefinedQuestions.filter(q => q.section === currentSectionName);
     }, [currentSectionName, visibleSections]); // Añadir visibleSections
 
+      const m2lNonNegativeNumericFields = [
+    // Channel Performance - Paid
+    'm2l_meta_ads_customerPercent', 'm2l_meta_ads_monthlySpend', 'm2l_meta_ads_warmTrafficPercent',
+    'm2l_tiktok_ads_customerPercent', 'm2l_tiktok_ads_monthlySpend', 'm2l_tiktok_ads_warmTrafficPercent',
+    'm2l_google_ads_customerPercent', 'm2l_google_ads_monthlySpend', 'm2l_google_ads_warmTrafficPercent',
+    'm2l_linkedin_ads_customerPercent', 'm2l_linkedin_ads_monthlySpend', 'm2l_linkedin_ads_warmTrafficPercent',
+    'm2l_youtube_ads_customerPercent', 'm2l_youtube_ads_monthlySpend', 'm2l_youtube_ads_warmTrafficPercent',
+    'm2l_otherPaidChannels_customerPercent', 'm2l_otherPaidChannels_monthlySpend',
+    // Channel Performance - Organic
+    'm2l_youtube_organic_customerPercent', 'm2l_youtube_organic_warmTrafficPercent',
+    'm2l_linkedin_organic_customerPercent', 'm2l_linkedin_organic_warmTrafficPercent',
+    'm2l_google_seo_customerPercent', 'm2l_google_seo_warmTrafficPercent',
+    'm2l_instagram_organic_customerPercent', 'm2l_instagram_organic_warmTrafficPercent',
+    'm2l_otherOrganicChannels_customerPercent',
+    // Channel Performance - Direct Outreach
+    'm2l_email_marketing_customerPercent', 'm2l_email_marketing_warmTrafficPercent',
+    'm2l_text_sms_marketing_customerPercent', 'm2l_text_sms_marketing_warmTrafficPercent',
+    // Channel Performance - Referral
+    'm2l_referral_customerPercent', 'm2l_referral_internalExternalPercent',
+    
+    // Unit Economics Analysis (Campos que deben ser >= 0)
+    'm2l_unit_overallCAC',
+    'm2l_unit_primaryChannelCAC',
+    // 'm2l_unit_90DayGrossProfit', // El Gross Profit SÍ podría ser negativo si hay pérdidas. Lo omito.
+    'm2l_unit_monthlyAcqFixedCosts',
+    'm2l_unit_salesForAcqBreakeven',
+    'm2l_unit_90DayGrossProfit', 
+    'm2l_unit_totalMonthlyFixedCosts',
+    'm2l_unit_salesForOverallProfitability'
+    // Considera si algún otro campo numérico de M2L P1 no debe ser negativo.
+];
+    const m2lPercentageFields = [
+    'm2l_meta_ads_customerPercent', 'm2l_meta_ads_warmTrafficPercent',
+    'm2l_tiktok_ads_customerPercent', 'm2l_tiktok_ads_warmTrafficPercent',
+    'm2l_google_ads_customerPercent', 'm2l_google_ads_warmTrafficPercent',
+    'm2l_linkedin_ads_customerPercent', 'm2l_linkedin_ads_warmTrafficPercent',
+    'm2l_youtube_ads_customerPercent', 'm2l_youtube_ads_warmTrafficPercent',
+    'm2l_otherPaidChannels_customerPercent',
+    'm2l_youtube_organic_customerPercent', 'm2l_youtube_organic_warmTrafficPercent',
+    'm2l_linkedin_organic_customerPercent', 'm2l_linkedin_organic_warmTrafficPercent',
+    'm2l_google_seo_customerPercent', 'm2l_google_seo_warmTrafficPercent',
+    'm2l_instagram_organic_customerPercent', 'm2l_instagram_organic_warmTrafficPercent',
+    'm2l_otherOrganicChannels_customerPercent',
+    'm2l_email_marketing_customerPercent', 'm2l_email_marketing_warmTrafficPercent',
+    'm2l_text_sms_marketing_customerPercent', 'm2l_text_sms_marketing_warmTrafficPercent',
+    'm2l_referral_customerPercent', 'm2l_referral_internalExternalPercent',
+    // Añade aquí cualquier otro campo de M2L que sea un porcentaje y deba estar entre 0-100.
+    // No incluyas campos que no sean porcentajes, como 'monthlySpend' o 'productRevenue'.
+];
     const handleChange = useCallback((event) => {
-        const { name, value, type } = event.target;
+        const { name, value, type: eventType } = event.target;
         let processedValue = value;
 
-        if (type === 'number') {
-            processedValue = value === '' ? null : parseFloat(value);
-            if (isNaN(processedValue)) processedValue = null;
+        if (eventType === 'number' || 
+            (typeof value === 'string' && value !== '' && !isNaN(Number(value)))
+        ) {
+            let numValue = value === '' ? null : parseFloat(value);
+
+            if (numValue !== null && !isNaN(numValue)) {
+                // Primero, asegurar que no sea negativo si está en m2lNonNegativeNumericFields
+                if (m2lNonNegativeNumericFields.includes(name) && numValue < 0) {
+                    numValue = 0; 
+                }
+
+                // Luego, si es un campo de porcentaje, asegurar que esté entre 0 y 100
+                if (m2lPercentageFields.includes(name)) {
+                    if (numValue < 0) { // Doble chequeo por si no estaba en m2lNonNegativeNumericFields
+                        numValue = 0;
+                    }
+                    if (numValue > 100) {
+                        numValue = 100; // No permitir más de 100
+                    }
+                }
+            }
+            processedValue = numValue;
         }
         
         setFormData(prevData => {
             const newFormData = { ...prevData, [name]: processedValue };
+
+            const isChannelUseQuestion = name.startsWith('m2l_') && 
+                                       (name.endsWith('_use') || 
+                                        name === 'm2l_referral_formal_programs' || 
+                                        name.endsWith('_list')); 
+
+            if (isChannelUseQuestion && processedValue === 'no') {
+                const fieldsToReset = getAssociatedNumericFieldsForChannel(name); 
+                fieldsToReset.forEach(fieldKey => {
+                    if (newFormData.hasOwnProperty(fieldKey)) {
+                        newFormData[fieldKey] = 0; 
+                    }
+                });
+                console.log(`[handleChange] Resetting fields for ${name}:`, fieldsToReset);
+            } else if (isChannelUseQuestion && processedValue === '') { // Si el usuario des-selecciona un "Yes/No" (vuelve a "Please select...")
+                // Podríamos querer resetear también en este caso, o no.
+                // Por ahora, solo reseteamos en "no".
+            }
+            
             return newFormData;
         });
 
         if (errors[name]) {
-            setErrors(prevErrors => {
-                const newErrors = { ...prevErrors };
-                delete newErrors[name];
-                return newErrors;
-            });
+            const newErrors = { ...errors }; // Crear copia para modificar
+            delete newErrors[name];
+            setErrors(newErrors);
         }
-    }, [errors]);
+
+    }, [errors, formData, getAssociatedNumericFieldsForChannel]);
 
 const generateS2DPromptTextInternal = useCallback((
        allFormData,
@@ -995,59 +1120,55 @@ const generateD2SPromptTextInternal = useCallback((
 }, []); // No necesita dependencias si d2sCalculatedData se pasa como argumento y no se accede a `formData` directamente
 
 const generateM2LPromptTextInternal = useCallback((
-    m2lCalculatedData, // Objeto con todos los scores, datos de formDataForPrompt, positioning, etc.
-    m2lPart1QuestionDefs, // Array de definiciones de preguntas para M2L P1
-    m2lPart2QuestionDefs  // Array de definiciones de preguntas para M2L P2
+    m2lCalculatedData,    
+    m2lPart1QuestionDefs, 
+    m2lPart2QuestionDefs  
 ) => {
     if (!m2lCalculatedData || !m2lCalculatedData.formDataForPrompt) {
-        console.error("generateM2LPromptTextInternal: Missing critical m2lCalculatedData or formDataForPrompt.");
+        console.error("generateM2LPromptTextInternal: Missing m2lCalculatedData or formDataForPrompt.");
         return "Error: Could not generate M2L prompt due to missing data.";
     }
 
     const fd = m2lCalculatedData.formDataForPrompt; // Alias para las respuestas directas
-    let output = "Market to Lead Current Company Scoring\n\n"; // Título según documento
+    let output = "Market to Lead Current Company Scoring\n\n";
 
     // --- Primary Product/Service Marketing Profile ---
-    output += "Primary Product/Service Marketing Profile\n";
-    output += `Product/Service: ${fd.m2l_productName || "N/A"} - ${fd.m2l_productDescription || "N/A"}\n`;
-    output += `Annual Revenue: $${parseFloat(fd.m2l_productRevenue || 0).toLocaleString()}\n`;
-    // Para el Primary Marketing Channel, necesitamos el texto de la opción, no el valueKey
-    const primaryChannelOption = MARKETING_CHANNELS_OPTIONS.find(opt => opt.value === fd.m2l_primaryMarketingChannel);
-    output += `Primary Marketing Channel: ${primaryChannelOption ? primaryChannelOption.text : (fd.m2l_primaryMarketingChannel || "N/A")}\n\n`;
+    output += "Primary Marketing Channel Focus\n"; // Título ajustado
+    const primaryChannelValue = fd.m2l_primaryMarketingChannel; // Asumiendo que esta pregunta se queda
+    const primaryChannelOption = MARKETING_CHANNELS_OPTIONS.find(opt => opt.value === primaryChannelValue);
+    output += `Primary Marketing Channel Considered: ${primaryChannelOption ? primaryChannelOption.text : (primaryChannelValue || "N/A")}\n\n`;
 
     // --- Complete Marketing Channel Attribution ---
     output += "Complete Marketing Channel Attribution\n";
     output += "Paid Advertising Channels:\n";
     let totalPaidSpend = 0;
+    const paidChannelKeys = ['meta_ads', 'tiktok_ads', 'google_ads', 'linkedin_ads', 'youtube_ads'];
+    // Necesitamos los display names para los canales. Podríamos tener un mapeo o extraerlos de las definiciones de preguntas.
+    // Por simplicidad, usaré los keys y un nombre genérico si no tenemos un display name fácil aquí.
+    // Idealmente, m2lPart1QuestionDefs podría ayudar a obtener los display names.
 
-    const paidChannels = [
-        { key: 'meta_ads', name: 'Meta (Facebook/Instagram)' }, { key: 'tiktok_ads', name: 'TikTok Ads' },
-        { key: 'google_ads', name: 'Google Ads' }, { key: 'linkedin_ads', name: 'LinkedIn Ads' },
-        { key: 'youtube_ads', name: 'YouTube Ads' }
-    ];
-
-    paidChannels.forEach(ch => {
-        if (fd[`m2l_${ch.key}_use`] === 'yes') {
-            const spend = parseFloat(fd[`m2l_${ch.key}_monthlySpend`] || 0);
+    paidChannelKeys.forEach(key => {
+        if (fd[`m2l_${key}_use`] === 'yes') {
+            const spend = parseFloat(fd[`m2l_${key}_monthlySpend`] || 0);
             totalPaidSpend += spend;
-            output += `${ch.name}: ${fd[`m2l_${ch.key}_customerPercent`] || 0}% of customers, $${spend.toLocaleString()}/month spend, ${fd[`m2l_${ch.key}_warmTrafficPercent`] || 0}% warm traffic\n`;
-        } else {
-            // output += `${ch.name}: Not used\n`; // Opcional: mostrar los no usados
+            const qDefBase = m2lPart1QuestionDefs.find(q => q.valueKey === `m2l_${key}_use`);
+            const displayName = qDefBase ? qDefBase.text.replace('Do you use ', '').replace('?', '') : key.replace('_ads',' Ads').toUpperCase();
+            output += `${displayName}: ${fd[`m2l_${key}_customerPercent`] || 0}% of customers, $${spend.toLocaleString()}/month spend, ${fd[`m2l_${key}_warmTrafficPercent`] || 0}% warm traffic\n`;
         }
     });
-    output += `Other Paid Channels: ${fd.m2l_otherPaidChannels_list || "None"}, ${fd.m2l_otherPaidChannels_customerPercent || 0}% of customers combined, $${parseFloat(fd.m2l_otherPaidChannels_monthlySpend || 0).toLocaleString()}/month spend\n`;
-    totalPaidSpend += parseFloat(fd.m2l_otherPaidChannels_monthlySpend || 0);
+    const otherPaidSpend = parseFloat(fd.m2l_otherPaidChannels_monthlySpend || 0);
+    totalPaidSpend += otherPaidSpend;
+    output += `Other Paid Channels: ${fd.m2l_otherPaidChannels_list || "None"}, ${fd.m2l_otherPaidChannels_customerPercent || 0}% of customers combined, $${otherPaidSpend.toLocaleString()}/month spend\n`;
     output += `Total Paid Advertising Spend: $${totalPaidSpend.toLocaleString()}/month\n\n`;
     
     output += "Content/Organic Channels:\n";
-    const organicChannels = [
-        { key: 'youtube_organic', name: 'YouTube Organic' }, { key: 'linkedin_organic', name: 'LinkedIn Organic' },
-        { key: 'google_seo', name: 'Google SEO' }, { key: 'instagram_organic', name: 'Instagram Organic' }
-    ];
-    organicChannels.forEach(ch => {
-        if (fd[`m2l_${ch.key}_use`] === 'yes') {
-            const warmSuffix = ch.key === 'google_seo' ? " (branded searches)" : "";
-            output += `${ch.name}: ${fd[`m2l_${ch.key}_customerPercent`] || 0}% of customers, ${fd[`m2l_${ch.key}_warmTrafficPercent`] || 0}% warm traffic${warmSuffix}\n`;
+    const organicChannelKeys = ['youtube_organic', 'linkedin_organic', 'google_seo', 'instagram_organic'];
+    organicChannelKeys.forEach(key => {
+        if (fd[`m2l_${key}_use`] === 'yes') {
+            const qDefBase = m2lPart1QuestionDefs.find(q => q.valueKey === `m2l_${key}_use`);
+            const displayName = qDefBase ? qDefBase.text.replace('Do you use ', '').replace('?', '') : key.replace('_',' ').toUpperCase();
+            const warmSuffix = key === 'google_seo' ? " (branded searches)" : "";
+            output += `${displayName}: ${fd[`m2l_${key}_customerPercent`] || 0}% of customers, ${fd[`m2l_${key}_warmTrafficPercent`] || 0}% warm traffic${warmSuffix}\n`;
         }
     });
     output += `Other Organic Channels: ${fd.m2l_otherOrganicChannels_list || "None"}, ${fd.m2l_otherOrganicChannels_customerPercent || 0}% of customers combined\n\n`;
@@ -1074,98 +1195,111 @@ const generateM2LPromptTextInternal = useCallback((
     output += `Overall Blended CAC: $${parseFloat(fd.m2l_unit_overallCAC || 0).toLocaleString()}\n`;
     output += `Primary Channel CAC: $${parseFloat(fd.m2l_unit_primaryChannelCAC || 0).toLocaleString()}\n`;
     output += `90-Day Customer Gross Profit: $${parseFloat(fd.m2l_unit_90DayGrossProfit || 0).toLocaleString()}\n`;
-    output += `LTV:CAC Ratio: ${typeof m2lCalculatedData.m2l_ltvToCacRatio === 'number' ? m2lCalculatedData.m2l_ltvToCacRatio.toFixed(2) : 'N/A'}\n`;
+    output += `90-day CV:CAC Ratio: ${typeof m2lCalculatedData.m2l_ltvToCacRatio === 'number' ? m2lCalculatedData.m2l_ltvToCacRatio.toFixed(2) : 'N/A'}\n`;
     output += `Monthly Customer Acquisition Fixed Costs: $${parseFloat(fd.m2l_unit_monthlyAcqFixedCosts || 0).toLocaleString()}\n`;
     output += `Monthly Sales Needed for Customer Acquisition Breakeven: ${fd.m2l_unit_salesForAcqBreakeven || 0} sales\n`;
     output += `Total Monthly Fixed Costs: $${parseFloat(fd.m2l_unit_totalMonthlyFixedCosts || 0).toLocaleString()}\n`;
     output += `Monthly Sales Needed for Overall Profitability: ${fd.m2l_unit_salesForOverallProfitability || 0} sales\n\n`;
 
     // --- Channel Performance Analysis & AI Recommendations ---
-    // Esta sección requiere un análisis más profundo que solo listar datos.
-    // Por ahora, un placeholder. Necesitaríamos lógica para identificar underperforming/high-opportunity.
     output += "Channel Performance Analysis & AI Recommendations\n";
     output += `Primary channel performance: [Analysis for ${primaryChannelOption ? primaryChannelOption.text : (fd.m2l_primaryMarketingChannel || "N/A")} needed]\n`;
-    output += "Underperforming channels: [Logic to identify these needed]\n";
-    output += "High-opportunity channels: [Logic to identify these needed]\n";
+    output += "Underperforming channels: [Logic to identify these needed - e.g., channels with high spend but low customer %]\n";
+    output += "High-opportunity channels: [Logic to identify these needed - e.g., channels with high customer % but low/no spend]\n";
+    output += "Warm traffic optimization: [Logic to identify channels needing warm traffic optimization needed]\n\n";
+ output += `Channel Concentration Risk Assessment: ${m2lCalculatedData.m2l_channelConcentrationRiskInterpretation || "Not calculated"}\n`;
+    if (m2lCalculatedData.m2l_highestNonEmailChannelPercent > 0 && 
+        !m2lCalculatedData.m2l_channelConcentrationRiskInterpretation?.includes("Good/Excellent Diversification")) {
+        output += `(Dominant non-email channel for concentration: ${m2lCalculatedData.m2l_highestNonEmailChannelName} at ${m2lCalculatedData.m2l_highestNonEmailChannelPercent?.toFixed(0)}% of customers)\n`;
+    }
     output += "Warm traffic optimization: [Logic to identify channels needing warm traffic optimization needed]\n\n";
 
     // --- Complete Competitive Analysis ---
     output += "Complete Competitive Analysis\nDirect Competitors:\n";
-    output += `Competitor #1: ${fd.m2l_pa_14_top3Competitors ? fd.m2l_pa_14_top3Competitors.split('\n')[0] : 'N/A'} - Primary advantage: [Extract from m2l_pa_14_competitorAdvantages] - How you differentiate: ${fd.m2l_pa_14_diffFromComp1 || 'N/A'}\n`;
-    // ... (Similar para Competitor #2 y #3, requiere parsear los textareas)
+    const competitors = (fd.m2l_pa_14_top3Competitors || "").split('\n').map(s => s.trim()).filter(Boolean);
+    const competitorAdvantages = (fd.m2l_pa_14_competitorAdvantages || "").split('\n').map(s => s.trim()).filter(Boolean);
+    const diffs = [fd.m2l_pa_14_diffFromComp1, fd.m2l_pa_14_diffFromComp2, fd.m2l_pa_14_diffFromComp3];
+
+    for (let i = 0; i < 3; i++) {
+        if (competitors[i]) {
+            output += `Competitor #${i+1}: ${competitors[i]} - Primary advantage: ${competitorAdvantages[i] || 'N/A'} - How you differentiate: ${diffs[i] || 'N/A'}\n`;
+        }
+    }
     output += "\nCompetitive Positioning:\n";
     output += `What competitors do better: ${fd.m2l_pa_14_competitorsDoBetter || 'N/A'}\n`;
     output += `What you do better than all competitors: ${fd.m2l_pa_14_youDoBetter || 'N/A'}\n`;
-    // "Category of One positioning" necesitaría una lógica de score/análisis de las respuestas de diferenciación.
-    output += "Category of One positioning: [Analysis needed based on differentiation inputs]\n\n";
+    output += "Category of One positioning: [Analysis needed based on differentiation inputs]\n\n"; // Necesitaría lógica de score o análisis
+    
     output += "When discussing competitive strategy, AI should:\n";
     output += "- Reference specific competitor strengths and how to counter them\n";
-    output += "- Leverage your unique advantages identified in the assessment\n";
-    // ... (resto de los puntos fijos para AI)
+    output += `- Leverage your unique advantages identified in the assessment (e.g., "${fd.m2l_pa_14_youDoBetter || 'Your Stated Advantage'}")\n`;
+    output += `- Suggest ways to avoid direct price competition with ${competitors.length > 0 ? competitors.join(', ') : '[Competitors]'}\n`;
+    output += "- Recommend strengthening differentiation in areas where [specific competitor] currently has advantage\n";
     output += "- Focus on building \"category of one\" positioning to escape commodity competition\n\n";
-
 
     // --- Owner Strategic Positioning (M2L) ---
     const m2lOSP = m2lCalculatedData.m2l_ownerStrategicPositioning;
-    output += "**Owner Strategic Positioning**\n"; // Usar ** según el formato S2D, no en el título general
-    output += "Areas for strategic oversight (delegation opportunities): " 
-            + (m2lOSP.areasForDelegation.length > 0 ? m2lOSP.areasForDelegation.join(', ') : "None identified") 
-            + ". User wants to begin delegating these areas to other members of the team.\n";
-    output += "Areas for active management: " 
-            + (m2lOSP.areasForActiveManagement.length > 0 ? m2lOSP.areasForActiveManagement.join(', ') : "None identified") 
-            + ". User wants to become actively involved in these areas to bring up competency. AI should share information whenever possible on best practices, templates, etc.\n\n";
+    if (m2lOSP) { // Asegurarse que el objeto existe
+        output += "**Owner Strategic Positioning**\n";
+        output += "Areas for strategic oversight (delegation opportunities): " 
+                + (m2lOSP.areasForDelegation && m2lOSP.areasForDelegation.length > 0 ? m2lOSP.areasForDelegation.join(', ') : "None identified") 
+                + ". User wants to begin delegating these areas to other members of the team.\n";
+        output += "Areas for active management: " 
+                + (m2lOSP.areasForActiveManagement && m2lOSP.areasForActiveManagement.length > 0 ? m2lOSP.areasForActiveManagement.join(', ') : "None identified") 
+                + ". User wants to become actively involved in these areas to bring up competency. AI should share information whenever possible on best practices, templates, etc.\n\n";
+    }
+
 
     // --- Process Improvement Priorities ---
     output += "Process Improvement Priorities\n";
-    const m2lProcessAssessmentQuestionsMap = {}; // Para mapear valueKey a la pregunta y el texto del prompt
-    m2lPart2QuestionDefs.forEach(q => {
-        if (q.valueKey.endsWith('_process')) {
-            m2lProcessAssessmentQuestionsMap[q.valueKey] = {
-                text: q.text, // Texto completo de la pregunta
-                // Necesitaremos los templates de prompt para cada área
-            };
-        }
-    });
-    
-    // Definir los templates para las prioridades de mejora (similar a S2D)
     const m2lImprovementTemplates = {
         'm2l_pa_1_marketResearchICP_process': "Market Research & ICP Development: Current customer profiling needs strengthening. AI should proactively suggest ICP refinement exercises, customer interview templates, and data analysis frameworks when discussing target audience or marketing strategy. Prioritize creating detailed buyer personas based on the [%CUSTOMER_PERCENT_PRIMARY_CHANNEL%]% of customers coming from [%PRIMARY_CHANNEL%] and analyze why [%SECONDARY_CHANNEL%] drives [%CUSTOMER_PERCENT_SECONDARY_CHANNEL%]% despite [%INVESTMENT_LEVEL_SECONDARY_CHANNEL%] investment.",
         'm2l_pa_2_brandPositioning_process': "Brand Positioning & Messaging: Current positioning lacks clarity or differentiation. AI should suggest messaging frameworks, competitive differentiation exercises, and value proposition templates. When discussing marketing content, prioritize developing clear positioning that explains why customers choose you over competitors, especially given your success in [%PRIMARY_CHANNEL%] versus [%UNDERPERFORMING_CHANNELS%].",
-        // ... (AÑADIR LOS 12 TEMPLATES RESTANTES AQUÍ, MAPEADOS A SUS valueKey _process)
-        // Ejemplo para Content Strategy:
         'm2l_pa_3_contentStrategy_process': "Content Strategy & Development: Content creation lacks systematic approach. AI should recommend editorial calendar templates, content pillar frameworks, and repurposing strategies. Focus on scaling content for [%ORGANIC_CHANNELS_DRIVING_CUSTOMERS%] and creating content that converts cold traffic to warm audiences for [%CHANNELS_LOW_WARM_TRAFFIC%].",
-        // ... y así sucesivamente para las 14 preguntas de proceso.
+        'm2l_pa_4_leadGenCapture_process': "Lead Generation & Capture Systems: Lead conversion processes need optimization. AI should suggest landing page optimization, lead magnet development, and conversion rate improvement tactics. Prioritize improving conversion rates for [%PRIMARY_TRAFFIC_SOURCE%] and implementing lead capture for [%HIGH_TRAFFIC_LOW_CONVERSION_CHANNELS%].",
+        'm2l_pa_5_marketingAutomation_process': "Marketing Automation & Nurturing: Automation systems are underdeveloped. AI should recommend email sequence templates, behavioral trigger setups, and CRM integration strategies. Focus on nurturing the [%LEAD_PERCENT_PRIMARY_CHANNEL%]% of leads from [%PRIMARY_CHANNEL%] and creating automated follow-up for [%CHANNELS_LOW_WARM_TRAFFIC%].",
+        'm2l_pa_6_paidMedia_process': "Paid Media Strategy & Optimization: Paid advertising lacks strategic approach. Given current spend of $[%TOTAL_PAID_SPEND%]/month with [%OVERALL_PAID_CUSTOMER_PERCENT%]% overall customer acquisition from paid, AI should suggest campaign optimization, audience targeting improvements, and budget reallocation strategies. Prioritize improving ROI for [%HIGHEST_SPEND_CHANNEL%] and testing expansion of [%HIGH_PERFORMING_LOW_SPEND_CHANNELS%].",
+        'm2l_pa_7_analyticsAttribution_process': "Performance Analytics & Attribution: Measurement capabilities are insufficient. AI should recommend attribution modeling, analytics setup, and reporting dashboard creation. Critical need to better track the customer journey from [%PRIMARY_CHANNEL%] through conversion and understand why [%CHANNEL_HIGH_SPEND_LOW_CUSTOMERS%] underperforms.",
+        'm2l_pa_8_customerJourney_process': "Customer Journey Optimization: Journey mapping and optimization lacks systematic approach. AI should suggest journey mapping exercises, touchpoint optimization, and conversion funnel analysis. Focus on optimizing the path from [%PRIMARY_TRAFFIC_SOURCE%] to sale and identifying friction points in [%UNDERPERFORMING_CHANNELS%].",
+        'm2l_pa_9_competitiveAnalysis_process': "Competitive Analysis & Market Intelligence: Competitive monitoring is insufficient. AI should recommend competitive research frameworks, monitoring tools, and market analysis templates. Focus on understanding why competitors may be more successful in [%CHANNELS_LOW_PERFORMANCE%] and identifying opportunities in [%YOUR_HIGH_PERFORMING_CHANNELS%].",
+        'm2l_pa_10_martech_process': "Marketing Technology Stack: Technology integration needs improvement. AI should suggest integration strategies, tool selection criteria, and workflow automation. Prioritize connecting data flow between [%PRIMARY_CHANNEL_SYSTEMS%] systems and overall reporting to better understand the [%CUSTOMER_ATTRIBUTION_ACROSS_CHANNELS%]% customer attribution across channels.",
+        'm2l_pa_11_teamResource_process': "Team & Resource Management: Team organization and resource allocation need structure. AI should recommend organizational frameworks, role definition templates, and performance management systems. Focus on allocating resources toward [%HIGHEST_PERFORMING_CHANNELS%] and building capabilities for [%UNDERUTILIZED_HIGH_OPPORTUNITY_CHANNELS%].",
+        'm2l_pa_12_budgetROI_process': "Budget Planning & ROI Management: Financial planning and ROI tracking lack sophistication. Given current total marketing spend of $[%TOTAL_MARKETING_SPEND%] and blended CAC of $[%BLENDED_CAC%], AI should recommend budget optimization frameworks, ROI calculation methods, and resource allocation strategies. Prioritize reallocating budget from [%UNDERPERFORMING_CHANNELS%] to [%HIGH_OPPORTUNITY_CHANNELS%] and improving CAC for [%PRIMARY_CHANNEL%].",
+        'm2l_pa_13_competitivePositioning_process': "Competitive Positioning & Differentiation: Current differentiation is not strong enough. AI should help develop stronger unique selling propositions and positioning statements. Focus on achieving 'category of one' status relative to [%COMPETITORS%].",
+        'm2l_pa_14_competitorIntelligence_process': "Competitor Intelligence & Market Awareness: Insufficient monitoring of the competitive landscape. AI should recommend tools and processes for systematic competitor tracking and analysis. Focus on understanding [%COMPETITOR_STRATEGIES_IN_KEY_CHANNELS%]."
     };
 
-    m2lPart2QuestionDefs.forEach(qDef => {
-        if (qDef.valueKey.endsWith('_process')) {
-            const answerValue = fd[qDef.valueKey];
-            if (answerValue && qDef.options) {
-                const selectedOpt = qDef.options.find(o => o.value === answerValue);
-                if (selectedOpt && typeof selectedOpt.score === 'number' && selectedOpt.score < 5) {
-                    const templateText = m2lImprovementTemplates[qDef.valueKey];
-                    if (templateText) {
-                        // Reemplazar placeholders en templateText con datos reales del formData o calculados
-                        // Esto es complejo y requiere más lógica para obtener [%PRIMARY_CHANNEL%], etc.
-                        // Por ahora, solo incluimos el template y la respuesta del usuario.
-                        let filledTemplate = templateText; 
-                        // Ejemplo de reemplazo (necesitarás más lógica para estos placeholders):
-                        // filledTemplate = filledTemplate.replace("[%PRIMARY_CHANNEL%]", primaryChannelOption ? primaryChannelOption.text : 'your primary channel');
-                        // ... otros reemplazos ...
-                        output += `**${qDef.text.substring(qDef.text.indexOf(' ') + 1, qDef.text.indexOf(':'))}**\n`; // Título del área
-                        output += filledTemplate + `\n(User's current approach: "${selectedOpt.text}")\n\n`;
-                    }
+    if (m2lCalculatedData.m2l_processAssessmentDetails) {
+        m2lCalculatedData.m2l_processAssessmentDetails.forEach(detail => {
+            if (detail.processAnswerScore < 5) { // Condición: Si el score de la pregunta de proceso es < 5
+                const templateKey = `m2l_pa_${detail.id.split('_')[2]}_${detail.id.split('_')[3]}_process`; // Reconstruir el valueKey
+                const templateText = m2lImprovementTemplates[templateKey];
+                if (templateText) {
+                    const questionTitle = detail.processQuestionText.substring(detail.processQuestionText.indexOf(' ') + 1, detail.processQuestionText.indexOf(':')).trim();
+                    let filledTemplate = templateText;
+                    // TODO: Implementar lógica de reemplazo de placeholders más robusta aquí.
+                    // Por ahora, solo usamos la respuesta del usuario para [%RESPONSE%] si existiera.
+                    // El template original del cliente usa placeholders más complejos.
+                    // Este es un ejemplo simple:
+                    filledTemplate = filledTemplate.replace("[%RESPONSE%]", `"${detail.processAnswerText}"`); // Ejemplo si el template tuviera [%RESPONSE%]
+                    
+                    output += `**${questionTitle}**\n`;
+                    output += filledTemplate + `\n(User's current approach: "${detail.processAnswerText}")\n\n`;
                 }
             }
-        }
-    });
+        });
+    }
     
     output += "Industry-Specific Marketing Guidance\n";
-    output += "[Based on selected industry - consulting, manufacturing, retail, construction, or general small business]\n\n"; // Placeholder
+    // Necesitaríamos saber la industria seleccionada por el usuario (de "Your Profile")
+    // const userIndustry = fd.naicsSector; // o un campo más específico si lo tienes
+    // output += `[Based on selected industry: ${userIndustry || "General Small Business"}]\n\n`;
+    output += "[Based on selected industry - consulting, manufacturing, retail, construction, or general small business]\n\n";
     
     output += "This enhanced Master Prompt will enable AI to provide sophisticated marketing guidance, channel optimization recommendations, and specific implementation strategies based on your current marketing maturity level, actual channel performance data, and unit economics.\n";
 
     return output;
+//}, [MARKETING_CHANNELS_OPTIONS]); // Si MARKETING_CHANNELS_OPTIONS es importada, no es estrictamente necesaria aquí.
 }, [MARKETING_CHANNELS_OPTIONS]); 
 
 const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
@@ -1201,11 +1335,7 @@ const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
     ) {
         const m2lP1Defs = getMarketToLeadPart1Questions(M2L_PART1_NAME);
         const m2lP2Defs = getMarketToLeadPart2Questions(M2L_PART2_NAME);
-        
-        // generateM2LPromptTextInternal espera el objeto m2lCalculatedData completo.
-        // Si el prompt se genera desde SectionResultsPage, sectionResultsData debería tenerlo.
-        // Si se genera en otro momento (no debería para M2L ya que el prompt está en SectionResultsPage),
-        // necesitaríamos una forma de obtener o recalcular estos datos.
+  
         let m2lDataForPrompt;
         if (sectionResultsData && sectionResultsData.isM2L) {
             m2lDataForPrompt = sectionResultsData;
@@ -1366,20 +1496,15 @@ if (promptText) { // Solo descargar si hay texto
     }
 
 }, [
-    formData, 
-    currentStep, // Mantenido para las secciones genéricas si getQuestionsForStep lo usa
-    allAppSections, 
-    sectionResultsData, // Añadido porque lo usamos para M2L y D2S
-    generateS2DPromptTextInternal,
-    getSaleToDeliveryProcessQuestions,
-    generateD2SPromptTextInternal, 
-    getDeliveryToSuccessQuestions, 
-    calculateD2SSectionData,
-    generateM2LPromptTextInternal,    // <--- AÑADIDO
-    getMarketToLeadPart1Questions,  // <--- AÑADIDO
-    getMarketToLeadPart2Questions,  // <--- AÑADIDO
-    calculateMarketToLeadData,      // <--- AÑADIDO (para el fallback de M2L)
-    getQuestionsForStep
+    formData, currentStep, allAppSections, sectionResultsData, // sectionResultsData es importante aquí
+    generateS2DPromptTextInternal, getSaleToDeliveryProcessQuestions,
+    generateD2SPromptTextInternal, getDeliveryToSuccessQuestions, calculateD2SSectionData,
+    generateM2LPromptTextInternal, // <--- AÑADIDO
+    getMarketToLeadPart1Questions, 
+    getMarketToLeadPart2Questions, 
+    calculateMarketToLeadData,     
+    getQuestionsForStep,
+    MARKETING_CHANNELS_OPTIONS
 ]);
 
     const handleSubmit = useCallback(async () => {

@@ -274,7 +274,7 @@ const M2LAssessmentDetails = ({ m2lData }) => {
         [m2lData.m2l_ownerIndependenceScore]
     );
 
-    return (
+return (
         <div className="m2l-assessment-details">
             <h3 style={styles.pageSubHeader}>Market to Lead Process Assessment</h3>
 
@@ -288,12 +288,24 @@ const M2LAssessmentDetails = ({ m2lData }) => {
                     <p><strong>Owner Independence Score:</strong> {m2lData.m2l_ownerIndependenceScore} / 70</p>
                     <p style={styles.interpretationText}><em>{ownerIndependenceInterpretation}</em></p>
                 </div>
+                
+                {/* --- MOSTRAR EL NUEVO CHANNEL CONCENTRATION RISK --- */}
                 <div style={styles.scoreItem}>
-                    <p><strong>Channel Diversification:</strong> {m2lData.m2l_activeChannelsCount} active channel(s)</p>
-                    <p style={styles.interpretationText}><em>{m2lData.m2l_channelDiversificationInterpretation}</em></p>
+                    <p><strong>Channel Concentration Risk:</strong></p>
+                    <p style={styles.interpretationText}>
+                        <em>{m2lData.m2l_channelConcentrationRiskInterpretation || "Not calculated"}</em>
+                    </p>
+                    {/* Mostrar detalle del canal dominante si el riesgo es al menos "Low Risk" o si hay un canal con >0% */}
+                    {(m2lData.m2l_highestNonEmailChannelPercent > 0) && 
+                     !m2lData.m2l_channelConcentrationRiskInterpretation?.includes("Good/Excellent Diversification") && (
+                        <p style={{fontSize: '0.8em', color: '#777', marginTop: '3px'}}>
+                            (Primary concentration driver: {m2lData.m2l_highestNonEmailChannelName} at {m2lData.m2l_highestNonEmailChannelPercent?.toFixed(0)}% of customers)
+                        </p>
+                    )}
                 </div>
+
                 <div style={styles.scoreItem}>
-                    <p><strong>Unit Economics Health (LTV:CAC Ratio):</strong> {typeof m2lData.m2l_ltvToCacRatio === 'number' ? m2lData.m2l_ltvToCacRatio.toFixed(2) : 'N/A'}</p>
+                    <p><strong>Unit Economics Health (90-day CV:CAC Ratio):</strong> {typeof m2lData.m2l_ltvToCacRatio === 'number' ? m2lData.m2l_ltvToCacRatio.toFixed(2) : 'N/A'}</p>
                     <p style={styles.interpretationText}><em>{m2lData.m2l_unitEconomicsHealthInterpretation}</em></p>
                 </div>
             </div>
@@ -338,7 +350,10 @@ const M2LReportDetails = ({ m2lData }) => {
         m2l_activeChannelsCount,
         m2l_ltvToCacRatio,
         m2l_processMaturityScore, 
-        m2l_ownerIndependenceScore 
+        m2l_ownerIndependenceScore,
+          m2l_channelConcentrationRiskInterpretation, // Nueva propiedad
+        m2l_highestNonEmailChannelName,         // Nueva propiedad
+        m2l_highestNonEmailChannelPercent,
     } = m2lData;
 
     return (
@@ -355,8 +370,8 @@ const M2LReportDetails = ({ m2lData }) => {
                     <strong> "{ownerIndependenceInterpretation.toLowerCase().split(" - ")[0]}"</strong>.
                 </p>
                 <p>
-                    Channel diversification is assessed as: <em>{m2l_channelDiversificationInterpretation}</em> (with {m2l_activeChannelsCount} active channel(s) identified).
-                    The Unit Economics Health, based on an LTV:CAC ratio of {typeof m2l_ltvToCacRatio === 'number' ? m2l_ltvToCacRatio.toFixed(2) : 'N/A'}, is considered: <em>{m2l_unitEconomicsHealthInterpretation}</em>.
+                    Regarding channel concentration, the current assessment is: <em>{m2l_channelConcentrationRiskInterpretation || "Not calculated"}</em>.
+                    The Unit Economics Health, based on a <strong>90-day CV:CAC Ratio</strong> of {typeof m2l_ltvToCacRatio === 'number' ? m2l_ltvToCacRatio.toFixed(2) : 'N/A'}, is considered: <em>{m2l_unitEconomicsHealthInterpretation}</em>.
                 </p>
             </div>
 
@@ -401,10 +416,14 @@ const M2LReportDetails = ({ m2lData }) => {
                     {m2l_activeChannelsCount < 3 && (
                         <li>Explore opportunities to diversify marketing channels to reduce risk and reach new audiences.</li>
                     )}
+                     {m2l_highestNonEmailChannelPercent >= 40 && ( // Si el riesgo es Medium, High, o Critical
+                        <li>Develop strategies to diversify customer acquisition beyond {m2l_highestNonEmailChannelName}, potentially by testing or scaling other identified channels.</li>
+                    )}
                     {(typeof m2l_ltvToCacRatio === 'number' && m2l_ltvToCacRatio < 1.5 && m2l_ltvToCacRatio !== Infinity) && (
                         <li>Urgently review marketing spend and customer value as unit economics may be unsustainable.</li>
                     )}
                     <li>Consider using the "Generate Prompt" feature for AI-driven suggestions tailored to your specific M2L assessment results.</li>
+                    
                 </ul>
             </div>
         </div>

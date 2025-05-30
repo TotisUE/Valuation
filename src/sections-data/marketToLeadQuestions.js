@@ -29,7 +29,7 @@ const createChannelQuestions = (channelKey, channelDisplayName, channelType, sec
         {
             id: `m2l_${channelKey}_customerPercent`, section: sectionName,
             text: `% of customers from ${channelDisplayName}:`, type: 'number', valueKey: `m2l_${channelKey}_customerPercent`,
-            placeholder: "e.g., 25", min: 0, max: 100, helpText: "Enter a number (0-100) for percentage."
+            placeholder: "e.g., 25", min: 0, max: 100
         }
     ];
 
@@ -37,7 +37,7 @@ const createChannelQuestions = (channelKey, channelDisplayName, channelType, sec
         questions.push({
             id: `m2l_${channelKey}_monthlySpend`, section: sectionName,
             text: `Monthly spend for ${channelDisplayName}:`, type: 'number', valueKey: `m2l_${channelKey}_monthlySpend`,
-            placeholder: "e.g., 500", min: 0, helpText: "Enter amount in $."
+            placeholder: "e.g., 500", min: 0
         });
     }
 
@@ -54,7 +54,7 @@ const createChannelQuestions = (channelKey, channelDisplayName, channelType, sec
     questions.push({
         id: `m2l_${channelKey}_warmTrafficPercent`, section: sectionName, text: warmTrafficText,
         type: 'number', valueKey: `m2l_${channelKey}_warmTrafficPercent`, placeholder: "e.g., 60",
-        min: 0, max: 100, helpText: "Enter a number (0-100) for percentage."
+        min: 0, max: 100
     });
     
     return questions;
@@ -63,19 +63,6 @@ const createChannelQuestions = (channelKey, channelDisplayName, channelType, sec
 // --- PREGUNTAS PARA MARKET TO LEAD - PARTE 1: Channels & Economics ---
 export const getMarketToLeadPart1Questions = (sectionName) => {
     const part1Questions = [
-        // --- Definición de Producto/Servicio Principal ---
-        {
-            id: "m2l_productName", section: sectionName, text: "Name of Product/Service you are primarily marketing:",
-            type: "text", valueKey: "m2l_productName", required: true, placeholder: "e.g., Our Premium Widget Model X"
-        },
-        {
-            id: "m2l_productDescription", section: sectionName, text: "Brief Description of this Product/Service:",
-            type: "textarea", valueKey: "m2l_productDescription", required: true, rows: 3, placeholder: "Describe what it is and its main benefit."
-        },
-        {
-            id: "m2l_productRevenue", section: sectionName, text: "Approximate Annual Revenue of this Product/Service:",
-            type: "number", valueKey: "m2l_productRevenue", placeholder: "e.g., 250000", required: true, helpText: "Enter numbers only, without commas or currency symbols."
-        },
         {
             id: "m2l_primaryMarketingChannel", section: sectionName, text: "Primary Marketing Channel for this Product/Service:",
             type: "select", valueKey: "m2l_primaryMarketingChannel", options: MARKETING_CHANNELS_OPTIONS, required: true,
@@ -143,20 +130,24 @@ export const getMarketToLeadPart1Questions = (sectionName) => {
         // === Unit Economics Analysis ===
         {
             id: "m2l_unit_overallCAC", section: sectionName, text: "What is your overall blended CAC across all channels?",
-            type: "number", valueKey: "m2l_unit_overallCAC", placeholder: "e.g., 150", helpText: "Enter amount in $."
+            type: "number", valueKey: "m2l_unit_overallCAC", placeholder: "e.g., 150"
         },
         {
             id: "m2l_unit_primaryChannelCAC", section: sectionName, text: "What is your CAC for your primary marketing channel?",
-            type: "number", valueKey: "m2l_unit_primaryChannelCAC", placeholder: "e.g., 100", helpText: "Enter amount in $."
+            type: "number", valueKey: "m2l_unit_primaryChannelCAC", placeholder: "e.g., 100"
         },
         {
             id: "m2l_unit_trackCACByChannel", section: sectionName, text: "Do you track CAC by individual channel?",
             type: "select", valueKey: "m2l_unit_trackCACByChannel", 
             options: [ {value: '', text: 'Please select...'}, {value: 'yes', text: 'Yes'}, {value: 'no', text: 'No'}, {value: 'somewhat', text: 'Somewhat'}], required: true,
         },
-        {
-            id: "m2l_unit_90DayGrossProfit", section: sectionName, text: "What is the gross profit from a typical customer in their first 90 days?",
-            type: "number", valueKey: "m2l_unit_90DayGrossProfit", placeholder: "e.g., 300", helpText: "Enter amount in $."
+         {
+            id: "m2l_unit_90DayCustomerValue",
+            section: sectionName, 
+            text: "What is the customer value from a typical customer in their first 90 days (gross profit - commission on sale)?", 
+            type: "number", 
+            valueKey: "m2l_unit_90DayGrossProfit",
+            placeholder: "e.g., 250",
         },
         {
             id: "m2l_unit_track90DayValue", section: sectionName, text: "Do you track this 90-day customer value metric consistently?",
@@ -165,7 +156,7 @@ export const getMarketToLeadPart1Questions = (sectionName) => {
         },
         {
             id: "m2l_unit_monthlyAcqFixedCosts", section: sectionName, text: "What are your monthly fixed costs for customer acquisition (marketing team, tools, overhead)?",
-            type: "number", valueKey: "m2l_unit_monthlyAcqFixedCosts", placeholder: "e.g., 5000", helpText: "Enter amount in $."
+            type: "number", valueKey: "m2l_unit_monthlyAcqFixedCosts", placeholder: "e.g., 5000"
         },
         {
             id: "m2l_unit_salesForAcqBreakeven", section: sectionName, text: "How many sales do you need monthly to cover these customer acquisition costs?",
@@ -173,7 +164,7 @@ export const getMarketToLeadPart1Questions = (sectionName) => {
         },
         {
             id: "m2l_unit_totalMonthlyFixedCosts", section: sectionName, text: "What are your total monthly fixed costs for this product/service?",
-            type: "number", valueKey: "m2l_unit_totalMonthlyFixedCosts", placeholder: "e.g., 10000", helpText: "Enter amount in $."
+            type: "number", valueKey: "m2l_unit_totalMonthlyFixedCosts", placeholder: "e.g., 10000"
         },
         {
             id: "m2l_unit_salesForOverallProfitability", section: sectionName, text: "How many sales do you need monthly for overall profitability for this product/service?",
@@ -202,7 +193,8 @@ export const getMarketToLeadPart2Questions = (sectionName) => {
                 { text: "We don't have a clearly defined ICP, or I'm not sure how our customer profile is currently defined.", value: "e", score: 0 }
             ], 
             required: true, 
-            helpText: "Industry Context:\nConsulting: Consider client industry, company size, decision-maker roles, and typical project triggers.\nManufacturing: Focus on customer industry verticals, order volumes, geographic distribution, and procurement processes.\nRetail: Think about customer demographics, shopping behaviors, seasonal patterns, and price sensitivity.\nConstruction: Consider project types, client size (residential/commercial), geographic service area, and decision-making timelines."
+           helpText: "",
+            industryContext:"Industry Context:\nConsulting: Consider client industry, company size, decision-maker roles, and typical project triggers.\nManufacturing: Focus on customer industry verticals, order volumes, geographic distribution, and procurement processes.\nRetail: Think about customer demographics, shopping behaviors, seasonal patterns, and price sensitivity.\nConstruction: Consider project types, client size (residential/commercial), geographic service area, and decision-making timelines."
         },
         {
             id: "m2l_pa_1_marketResearchICP_owner", 
@@ -515,7 +507,8 @@ export const getMarketToLeadPart2Questions = (sectionName) => {
                 { text: "We struggle to differentiate ourselves from competitors and consistently compete on price, or I'm not sure how we're positioned relative to competitors.", value: "e", score: 0 }
             ], 
             required: true, 
-            helpText: "Industry Context:\nConsulting: Consider your methodology, expertise area, industry specialization, or service delivery approach.\nManufacturing: Focus on product features, quality standards, customization capabilities, or supply chain advantages.\nRetail: Think about product curation, customer experience, location advantages, or brand positioning.\nConstruction: Consider specialization areas, quality standards, project management approach, or customer relationships."
+            helpText: "", // O un tooltip breve si lo deseas, ej: "Learn more about ICP definition."
+            industryContext:"Industry Context:\nConsulting: Consider your methodology, expertise area, industry specialization, or service delivery approach.\nManufacturing: Focus on product features, quality standards, customization capabilities, or supply chain advantages.\nRetail: Think about product curation, customer experience, location advantages, or brand positioning.\nConstruction: Consider specialization areas, quality standards, project management approach, or customer relationships."
         },
         {
             id: "m2l_pa_13_competitivePositioning_owner", 
