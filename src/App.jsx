@@ -1,108 +1,51 @@
-// src/App.jsx
-import React, { useState, useEffect, useContext } from 'react';
-import { Routes, Route, useLocation, Link, useNavigate } from 'react-router-dom';
+// src/App.jsx (Modificado)
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 
-import HomePageGuard from './components/HomePageGuard';
+// Se importa el HomePageGuard ya modificado para ser la página principal.
+import HomePageGuard from './components/HomePageGuard'; 
+
+// Se mantienen los otros componentes y páginas.
 import AssessmentContinuation from './components/AssessmentContinuation';
 import RequestNewLink from './components/RequestNewLink';
-import './App.css';
-import LoginForm from './components/LoginForm';
-import SignupForm from './components/SignupForm';
-import logoImage from './assets/logobrain.png';
-import S2DResultsDisplayPage from './pages/S2DResultsDisplayPage';
-import { SupabaseContext } from './context/SupabaseProvider';
 import AddProductServicePage from './pages/AddProductServicePage';
+import S2DResultsDisplayPage from './pages/S2DResultsDisplayPage';
 
-// --- PRIMERA Y ÚNICA DEFINICIÓN DE LogoutButton ---
-function LogoutButton() {
-    const supabase = useContext(SupabaseContext);
-    const navigate = useNavigate();
-    const [session, setSession] = useState(null);
-
-    useEffect(() => {
-        if (!supabase) return;
-        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-            setSession(currentSession);
-        });
-        const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-            setSession(newSession);
-        });
-        return () => authListener?.subscription?.unsubscribe();
-    }, [supabase]);
-
-    const handleLogout = async () => {
-        if (!supabase) return;
-        await supabase.auth.signOut();
-        navigate('/login');
-    };
-
-    if (!session) return null;
-
-    return <button onClick={handleLogout} style={{ margin: '10px', padding: '8px 15px' }}>Logout</button>;
-}
-// --- FIN DE LA DEFINICIÓN DE LogoutButton ---
-
+// Estilos e imágenes
+import './App.css';
+import logoImage from './assets/mi-logo.png.png';
 
 function App() {
-  // ... (resto del código de App se mantiene igual) ...
-  const location = useLocation();
-  const [currentSession, setCurrentSession] = useState(null);
-  const supabase = useContext(SupabaseContext);
-
-  useEffect(() => {
-      if (supabase) {
-          supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-              setCurrentSession(initialSession);
-          });
-          const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-              setCurrentSession(newSession);
-          });
-          return () => {
-              subscription?.unsubscribe();
-          };
-      }
-  }, [supabase]);
-
+  // Se eliminó toda la lógica de sesión y el header con login/logout.
   return (
     <div className="App">
       <header className="app-global-header">
-         <div className="app-global-header-banner">
-          <nav style={{ padding: '10px', textAlign: 'right', backgroundColor: '#f0f0f0' }}>
-            {!currentSession ? (
-              <>
-                <Link to="/login" style={{ marginRight: '10px' }}>Login</Link>
-                <Link to="/signup">Sign Up</Link>
-              </>
-            ) : (
-              <LogoutButton /> // Se usa la definición de arriba
-            )}
-          </nav>
+        <div className="app-global-header-banner">
+          {/* La barra de navegación <nav> con login/logout ha sido eliminada. */}
         </div>
       </header>
 
-      {/* ... (resto del JSX de App se mantiene igual) ... */}
-       <main className="app-main-content">
+      <main className="app-main-content">
         <div className="main-content-logo-container">
           <img src={logoImage} alt="Logo de la Empresa" className="app-logo" />
         </div>
 
         <Routes>
+          {/* La ruta principal ahora muestra HomePageGuard (que contiene el formulario) */}
           <Route path="/" element={<HomePageGuard />} />
+          
+          {/* El resto de las rutas funcionales se conservan */}
           <Route path="/assessment/continue" element={<AssessmentContinuation />} />
           <Route path="/request-link" element={<RequestNewLink />} />
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/signup" element={<SignupForm />} />
-          <Route path="*" element={<div><h2>404 - Page Not Found</h2></div>} />
           <Route path="/add-product-service" element={<AddProductServicePage />} />
-           <Route path="/s2d-results" element={<S2DResultsDisplayPage />} />
+          <Route path="/s2d-results" element={<S2DResultsDisplayPage />} />
+
+          {/* Ruta para páginas no encontradas */}
+          <Route path="*" element={<div><h2>404 - Page Not Found</h2></div>} />
         </Routes>
       </main>
     </div>
   );
 }
 
-// ELIMINA CUALQUIER OTRA DEFINICIÓN DE LogoutButton DE AQUÍ ABAJO
-
 export default App;
-
-

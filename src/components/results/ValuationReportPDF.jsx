@@ -81,15 +81,14 @@ const styles = StyleSheet.create({
   roadmapAction: {
       marginLeft: 10, // Indentación para pasos de acción
   },
-  //chartImage: {
-    //width: 400,       // <-- Ancho fijo en puntos (pt)
-    //height: 300,      // <-- Alto fijo en puntos (pt)
-    //alignSelf: 'center',
-   // marginTop: 10,
-   // marginBottom: 15,
-  //  borderWidth: 1, // <-- Añadir un borde temporal
-   // borderColor: 'red', // <-- Borde rojo para ver si el espacio se reserva
- // },
+// CÓDIGO NUEVO
+chartImage: {
+  width: 450,
+  height: 350,
+  alignSelf: 'center',
+  marginTop: 10,
+  marginBottom: 15,
+},
   disclaimer: {
       marginTop: 20,
       fontSize: 8,

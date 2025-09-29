@@ -224,37 +224,104 @@ useEffect(() => {
         return scores;
     }, [allAppSections, initialScores, ScoringAreas]); // allAppSections para getQuestionsForStep indirectamente
 
-    const generateImprovementRoadmap = useCallback((scores, stage, currentFormData) => { /* ... tu función sin cambios, pero asegúrate que usa los scores correctos ... */ 
-        // Esta función usa los 'scores' de la valoración principal
-        const roadmapItems = [];
-        const numberOfAreasToShow = 3;
-        const stageToUrlMap = { /* ... */ };
-        const fallbackUrl = 'https://www.acquisition.com/training/stabilize';
-        const targetUrl = stageToUrlMap[stage] || fallbackUrl;
-        const roadmapContent = { /* ... tu roadmapContent ... */ };
+    const generateImprovementRoadmap = useCallback((scores, stage, currentFormData) => {
+        const roadmapContent = {
+            [ScoringAreas.EXPANSION]: {
+                title: "Strengthen Expansion Capability",
+                description: "Your ability to grow is limited by a lack of scalable systems and documented processes. To improve, focus on creating 'playbooks' for key tasks, validating new service offerings with basic market analysis, and identifying bottlenecks that would prevent handling 3x your current volume."
+            },
+            [ScoringAreas.MARKETING]: {
+                title: "Systematize Marketing & Lead Generation",
+                description: "Currently, marketing efforts are inconsistent. Clearly define your Ideal Customer Profile (ICP). Choose one primary marketing channel to focus on and measure its return on investment (ROI). Improve your digital presence to act as an active lead generation tool."
+            },
+            [ScoringAreas.PROFITABILITY]: {
+                title: "Improve Profitability Metrics & Visibility",
+                description: "A lack of profitability tracking is a risk. Analyze your Profit & Loss (P&L) statement to understand trends. Calculate the gross margin on your main product/service and look for opportunities to introduce recurring revenue streams, such as maintenance plans or subscriptions."
+            },
+            [ScoringAreas.OFFERING_SALES]: {
+                title: "Optimize Offering & Sales Effectiveness",
+                description: "An inconsistent sales process and lack of customer satisfaction measurement are hindering growth. Implement a simple survey (like NPS) after each sale. Document your current sales stages and identify where most prospects drop off to improve that specific stage."
+            },
+            [ScoringAreas.WORKFORCE]: {
+                title: "Reduce Owner Dependency & Strengthen the Team",
+                description: "High owner reliance is a significant bottleneck. Identify one recurring task you perform that someone else could potentially do. Document it and delegate. Establish 1-2 Key Performance Indicators (KPIs) for a key role to foster accountability."
+            },
+            [ScoringAreas.SYSTEMS]: {
+                title: "Implement Robust Execution Systems",
+                description: "Reliance on manual processes and a lack of documentation (SOPs) limit efficiency. Choose one critical process and create a simple checklist or a one-page SOP for it. Research one technology tool (CRM, project management software) that can automate a time-consuming task."
+            },
+            [ScoringAreas.MARKET]: {
+                title: "Solidify a Robust Market Position",
+                description: "High customer concentration or being in a declining market presents risks. Develop a plan to acquire 2-3 new ideal clients in the next 90 days to diversify revenue. Reinforce what makes you different from your competitors to protect your market position."
+            }
+        };
 
         if (!scores || typeof scores !== 'object' || Object.keys(scores).length === 0) return [];
-        if (!currentFormData || typeof currentFormData !== 'object') return [];
 
-        let executeConditionalLogic = false;
+        const areaScores = Object.keys(scores).map(areaKey => {
+            const score = scores[areaKey];
+            const maxScore = calculateMaxScoreForArea(areaKey);
+            const percentage = maxScore > 0 ? score / maxScore : 0;
+            return {
+                area: areaKey,
+                score,
+                maxScore,
+                percentage
+            };
+        });
+
+        areaScores.sort((a, b) => a.percentage - b.percentage);
+
+        let finalRoadmapItems = [];
         const marketingAreaKey = ScoringAreas.MARKETING;
-        const marketingScore = scores[marketingAreaKey] || 0;
-        const maxMarketingScore = calculateMaxScoreForArea(marketingAreaKey);
-        const marketingScorePercent = maxMarketingScore > 0 ? marketingScore / maxMarketingScore : 0;
-        const revenueBalance = currentFormData.revenueSourceBalance;
+        const marketingData = areaScores.find(a => a.area === marketingAreaKey);
+        
         const directSalesRevenueBalances = [
             "Mostly/All Direct (>80% Direct Revenue)",
             "Primarily Direct (approx. 60-80% Direct Revenue)",
             "Roughly Balanced Mix (approx. 40-60% Direct Revenue)"
         ];
-        if (marketingScorePercent < 0.80 && directSalesRevenueBalances.includes(revenueBalance)) {
-            executeConditionalLogic = true;
+        
+        if (marketingData && marketingData.percentage < 0.80 && directSalesRevenueBalances.includes(currentFormData.revenueSourceBalance)) {
+            const marketingContent = roadmapContent[marketingAreaKey];
+            if (marketingContent) {
+                finalRoadmapItems.push({
+                    ...marketingContent,
+                    areaName: marketingAreaKey,
+                    areaScore: marketingData.score,
+                    maxScore: marketingData.maxScore
+                });
+            }
+            const otherLowestAreas = areaScores.filter(a => a.area !== marketingAreaKey).slice(0, 2);
+            otherLowestAreas.forEach(areaData => {
+                const content = roadmapContent[areaData.area];
+                if (content) {
+                    finalRoadmapItems.push({
+                        ...content,
+                        areaName: areaData.area,
+                        areaScore: areaData.score,
+                        maxScore: areaData.maxScore
+                    });
+                }
+            });
+        } else {
+            const lowestThreeAreas = areaScores.slice(0, 3);
+            lowestThreeAreas.forEach(areaData => {
+                const content = roadmapContent[areaData.area];
+                if (content) {
+                    finalRoadmapItems.push({
+                        ...content,
+                        areaName: areaData.area,
+                        areaScore: areaData.score,
+                        maxScore: areaData.maxScore
+                    });
+                }
+            });
         }
         
-        if (executeConditionalLogic) { /* ... tu lógica condicional del roadmap ... */ }
-        else { /* ... tu lógica original del roadmap ... */ }
-        return roadmapItems;
-    }, [ScoringAreas, formData.revenueSourceBalance]); // Ajustar dependencias
+        return finalRoadmapItems;
+
+    }, [ScoringAreas, calculateMaxScoreForArea]);
 
  const calculateS2DSectionData = useCallback(() => {
      let s2d_processMaturityScore = 0;
@@ -724,45 +791,7 @@ return {
     };
 }, [formData, allAppSections, getMarketToLeadPart1Questions, getMarketToLeadPart2Questions]);
 
-    const currentSectionName = visibleSections[currentStep];
-    const currentQuestions = useMemo(() => {
-        if (currentSectionName === undefined) return [];
-        const allDefinedQuestions = getQuestionsDataArray();
-        if (!Array.isArray(allDefinedQuestions)) return [];
-        return allDefinedQuestions.filter(q => q.section === currentSectionName);
-    }, [currentSectionName, visibleSections]); // Añadir visibleSections
-
-      const m2lNonNegativeNumericFields = [
-    // Channel Performance - Paid
-    'm2l_meta_ads_customerPercent', 'm2l_meta_ads_monthlySpend', 'm2l_meta_ads_warmTrafficPercent',
-    'm2l_tiktok_ads_customerPercent', 'm2l_tiktok_ads_monthlySpend', 'm2l_tiktok_ads_warmTrafficPercent',
-    'm2l_google_ads_customerPercent', 'm2l_google_ads_monthlySpend', 'm2l_google_ads_warmTrafficPercent',
-    'm2l_linkedin_ads_customerPercent', 'm2l_linkedin_ads_monthlySpend', 'm2l_linkedin_ads_warmTrafficPercent',
-    'm2l_youtube_ads_customerPercent', 'm2l_youtube_ads_monthlySpend', 'm2l_youtube_ads_warmTrafficPercent',
-    'm2l_otherPaidChannels_customerPercent', 'm2l_otherPaidChannels_monthlySpend',
-    // Channel Performance - Organic
-    'm2l_youtube_organic_customerPercent', 'm2l_youtube_organic_warmTrafficPercent',
-    'm2l_linkedin_organic_customerPercent', 'm2l_linkedin_organic_warmTrafficPercent',
-    'm2l_google_seo_customerPercent', 'm2l_google_seo_warmTrafficPercent',
-    'm2l_instagram_organic_customerPercent', 'm2l_instagram_organic_warmTrafficPercent',
-    'm2l_otherOrganicChannels_customerPercent',
-    // Channel Performance - Direct Outreach
-    'm2l_email_marketing_customerPercent', 'm2l_email_marketing_warmTrafficPercent',
-    'm2l_text_sms_marketing_customerPercent', 'm2l_text_sms_marketing_warmTrafficPercent',
-    // Channel Performance - Referral
-    'm2l_referral_customerPercent', 'm2l_referral_internalExternalPercent',
-    
-    // Unit Economics Analysis (Campos que deben ser >= 0)
-    'm2l_unit_overallCAC',
-    'm2l_unit_primaryChannelCAC',
-    // 'm2l_unit_90DayGrossProfit', // El Gross Profit SÍ podría ser negativo si hay pérdidas. Lo omito.
-    'm2l_unit_monthlyAcqFixedCosts',
-    'm2l_unit_salesForAcqBreakeven',
-    'm2l_unit_90DayGrossProfit', 
-    'm2l_unit_totalMonthlyFixedCosts',
-    'm2l_unit_salesForOverallProfitability'
-    // Considera si algún otro campo numérico de M2L P1 no debe ser negativo.
-];
+  
     const m2lPercentageFields = [
     'm2l_meta_ads_customerPercent', 'm2l_meta_ads_warmTrafficPercent',
     'm2l_tiktok_ads_customerPercent', 'm2l_tiktok_ads_warmTrafficPercent',
@@ -1302,6 +1331,46 @@ const generateM2LPromptTextInternal = useCallback((
 //}, [MARKETING_CHANNELS_OPTIONS]); // Si MARKETING_CHANNELS_OPTIONS es importada, no es estrictamente necesaria aquí.
 }, [MARKETING_CHANNELS_OPTIONS]); 
 
+const currentSectionName = visibleSections[currentStep];
+const currentQuestions = useMemo(() => {
+    if (currentSectionName === undefined) return [];
+    const allDefinedQuestions = getQuestionsDataArray();
+    if (!Array.isArray(allDefinedQuestions)) return [];
+    return allDefinedQuestions.filter(q => q.section === currentSectionName);
+}, [currentSectionName, visibleSections]); // Añadir visibleSections
+
+  const m2lNonNegativeNumericFields = [
+// Channel Performance - Paid
+'m2l_meta_ads_customerPercent', 'm2l_meta_ads_monthlySpend', 'm2l_meta_ads_warmTrafficPercent',
+'m2l_tiktok_ads_customerPercent', 'm2l_tiktok_ads_monthlySpend', 'm2l_tiktok_ads_warmTrafficPercent',
+'m2l_google_ads_customerPercent', 'm2l_google_ads_monthlySpend', 'm2l_google_ads_warmTrafficPercent',
+'m2l_linkedin_ads_customerPercent', 'm2l_linkedin_ads_monthlySpend', 'm2l_linkedin_ads_warmTrafficPercent',
+'m2l_youtube_ads_customerPercent', 'm2l_youtube_ads_monthlySpend', 'm2l_youtube_ads_warmTrafficPercent',
+'m2l_otherPaidChannels_customerPercent', 'm2l_otherPaidChannels_monthlySpend',
+// Channel Performance - Organic
+'m2l_youtube_organic_customerPercent', 'm2l_youtube_organic_warmTrafficPercent',
+'m2l_linkedin_organic_customerPercent', 'm2l_linkedin_organic_warmTrafficPercent',
+'m2l_google_seo_customerPercent', 'm2l_google_seo_warmTrafficPercent',
+'m2l_instagram_organic_customerPercent', 'm2l_instagram_organic_warmTrafficPercent',
+'m2l_otherOrganicChannels_customerPercent',
+// Channel Performance - Direct Outreach
+'m2l_email_marketing_customerPercent', 'm2l_email_marketing_warmTrafficPercent',
+'m2l_text_sms_marketing_customerPercent', 'm2l_text_sms_marketing_warmTrafficPercent',
+// Channel Performance - Referral
+'m2l_referral_customerPercent', 'm2l_referral_internalExternalPercent',
+
+// Unit Economics Analysis (Campos que deben ser >= 0)
+'m2l_unit_overallCAC',
+'m2l_unit_primaryChannelCAC',
+// 'm2l_unit_90DayGrossProfit', // El Gross Profit SÍ podría ser negativo si hay pérdidas. Lo omito.
+'m2l_unit_monthlyAcqFixedCosts',
+'m2l_unit_salesForAcqBreakeven',
+'m2l_unit_90DayGrossProfit', 
+'m2l_unit_totalMonthlyFixedCosts',
+'m2l_unit_salesForOverallProfitability'
+// Considera si algún otro campo numérico de M2L P1 no debe ser negativo.
+];
+
 const handleGenerateStepPrompt = useCallback((sectionNameForPrompt) => {
     console.log(`[MultiStepForm] Generating prompt for section: ${sectionNameForPrompt}`);
     let promptText = "";
@@ -1636,19 +1705,7 @@ if (promptText) { // Solo descargar si hay texto
 
         const isLastQuestionStep = currentStep === TOTAL_STEPS_QUESTIONS - 1; 
 
-        // --- DEFINIR QUÉ PASOS MUESTRAN UNA PÁGINA DE RESULTADOS DESPUÉS DE ELLOS ---
-        const stepsThatTriggerResultsPage = [
-            S2D_SECTION_INDEX, 
-            D2S_SECTION_INDEX, 
-            M2L_PART2_INDEX, // Los resultados de M2L se muestran DESPUÉS de la Parte 2
-            5, // Expansion Capability
-            6, // Marketing & Brand Equity
-            7, // Profitability Metrics
-            8, // Offering & Sales Effectiveness
-            9, // Workforce & Leadership
-            10, // Execution Systems
-            11, // Robust Market Position
-        ];
+        const stepsThatTriggerResultsPage = [];
 
         // Determinar si el paso actual debe mostrar una página de resultados
         const shouldShowSectionResultsPage = stepsThatTriggerResultsPage.includes(currentStep);
